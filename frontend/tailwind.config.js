@@ -18,11 +18,10 @@ export default {
       },
     },
     extend: {
-      // Typography - Pixel-perfect monospace for terminal aesthetic
       fontFamily: {
-        mono: ['"ArkPixel"', '"CJK Fallback"', '"Noto Sans SC"', '"PingFang SC"', '"Microsoft YaHei"', '"JetBrains Mono"', '"Roboto Mono"', '"Courier New"', 'monospace'],
-        sans: ['"Inter"', '"Noto Sans SC"', '"PingFang SC"', '"Microsoft YaHei"', 'system-ui', 'sans-serif'],
-        display: ['"Orbitron"', '"Rajdhani"', 'sans-serif'],
+        mono: ['"SFMono-Regular"', '"JetBrains Mono"', '"Roboto Mono"', '"Menlo"', 'monospace'],
+        sans: ['"Inter"', '"PingFang SC"', '"Hiragino Sans GB"', '"Microsoft YaHei"', '"Noto Sans SC"', 'system-ui', 'sans-serif'],
+        display: ['"Inter"', '"PingFang SC"', '"Hiragino Sans GB"', 'sans-serif'],
       },
       fontSize: {
         'xs': ['0.8125rem', { lineHeight: '1.125rem', letterSpacing: '0.01em' }],  // 13px
@@ -34,7 +33,6 @@ export default {
         '3xl': ['2rem', { lineHeight: '2.5rem', letterSpacing: '-0.02em' }],       // 32px
         '4xl': ['2.5rem', { lineHeight: '3rem', letterSpacing: '-0.02em' }],       // 40px
       },
-      // Extended Color System
       colors: {
         border: 'hsl(var(--border))',
         input: 'hsl(var(--input))',
@@ -73,13 +71,12 @@ export default {
           DEFAULT: 'hsl(var(--card))',
           foreground: 'hsl(var(--card-foreground))',
         },
-        // Core Palette - Direct color access
         terminal: {
-          orange: '#FF6B2C',      // Vibrant Orange
+          orange: '#F97316',
           'orange-dark': '#E55A1F',
-          red: '#D32F2F',         // Deep Red
+          red: '#D32F2F',
           'red-dark': '#B71C1C',
-          green: '#00E676',       // Signal Green
+          green: '#16A34A',
           'green-dark': '#00C853',
           grey: {
             50: '#F5F5F5',
@@ -95,28 +92,23 @@ export default {
           }
         }
       },
-      // Simplified Border Radius
       borderRadius: {
         lg: 'var(--radius)',
         md: 'var(--radius)',
         sm: 'var(--radius)',
         none: '0',
       },
-      // Refined Shadows - Subtle and clean
       boxShadow: {
         'sm': 'var(--shadow-sm)',
         'md': 'var(--shadow-md)',
-        'lg': '0 4px 6px rgba(0, 0, 0, 0.12)',
+        'lg': 'var(--shadow-lg)',
         'focus': 'var(--shadow-focus)',
-        // Minimal retro effect for special cases
-        'terminal': '1px 1px 0px rgba(0, 0, 0, 0.15)',
-        'terminal-md': '2px 2px 0px rgba(0, 0, 0, 0.15)',
-        // Glow effects for status indicators
-        'glow-orange': '0 0 8px rgba(255, 107, 44, 0.4)',
-        'glow-red': '0 0 8px rgba(211, 47, 47, 0.4)',
-        'glow-green': '0 0 8px rgba(0, 230, 118, 0.4)',
+        'terminal': 'var(--shadow-sm)',
+        'terminal-md': 'var(--shadow-md)',
+        'glow-orange': '0 8px 20px rgba(249, 115, 22, 0.18)',
+        'glow-red': '0 8px 20px rgba(211, 47, 47, 0.15)',
+        'glow-green': '0 8px 20px rgba(22, 163, 74, 0.15)',
       },
-      // Refined Animations
       keyframes: {
         'accordion-down': {
           from: { height: '0' },
@@ -126,27 +118,22 @@ export default {
           from: { height: 'var(--radix-accordion-content-height)' },
           to: { height: '0' },
         },
-        // Subtle fade in
         'fade-in': {
           '0%': { opacity: '0' },
           '100%': { opacity: '1' },
         },
-        // Slide in from bottom
         'slide-up': {
           '0%': { transform: 'translateY(10px)', opacity: '0' },
           '100%': { transform: 'translateY(0)', opacity: '1' },
         },
-        // Subtle pulse for status indicators
         'pulse-glow': {
           '0%, 100%': { opacity: '1' },
           '50%': { opacity: '0.7' },
         },
-        // Terminal cursor blink
         'blink': {
           '0%, 100%': { opacity: '1' },
           '50%': { opacity: '0' },
         },
-        // Simplified scanline
         'scanline': {
           '0%': { transform: 'translateY(-100%)' },
           '100%': { transform: 'translateY(100%)' },
@@ -161,7 +148,6 @@ export default {
         'blink': 'blink 1s step-end infinite',
         'scanline': 'scanline 8s linear infinite',
       },
-      // Spacing adjustments for pixel-perfect layouts
       spacing: {
         '18': '4.5rem',
         '88': '22rem',

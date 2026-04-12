@@ -1,17 +1,19 @@
 /**
  * Stats Panel Component
- * Dashboard-style statistics with premium visual design
- * Features: Animated progress, metric gauges, severity indicators
- * Enhanced visual effects with depth and polish
+ * Workspace statistics panel
  */
 
 import { memo } from "react";
-import { Activity, FileCode, Repeat, Zap, Bug, Shield, AlertTriangle, TrendingUp, Clock } from "lucide-react";
+import { Activity, FileCode, Repeat, Zap, Bug, Shield, AlertTriangle, TrendingUp } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import type { StatsPanelProps } from "../types";
 
-// Enhanced Circular progress component with glow effect
-function CircularProgress({ value, size = 52, strokeWidth = 4, color = "primary" }: {
+function CircularProgress({
+  value,
+  size = 52,
+  strokeWidth = 4,
+  color = "primary",
+}: {
   value: number;
   size?: number;
   strokeWidth?: number;
@@ -21,40 +23,25 @@ function CircularProgress({ value, size = 52, strokeWidth = 4, color = "primary"
   const circumference = radius * 2 * Math.PI;
   const offset = circumference - (value / 100) * circumference;
 
-  const colorMap: Record<string, { stroke: string; glow: string }> = {
-    primary: { stroke: '#FF6B2C', glow: 'rgba(255,107,44,0.4)' },
-    emerald: { stroke: '#34d399', glow: 'rgba(52,211,153,0.4)' },
-    rose: { stroke: '#fb7185', glow: 'rgba(251,113,133,0.4)' },
-    amber: { stroke: '#fbbf24', glow: 'rgba(251,191,36,0.4)' },
+  const colorMap: Record<string, { stroke: string }> = {
+    primary: { stroke: "#F97316" },
+    emerald: { stroke: "#16A34A" },
+    rose: { stroke: "#DC2626" },
+    amber: { stroke: "#D97706" },
   };
 
   const colors = colorMap[color] || colorMap.primary;
 
   return (
-    <svg width={size} height={size} className="transform -rotate-90">
-      {/* Background circle with subtle gradient */}
+    <svg width={size} height={size} className="-rotate-90 transform">
       <circle
         cx={size / 2}
         cy={size / 2}
         r={radius}
         fill="none"
-        stroke="rgba(255,255,255,0.08)"
+        stroke="rgba(148,163,184,0.22)"
         strokeWidth={strokeWidth}
       />
-      {/* Glow effect circle */}
-      <circle
-        cx={size / 2}
-        cy={size / 2}
-        r={radius}
-        fill="none"
-        stroke={colors.stroke}
-        strokeWidth={strokeWidth + 4}
-        strokeDasharray={circumference}
-        strokeDashoffset={offset}
-        strokeLinecap="round"
-        className="transition-all duration-700 ease-out opacity-20 blur-sm"
-      />
-      {/* Progress circle */}
       <circle
         cx={size / 2}
         cy={size / 2}
@@ -66,16 +53,19 @@ function CircularProgress({ value, size = 52, strokeWidth = 4, color = "primary"
         strokeDashoffset={offset}
         strokeLinecap="round"
         className="transition-all duration-700 ease-out"
-        style={{
-          filter: `drop-shadow(0 0 8px ${colors.glow})`,
-        }}
       />
     </svg>
   );
 }
 
-// Enhanced Metric card component with premium styling
-function MetricCard({ icon, label, value, suffix = "", colorClass = "text-muted-foreground", bgClass = "" }: {
+function MetricCard({
+  icon,
+  label,
+  value,
+  suffix = "",
+  colorClass = "text-muted-foreground",
+  bgClass = "",
+}: {
   icon: React.ReactNode;
   label: string;
   value: string | number;
@@ -84,34 +74,30 @@ function MetricCard({ icon, label, value, suffix = "", colorClass = "text-muted-
   bgClass?: string;
 }) {
   return (
-    <div className={`
-      group relative flex items-center gap-3 p-3.5 rounded-lg
-      bg-card/80 border border-border/50 backdrop-blur-sm
-      hover:bg-card hover:border-border/80 hover:shadow-md
-      transition-all duration-300
-      ${bgClass}
-    `}>
-      {/* Subtle gradient overlay on hover */}
-      <div className="absolute inset-0 rounded-lg bg-gradient-to-br from-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
-
-      <div className={`relative z-10 p-2 rounded-md bg-muted/50 border border-border/50 ${colorClass} transition-transform duration-300 group-hover:scale-105`}>
+    <div
+      className={`
+        group relative flex items-center gap-3 rounded-2xl border border-border bg-white p-3.5
+        transition-all duration-300 hover:border-primary/15 hover:shadow-sm
+        ${bgClass}
+      `}
+    >
+      <div className={`relative z-10 rounded-xl border border-border bg-slate-50 p-2 ${colorClass}`}>
         {icon}
       </div>
-      <div className="flex-1 min-w-0 relative z-10">
-        <div className="text-xs text-muted-foreground uppercase tracking-wider truncate font-medium mb-0.5">{label}</div>
-        <div className="text-lg text-foreground font-mono font-bold leading-tight">
-          {value}<span className="text-muted-foreground text-sm ml-0.5">{suffix}</span>
+      <div className="relative z-10 min-w-0 flex-1">
+        <div className="mb-0.5 truncate text-xs font-medium text-muted-foreground">{label}</div>
+        <div className="text-lg font-semibold leading-tight text-foreground">
+          {value}
+          <span className="ml-0.5 text-sm text-muted-foreground">{suffix}</span>
         </div>
       </div>
     </div>
   );
 }
 
-export const StatsPanel = memo(function StatsPanel({ task, findings }: StatsPanelProps) {
+export const StatsPanel = memo(function StatsPanel({ task }: StatsPanelProps) {
   if (!task) return null;
 
-  // 🔥 Use task's reliable statistics instead of computing from findings array
-  // This ensures consistency even when findings array is empty or not loaded
   const severityCounts = {
     critical: task.critical_count || 0,
     high: task.high_count || 0,
@@ -121,146 +107,124 @@ export const StatsPanel = memo(function StatsPanel({ task, findings }: StatsPane
   const totalFindings = task.findings_count || 0;
   const progressPercent = task.progress_percentage || 0;
 
-  // Determine score color
   const getScoreColor = (score: number) => {
-    if (score >= 80) return 'emerald';
-    if (score >= 60) return 'amber';
-    return 'rose';
+    if (score >= 80) return "emerald";
+    if (score >= 60) return "amber";
+    return "rose";
   };
 
   return (
     <div className="space-y-3">
-      {/* Progress Section with enhanced styling */}
-      <div className="p-4 rounded-lg border border-border/50 bg-card/80 backdrop-blur-sm relative overflow-hidden">
-        {/* Background gradient */}
-        <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent pointer-events-none" />
-
+      <div className="relative overflow-hidden rounded-2xl border border-border bg-white p-4 shadow-sm">
         <div className="relative z-10">
-          <div className="flex items-center justify-between mb-3">
+          <div className="mb-3 flex items-center justify-between">
             <div className="flex items-center gap-2.5">
-              <div className="p-1.5 rounded-md bg-primary/15 border border-primary/30">
-                <Activity className="w-4 h-4 text-primary" />
+              <div className="rounded-xl border border-primary/10 bg-orange-50 p-1.5">
+                <Activity className="h-4 w-4 text-primary" />
               </div>
-              <span className="text-sm text-foreground uppercase tracking-wider font-semibold">Progress</span>
+              <span className="text-sm font-semibold text-foreground">执行进度</span>
             </div>
             <div className="flex items-center gap-2">
-              <span className="text-lg text-primary font-mono font-bold">{progressPercent.toFixed(0)}</span>
+              <span className="text-lg font-semibold text-primary">{progressPercent.toFixed(0)}</span>
               <span className="text-sm text-muted-foreground">%</span>
             </div>
           </div>
 
-          {/* Enhanced Progress bar */}
-          <div className="relative h-3 bg-muted/50 rounded-full overflow-hidden border border-border/30">
+          <div className="relative h-3 overflow-hidden rounded-full border border-border/30 bg-muted/50">
             <div
-              className="absolute inset-y-0 left-0 bg-gradient-to-r from-primary via-primary to-primary/80 rounded-full transition-all duration-700 ease-out"
+              className="absolute inset-y-0 left-0 rounded-full bg-gradient-to-r from-primary via-primary to-primary/80 transition-all duration-700 ease-out"
               style={{ width: `${progressPercent}%` }}
             />
-            {/* Animated shine effect */}
             <div
-              className="absolute inset-y-0 left-0 bg-gradient-to-r from-transparent via-white/30 to-transparent rounded-full"
+              className="absolute inset-y-0 left-0 rounded-full bg-gradient-to-r from-transparent via-white/25 to-transparent"
               style={{
                 width: `${progressPercent}%`,
-                animation: 'shine 2s ease-in-out infinite',
-              }}
-            />
-            {/* Glow effect */}
-            <div
-              className="absolute inset-y-0 left-0 rounded-full blur-sm opacity-50"
-              style={{
-                width: `${progressPercent}%`,
-                background: 'linear-gradient(to right, #FF6B2C, #FF6B2C)',
+                animation: "shine 2s ease-in-out infinite",
               }}
             />
           </div>
 
-          {/* File progress with enhanced styling */}
-          <div className="flex items-center justify-between mt-4 text-sm">
+          <div className="mt-4 flex items-center justify-between text-sm">
             <div className="flex items-center gap-2 text-muted-foreground">
-              <FileCode className="w-4 h-4" />
-              <span className="font-medium">Files scanned</span>
+              <FileCode className="h-4 w-4" />
+              <span className="font-medium">已扫描文件</span>
             </div>
-            <span className="text-foreground font-mono font-bold">
-              {task.analyzed_files}<span className="text-muted-foreground font-normal"> / {task.total_files}</span>
+            <span className="font-semibold text-foreground">
+              {task.analyzed_files}
+              <span className="font-normal text-muted-foreground"> / {task.total_files}</span>
             </span>
           </div>
-          {/* Files with findings */}
+
           {task.files_with_findings > 0 && (
-            <div className="flex items-center justify-between mt-2 text-sm">
+            <div className="mt-2 flex items-center justify-between text-sm">
               <div className="flex items-center gap-2 text-muted-foreground">
-                <AlertTriangle className="w-4 h-4 text-rose-500" />
-                <span className="font-medium">Files with findings</span>
+                <AlertTriangle className="h-4 w-4 text-rose-500" />
+                <span className="font-medium">发现问题的文件</span>
               </div>
-              <span className="text-rose-500 font-mono font-bold">
-                {task.files_with_findings}
-              </span>
+              <span className="font-semibold text-rose-500">{task.files_with_findings}</span>
             </div>
           )}
         </div>
       </div>
 
-      {/* Metrics Grid with enhanced styling */}
       <div className="grid grid-cols-2 gap-2.5">
         <MetricCard
-          icon={<Repeat className="w-4 h-4" />}
-          label="Iterations"
+          icon={<Repeat className="h-4 w-4" />}
+          label="迭代次数"
           value={task.total_iterations || 0}
           colorClass="text-teal-500"
         />
         <MetricCard
-          icon={<Zap className="w-4 h-4" />}
-          label="Tool Calls"
+          icon={<Zap className="h-4 w-4" />}
+          label="工具调用"
           value={task.tool_calls_count || 0}
           colorClass="text-amber-500"
         />
         <MetricCard
-          icon={<TrendingUp className="w-4 h-4" />}
-          label="Tokens"
+          icon={<TrendingUp className="h-4 w-4" />}
+          label="Token 使用"
           value={((task.tokens_used || 0) / 1000).toFixed(1)}
           suffix="k"
           colorClass="text-violet-500"
         />
         <MetricCard
-          icon={<Bug className="w-4 h-4" />}
-          label="Findings"
+          icon={<Bug className="h-4 w-4" />}
+          label="问题总数"
           value={totalFindings}
           colorClass={totalFindings > 0 ? "text-rose-500" : "text-muted-foreground"}
-          bgClass={totalFindings > 0 ? "border-rose-500/20" : ""}
+          bgClass={totalFindings > 0 ? "border-rose-100" : ""}
         />
       </div>
 
-      {/* Findings breakdown with enhanced styling */}
       {totalFindings > 0 && (
-        <div className="p-4 rounded-lg border border-rose-500/20 bg-card/80 backdrop-blur-sm relative overflow-hidden">
-          {/* Background gradient */}
-          <div className="absolute inset-0 bg-gradient-to-br from-rose-500/5 to-transparent pointer-events-none" />
-
+        <div className="relative overflow-hidden rounded-2xl border border-rose-100 bg-white p-4 shadow-sm">
           <div className="relative z-10">
-            <div className="flex items-center gap-2.5 mb-3">
-              <div className="p-1.5 rounded-md bg-rose-500/15 border border-rose-500/30">
-                <AlertTriangle className="w-4 h-4 text-rose-500" />
+            <div className="mb-3 flex items-center gap-2.5">
+              <div className="rounded-xl border border-rose-200 bg-rose-50 p-1.5">
+                <AlertTriangle className="h-4 w-4 text-rose-500" />
               </div>
-              <span className="text-sm text-foreground uppercase tracking-wider font-semibold">Severity Breakdown</span>
+              <span className="text-sm font-semibold text-foreground">问题等级分布</span>
             </div>
 
             <div className="flex flex-wrap gap-2">
               {severityCounts.critical > 0 && (
-                <Badge className="bg-rose-500/20 text-rose-600 dark:text-rose-300 border border-rose-500/40 text-xs font-mono font-bold px-2.5 py-1 shadow-[0_0_10px_rgba(244,63,94,0.15)]">
-                  CRITICAL: {severityCounts.critical}
+                <Badge className="border border-rose-200 bg-rose-50 px-2.5 py-1 text-xs font-semibold text-rose-700">
+                  严重 {severityCounts.critical}
                 </Badge>
               )}
               {severityCounts.high > 0 && (
-                <Badge className="bg-orange-500/20 text-orange-600 dark:text-orange-300 border border-orange-500/40 text-xs font-mono font-bold px-2.5 py-1 shadow-[0_0_10px_rgba(249,115,22,0.15)]">
-                  HIGH: {severityCounts.high}
+                <Badge className="border border-orange-200 bg-orange-50 px-2.5 py-1 text-xs font-semibold text-orange-700">
+                  高危 {severityCounts.high}
                 </Badge>
               )}
               {severityCounts.medium > 0 && (
-                <Badge className="bg-amber-500/20 text-amber-600 dark:text-amber-300 border border-amber-500/40 text-xs font-mono font-bold px-2.5 py-1 shadow-[0_0_10px_rgba(245,158,11,0.15)]">
-                  MEDIUM: {severityCounts.medium}
+                <Badge className="border border-amber-200 bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-700">
+                  中危 {severityCounts.medium}
                 </Badge>
               )}
               {severityCounts.low > 0 && (
-                <Badge className="bg-sky-500/20 text-sky-600 dark:text-sky-300 border border-sky-500/40 text-xs font-mono font-bold px-2.5 py-1 shadow-[0_0_10px_rgba(14,165,233,0.15)]">
-                  LOW: {severityCounts.low}
+                <Badge className="border border-sky-200 bg-sky-50 px-2.5 py-1 text-xs font-semibold text-sky-700">
+                  低危 {severityCounts.low}
                 </Badge>
               )}
             </div>
@@ -268,35 +232,37 @@ export const StatsPanel = memo(function StatsPanel({ task, findings }: StatsPane
         </div>
       )}
 
-      {/* Security Score with enhanced styling */}
       {task.security_score !== null && task.security_score !== undefined && (
-        <div className="p-4 rounded-lg border border-emerald-500/20 bg-card/80 backdrop-blur-sm relative overflow-hidden">
-          {/* Background gradient based on score */}
-          <div className={`absolute inset-0 bg-gradient-to-br pointer-events-none ${
-            task.security_score >= 80 ? 'from-emerald-500/5' :
-            task.security_score >= 60 ? 'from-amber-500/5' :
-            'from-rose-500/5'
-          } to-transparent`} />
-
+        <div className="relative overflow-hidden rounded-2xl border border-border bg-white p-4 shadow-sm">
           <div className="relative z-10 flex items-center justify-between">
             <div className="flex items-center gap-2.5">
-              <div className={`p-1.5 rounded-md border ${
-                task.security_score >= 80 ? 'bg-emerald-500/15 border-emerald-500/30' :
-                task.security_score >= 60 ? 'bg-amber-500/15 border-amber-500/30' :
-                'bg-rose-500/15 border-rose-500/30'
-              }`}>
-                <Shield className={`w-4 h-4 ${
-                  task.security_score >= 80 ? 'text-emerald-500' :
-                  task.security_score >= 60 ? 'text-amber-500' :
-                  'text-rose-500'
-                }`} />
+              <div
+                className={`rounded-xl border p-1.5 ${
+                  task.security_score >= 80
+                    ? "border-emerald-200 bg-emerald-50"
+                    : task.security_score >= 60
+                      ? "border-amber-200 bg-amber-50"
+                      : "border-rose-200 bg-rose-50"
+                }`}
+              >
+                <Shield
+                  className={`h-4 w-4 ${
+                    task.security_score >= 80
+                      ? "text-emerald-500"
+                      : task.security_score >= 60
+                        ? "text-amber-500"
+                        : "text-rose-500"
+                  }`}
+                />
               </div>
               <div>
-                <span className="text-sm text-foreground uppercase tracking-wider font-semibold block">Security Score</span>
+                <span className="block text-sm font-semibold text-foreground">安全评分</span>
                 <span className="text-xs text-muted-foreground">
-                  {task.security_score >= 80 ? 'Excellent' :
-                   task.security_score >= 60 ? 'Good' :
-                   'Needs Attention'}
+                  {task.security_score >= 80
+                    ? "整体风险较低"
+                    : task.security_score >= 60
+                      ? "仍需跟进部分问题"
+                      : "建议优先处理高风险项"}
                 </span>
               </div>
             </div>
@@ -308,11 +274,15 @@ export const StatsPanel = memo(function StatsPanel({ task, findings }: StatsPane
                 color={getScoreColor(task.security_score)}
               />
               <div className="absolute inset-0 flex items-center justify-center">
-                <span className={`text-base font-bold font-mono ${
-                  task.security_score >= 80 ? 'text-emerald-500' :
-                  task.security_score >= 60 ? 'text-amber-500' :
-                  'text-rose-500'
-                }`}>
+                <span
+                  className={`text-base font-semibold ${
+                    task.security_score >= 80
+                      ? "text-emerald-500"
+                      : task.security_score >= 60
+                        ? "text-amber-500"
+                        : "text-rose-500"
+                  }`}
+                >
                   {task.security_score.toFixed(0)}
                 </span>
               </div>
@@ -321,7 +291,6 @@ export const StatsPanel = memo(function StatsPanel({ task, findings }: StatsPane
         </div>
       )}
 
-      {/* Inline animation */}
       <style>{`
         @keyframes shine {
           0% { transform: translateX(-100%); }

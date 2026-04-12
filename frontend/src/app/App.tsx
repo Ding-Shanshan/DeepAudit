@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { BrowserRouter, Routes, Route, Outlet } from "react-router-dom";
-import { Toaster } from "sonner";
 import Sidebar from "@/components/layout/Sidebar";
 import routes from "./routes";
 import { AuthProvider } from "@/shared/context/AuthContext";
@@ -8,6 +7,7 @@ import { ProtectedRoute } from "./ProtectedRoute";
 import Login from "@/pages/Login";
 import Register from "@/pages/Register";
 import NotFound from "@/pages/NotFound";
+import { Toaster } from "@/components/ui/sonner";
 
 function AppLayout() {
   const [collapsed, setCollapsed] = useState(false);
@@ -16,7 +16,7 @@ function AppLayout() {
     <div className="min-h-screen gradient-bg">
       <Sidebar collapsed={collapsed} setCollapsed={setCollapsed} />
       <main
-        className={`transition-all duration-300 min-h-screen ${collapsed ? "md:ml-20" : "md:ml-64"
+        className={`transition-all duration-300 min-h-screen ${collapsed ? "md:ml-20" : "md:ml-72"
           }`}
       >
         <Outlet />

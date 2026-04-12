@@ -31,10 +31,10 @@ function AlertDialogOverlay({
   ...props
 }: React.ComponentProps<typeof AlertDialogPrimitive.Overlay>) {
   return (
-    <AlertDialogPrimitive.Overlay
-      data-slot="alert-dialog-overlay"
-      className={cn(
-        "data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 fixed inset-0 z-50 bg-black/50",
+      <AlertDialogPrimitive.Overlay
+        data-slot="alert-dialog-overlay"
+        className={cn(
+        "data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 fixed inset-0 z-50 bg-slate-950/28 backdrop-blur-sm",
         className
       )}
       {...props}
@@ -53,7 +53,7 @@ function AlertDialogContent({
         <AlertDialogPrimitive.Content
           data-slot="alert-dialog-content"
           className={cn(
-            "bg-background data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 grid w-full max-w-lg gap-6 rounded-sm border border-border p-0 shadow-lg duration-200 overflow-hidden",
+            "bg-background data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 grid w-full max-w-lg gap-6 rounded-2xl border border-border p-0 shadow-lg duration-200 overflow-hidden",
             className
           )}
           {...props}
@@ -99,7 +99,7 @@ function AlertDialogTitle({
   return (
     <AlertDialogPrimitive.Title
       data-slot="alert-dialog-title"
-      className={cn("text-xl font-mono font-bold uppercase tracking-wider text-foreground", className)}
+      className={cn("text-xl font-semibold tracking-tight text-foreground", className)}
       {...props}
     />
   );
@@ -112,7 +112,7 @@ function AlertDialogDescription({
   return (
     <AlertDialogPrimitive.Description
       data-slot="alert-dialog-description"
-      className={cn("text-foreground/70 text-base font-mono", className)}
+      className={cn("text-foreground/70 text-sm", className)}
       {...props}
     />
   );

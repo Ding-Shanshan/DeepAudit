@@ -1,28 +1,27 @@
 /**
  * Sidebar Component
- * Premium Terminal Aesthetic with Enhanced Visual Design
+ * Enterprise console navigation
  */
 
 import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { ThemeToggle } from "@/components/ui/theme-toggle";
 import {
-    Menu,
-    X,
-    LayoutDashboard,
-    FolderGit2,
-    Zap,
-    ListTodo,
-    Settings,
-    Trash2,
-    ChevronLeft,
-    ChevronRight,
-    Github,
-    UserCircle,
-    Shield,
-    MessageSquare,
-    Bot,
+  Menu,
+  X,
+  LayoutDashboard,
+  FolderGit2,
+  Zap,
+  ListTodo,
+  Settings,
+  Trash2,
+  ChevronLeft,
+  ChevronRight,
+  Github,
+  UserCircle,
+  Shield,
+  MessageSquare,
+  Bot,
 } from "lucide-react";
 import routes from "@/app/routes";
 import { version } from "../../../package.json";
@@ -41,282 +40,170 @@ const routeIcons: Record<string, React.ReactNode> = {
 };
 
 interface SidebarProps {
-    collapsed: boolean;
-    setCollapsed: (collapsed: boolean) => void;
+  collapsed: boolean;
+  setCollapsed: (collapsed: boolean) => void;
 }
 
 export default function Sidebar({ collapsed, setCollapsed }: SidebarProps) {
-    const location = useLocation();
-    const [mobileOpen, setMobileOpen] = useState(false);
+  const location = useLocation();
+  const [mobileOpen, setMobileOpen] = useState(false);
 
-    const visibleRoutes = routes.filter(route => route.visible !== false);
+  const visibleRoutes = routes.filter((route) => route.visible !== false);
 
-    return (
-        <>
-            {/* Mobile Menu Button */}
-            <Button
-                variant="ghost"
-                size="sm"
-                className="fixed top-4 left-4 z-50 md:hidden"
-                style={{
-                    background: 'var(--cyber-bg)',
-                    border: '1px solid var(--cyber-border)',
-                    color: 'var(--cyber-text-muted)'
-                }}
-                onClick={() => setMobileOpen(!mobileOpen)}
+  return (
+    <>
+      <Button
+        variant="outline"
+        size="icon"
+        className="fixed left-4 top-4 z-50 md:hidden"
+        onClick={() => setMobileOpen(!mobileOpen)}
+      >
+        {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+      </Button>
+
+      {mobileOpen && (
+        <div
+          className="fixed inset-0 z-40 bg-slate-950/28 backdrop-blur-sm md:hidden"
+          onClick={() => setMobileOpen(false)}
+        />
+      )}
+
+      <aside
+        className={`fixed left-0 top-0 z-40 h-screen border-r border-white/70 bg-white/88 shadow-[0_12px_40px_rgba(15,23,42,0.08)] backdrop-blur-xl transition-all duration-300 ease-in-out ${
+          collapsed ? "w-20" : "w-72"
+        } ${mobileOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"}`}
+      >
+        <div className="flex h-full flex-col">
+          <div className={`flex h-20 items-center border-b border-border px-4 ${collapsed ? "justify-center" : "gap-3 px-5"}`}>
+            <Link
+              to="/"
+              className={`flex items-center ${collapsed ? "justify-center" : "gap-3"} min-w-0 flex-1 text-foreground hover:text-foreground`}
+              onClick={() => setMobileOpen(false)}
             >
-                {mobileOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-            </Button>
-
-            {/* Overlay for mobile */}
-            {mobileOpen && (
-                <div
-                    className="fixed inset-0 bg-black/70 backdrop-blur-sm z-40 md:hidden"
-                    onClick={() => setMobileOpen(false)}
-                />
-            )}
-
-            {/* Sidebar */}
-            <aside
-                className={`
-                    fixed top-0 left-0 h-screen z-40 transition-all duration-300 ease-in-out
-                    ${collapsed ? "w-20" : "w-64"}
-                    ${mobileOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"}
-                `}
-                style={{
-                    background: 'var(--cyber-bg)',
-                    borderRight: '1px solid var(--cyber-border)'
-                }}
-            >
-                <div className="flex flex-col h-full relative">
-                    {/* Subtle gradient background */}
-                    <div className="absolute inset-0 bg-gradient-to-b from-primary/5 via-transparent to-transparent pointer-events-none" />
-
-                    {/* Subtle grid background */}
-                    <div
-                        className="absolute inset-0 opacity-20 pointer-events-none"
-                        style={{
-                            backgroundImage: `
-                                linear-gradient(var(--cyber-border-accent) 1px, transparent 1px),
-                                linear-gradient(90deg, var(--cyber-border-accent) 1px, transparent 1px)
-                            `,
-                            backgroundSize: '32px 32px',
-                        }}
-                    />
-
-                    {/* Right edge glow */}
-                    <div className="absolute top-0 right-0 bottom-0 w-px bg-gradient-to-b from-primary/30 via-primary/10 to-primary/30 pointer-events-none" />
-
-                    {/* Logo Section */}
-                    <div
-                        className={`flex-shrink-0 relative flex items-center h-16 ${collapsed ? 'px-3 justify-center' : 'px-5 pr-6'}`}
-                        style={{
-                            background: 'var(--cyber-bg-elevated)',
-                            borderBottom: '1px solid var(--cyber-border)'
-                        }}
-                    >
-                        {/* Bottom accent line */}
-                        <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-primary/40 via-primary/20 to-transparent" />
-
-                        <Link
-                            to="/"
-                            className={`flex items-center gap-3 group transition-all duration-300 ${collapsed ? 'justify-center' : 'flex-1 min-w-0'}`}
-                            onClick={() => setMobileOpen(false)}
-                        >
-                            {/* Logo Icon */}
-                            <div className="relative flex-shrink-0">
-                                <div
-                                    className="w-10 h-10 rounded-xl flex items-center justify-center overflow-hidden transition-all duration-300 group-hover:shadow-[0_0_20px_rgba(255,107,44,0.3)]"
-                                    style={{
-                                        background: 'linear-gradient(135deg, hsl(var(--primary) / 0.15), hsl(var(--primary) / 0.05))',
-                                        border: '1px solid hsl(var(--primary) / 0.4)'
-                                    }}
-                                >
-                                    <img
-                                        src="/logo_deepaudit.png"
-                                        alt="DeepAudit"
-                                        className="w-6 h-6 object-contain transition-transform duration-300 group-hover:scale-110"
-                                    />
-                                </div>
-                                {/* Glow effect */}
-                                <div className="absolute inset-0 bg-primary/30 rounded-xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                            </div>
-
-                            {/* Logo Text */}
-                            <div className={`transition-all duration-300 ${collapsed ? 'w-0 opacity-0 overflow-hidden' : 'flex-1 min-w-0 opacity-100'}`}>
-                                <div
-                                    className="text-xl font-bold tracking-wider font-mono leading-tight"
-                                    style={{ textShadow: '0 0 25px rgba(255,107,44,0.4)' }}
-                                >
-                                    <span className="text-primary">DEEP</span>
-                                    <span style={{ color: 'var(--cyber-text)' }}>AUDIT</span>
-                                </div>
-                            </div>
-                        </Link>
-
-                        {/* Collapse button */}
-                        <button
-                            className="hidden md:flex absolute -right-3 top-1/2 -translate-y-1/2 w-6 h-6 rounded-md items-center justify-center hover:bg-primary hover:border-primary hover:text-white transition-all duration-300 shadow-sm"
-                            style={{
-                                background: 'var(--cyber-bg)',
-                                border: '1px solid var(--cyber-border)',
-                                color: 'var(--cyber-text-muted)',
-                                zIndex: 100
-                            }}
-                            onClick={() => setCollapsed(!collapsed)}
-                        >
-                            {collapsed ? (
-                                <ChevronRight className="w-3.5 h-3.5" />
-                            ) : (
-                                <ChevronLeft className="w-3.5 h-3.5" />
-                            )}
-                        </button>
-                    </div>
-
-                    {/* Navigation */}
-                    <nav className="flex-1 min-h-0 py-3 px-3 relative">
-                        <div className="space-y-1">
-                            {visibleRoutes.map((route) => {
-                                const isActive = location.pathname === route.path;
-                                return (
-                                    <Link
-                                        key={route.path}
-                                        to={route.path}
-                                        className={`
-                                            flex items-center gap-3 px-3 py-2 transition-all duration-300 group relative rounded-lg
-                                            ${isActive
-                                                ? 'bg-primary/15 border border-primary/40 shadow-[0_0_15px_rgba(255,107,44,0.1)]'
-                                                : 'border border-transparent hover:bg-card/60 hover:border-border/50'
-                                            }
-                                        `}
-                                        style={{
-                                            color: isActive ? 'hsl(var(--primary))' : 'var(--cyber-text-muted)'
-                                        }}
-                                        onClick={() => setMobileOpen(false)}
-                                        title={collapsed ? route.name : undefined}
-                                        onMouseEnter={(e) => {
-                                            if (!isActive) {
-                                                e.currentTarget.style.color = 'var(--cyber-text)';
-                                            }
-                                        }}
-                                        onMouseLeave={(e) => {
-                                            if (!isActive) {
-                                                e.currentTarget.style.color = 'var(--cyber-text-muted)';
-                                            }
-                                        }}
-                                    >
-                                        {/* Active indicator */}
-                                        {isActive && (
-                                            <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-primary rounded-r shadow-[0_0_8px_rgba(255,107,44,0.5)]" />
-                                        )}
-
-                                        {/* Icon */}
-                                        <span className={`
-                                            flex-shrink-0 transition-all duration-300 p-1.5 rounded-md
-                                            ${isActive ? 'bg-primary/20' : 'group-hover:bg-muted/50'}
-                                        `}>
-                                            {routeIcons[route.path] || <LayoutDashboard className="w-[18px] h-[18px]" />}
-                                        </span>
-
-                                        {/* Label */}
-                                        {!collapsed && (
-                                            <span className={`font-mono text-sm tracking-wide transition-all duration-300 ${isActive ? 'font-semibold' : 'font-medium'}`}>
-                                                {route.name}
-                                            </span>
-                                        )}
-
-                                        {/* Hover indicator */}
-                                        {!isActive && !collapsed && (
-                                            <span className="absolute right-3 opacity-0 group-hover:opacity-100 transition-all duration-300 group-hover:translate-x-1">
-                                                <ChevronRight className="w-4 h-4 text-primary" />
-                                            </span>
-                                        )}
-                                    </Link>
-                                );
-                            })}
-                        </div>
-                    </nav>
-
-                    {/* Footer */}
-                    <div
-                        className="flex-shrink-0 p-3 space-y-1 relative"
-                        style={{
-                            background: 'var(--cyber-bg-elevated)',
-                            borderTop: '1px solid var(--cyber-border)'
-                        }}
-                    >
-                        {/* Top accent line */}
-                        <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-primary/20 to-transparent" />
-
-                        {/* Theme Toggle */}
-                        <ThemeToggle collapsed={collapsed} />
-
-                        {/* Account Link */}
-                        <Link
-                            to="/account"
-                            className={`
-                                flex items-center gap-3 px-3 py-2 rounded-lg transition-all duration-300 group
-                                ${location.pathname === '/account'
-                                    ? 'bg-primary/15 border border-primary/40'
-                                    : 'border border-transparent hover:bg-card/60 hover:border-border/50'
-                                }
-                            `}
-                            style={{
-                                color: location.pathname === '/account' ? 'hsl(var(--primary))' : 'var(--cyber-text-muted)'
-                            }}
-                            onClick={() => setMobileOpen(false)}
-                            title={collapsed ? "账号管理" : undefined}
-                        >
-                            <span className={`p-1.5 rounded-md transition-all duration-300 ${location.pathname === '/account' ? 'bg-primary/20' : 'group-hover:bg-muted/50'}`}>
-                                <UserCircle className="w-[18px] h-[18px] flex-shrink-0" />
-                            </span>
-                            {!collapsed && (
-                                <span className="font-mono text-sm">账号管理</span>
-                            )}
-                        </Link>
-
-                        {/* GitHub & Status Row */}
-                        <div className={`flex items-center ${collapsed ? 'flex-col gap-2' : 'justify-between'} px-3 py-2`}>
-                            <a
-                                href="https://github.com/lintsinghua/DeepAudit"
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="flex items-center gap-2 transition-all duration-300 group"
-                                style={{ color: 'var(--cyber-text-muted)' }}
-                                title="GitHub"
-                            >
-                                <Github className="w-[18px] h-[18px] group-hover:text-primary transition-colors" />
-                                {!collapsed && (
-                                    <span className="text-xs font-mono text-muted-foreground">v{version}</span>
-                                )}
-                            </a>
-
-                            {!collapsed && (
-                                <div className="flex items-center gap-2">
-                                    <div className="relative">
-                                        <div
-                                            className="w-2 h-2 rounded-full bg-emerald-400"
-                                            style={{ boxShadow: '0 0 8px rgba(52, 211, 153, 0.6)' }}
-                                        />
-                                        <div className="absolute inset-0 w-2 h-2 rounded-full bg-emerald-400 animate-ping opacity-50" />
-                                    </div>
-                                    <span className="text-xs font-mono text-emerald-500">Online</span>
-                                </div>
-                            )}
-
-                            {collapsed && (
-                                <div className="relative">
-                                    <div
-                                        className="w-2 h-2 rounded-full bg-emerald-400"
-                                        style={{ boxShadow: '0 0 8px rgba(52, 211, 153, 0.6)' }}
-                                    />
-                                    <div className="absolute inset-0 w-2 h-2 rounded-full bg-emerald-400 animate-ping opacity-50" />
-                                </div>
-                            )}
-                        </div>
-                    </div>
+              <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-primary/15 bg-gradient-to-br from-orange-50 to-white shadow-sm">
+                <img src="/logo_deepaudit.png" alt="DeepAudit" className="h-7 w-7 object-contain" />
+              </div>
+              {!collapsed && (
+                <div className="min-w-0">
+                  <div className="truncate text-lg font-semibold tracking-tight">DeepAudit</div>
+                  <div className="truncate text-xs text-muted-foreground">Security Console</div>
                 </div>
-            </aside>
-        </>
-    );
+              )}
+            </Link>
+
+            <button
+              className="hidden h-9 w-9 items-center justify-center rounded-full border border-border bg-white text-muted-foreground transition-colors hover:border-primary/20 hover:text-primary md:flex"
+              onClick={() => setCollapsed(!collapsed)}
+              aria-label={collapsed ? "展开导航" : "收起导航"}
+            >
+              {collapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
+            </button>
+          </div>
+
+          <div className="px-4 pt-5">
+            {!collapsed && (
+              <div className="rounded-2xl border border-orange-100 bg-gradient-to-br from-orange-50 via-white to-white px-4 py-4 shadow-sm">
+                <div className="text-xs font-medium uppercase tracking-[0.12em] text-primary/80">Workspace</div>
+                <div className="mt-2 text-sm font-medium text-foreground">代码审计工作台</div>
+                <p className="mt-1 text-xs leading-5 text-muted-foreground">
+                  覆盖 Agent 审计、项目治理、任务跟踪和规则运营。
+                </p>
+              </div>
+            )}
+          </div>
+
+          <nav className="flex-1 overflow-y-auto px-4 py-5">
+            <div className="space-y-1.5">
+              {visibleRoutes.map((route) => {
+                const isActive =
+                  location.pathname === route.path ||
+                  (route.path !== "/" && location.pathname.startsWith(route.path));
+
+                return (
+                  <Link
+                    key={route.path}
+                    to={route.path}
+                    className={`group flex items-center rounded-2xl px-3 py-3 transition-all ${
+                      isActive
+                        ? "bg-primary/10 text-primary shadow-sm ring-1 ring-primary/10"
+                        : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                    } ${collapsed ? "justify-center" : "gap-3"}`}
+                    onClick={() => setMobileOpen(false)}
+                    title={collapsed ? route.name : undefined}
+                  >
+                    <span
+                      className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${
+                        isActive ? "bg-white text-primary shadow-sm" : "bg-slate-100 text-muted-foreground group-hover:bg-white"
+                      }`}
+                    >
+                      {routeIcons[route.path] || <LayoutDashboard className="h-[18px] w-[18px]" />}
+                    </span>
+                    {!collapsed && (
+                      <div className="min-w-0 flex-1">
+                        <div className="truncate text-sm font-medium">{route.name}</div>
+                      </div>
+                    )}
+                    {!collapsed && (
+                      <ChevronRight
+                        className={`h-4 w-4 transition-transform ${
+                          isActive ? "text-primary" : "translate-x-0 text-transparent group-hover:translate-x-0.5 group-hover:text-muted-foreground"
+                        }`}
+                      />
+                    )}
+                  </Link>
+                );
+              })}
+            </div>
+          </nav>
+
+          <div className="border-t border-border bg-slate-50/70 p-4">
+            <Link
+              to="/account"
+              className={`group flex items-center rounded-2xl px-3 py-3 transition-all ${
+                location.pathname === "/account"
+                  ? "bg-primary/10 text-primary shadow-sm ring-1 ring-primary/10"
+                  : "text-muted-foreground hover:bg-white hover:text-foreground"
+              } ${collapsed ? "justify-center" : "gap-3"}`}
+              onClick={() => setMobileOpen(false)}
+              title={collapsed ? "账号管理" : undefined}
+            >
+              <span
+                className={`flex h-10 w-10 items-center justify-center rounded-xl ${
+                  location.pathname === "/account" ? "bg-white text-primary shadow-sm" : "bg-slate-100"
+                }`}
+              >
+                <UserCircle className="h-[18px] w-[18px]" />
+              </span>
+              {!collapsed && (
+                <div className="min-w-0 flex-1">
+                  <div className="text-sm font-medium">账号管理</div>
+                  <div className="text-xs text-muted-foreground">个人信息与认证状态</div>
+                </div>
+              )}
+            </Link>
+
+            <div className={`mt-4 flex items-center ${collapsed ? "justify-center" : "justify-between"}`}>
+              <a
+                href="https://github.com/lintsinghua/DeepAudit"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 text-xs text-muted-foreground hover:text-primary"
+                title="GitHub"
+              >
+                <Github className="h-4 w-4" />
+                {!collapsed && <span>v{version}</span>}
+              </a>
+
+              {!collapsed && (
+                <div className="inline-flex items-center gap-2 rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-medium text-emerald-700">
+                  <span className="h-2 w-2 rounded-full bg-emerald-500" />
+                  Ready
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </aside>
+    </>
+  );
 }

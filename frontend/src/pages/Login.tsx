@@ -1,19 +1,18 @@
 /**
  * Login Page
- * Cyberpunk Terminal Aesthetic
  */
 
 import { useState, FormEvent, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/shared/context/AuthContext";
 import { apiClient } from "@/shared/api/serverClient";
+import AuthShell from "@/components/layout/AuthShell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
-import { Lock, Mail, Terminal, Shield, Fingerprint, Cpu } from "lucide-react";
-import { version } from "../../package.json";
+import { Lock, Mail } from "lucide-react";
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -78,208 +77,85 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center cyber-bg-elevated relative overflow-hidden">
-      {/* Scanline overlay */}
-      <div className="absolute inset-0 pointer-events-none z-20">
-        <div
-          className="absolute inset-0"
-          style={{
-            backgroundImage: "repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.1) 2px, rgba(0,0,0,0.1) 4px)",
-          }}
-        />
-      </div>
-
-      {/* Vignette effect */}
-      <div
-        className="absolute inset-0 pointer-events-none z-10"
-        style={{
-          background: "radial-gradient(ellipse at center, transparent 0%, transparent 50%, rgba(0,0,0,0.5) 100%)",
-        }}
-      />
-
-      {/* Grid background */}
-      <div
-        className="absolute inset-0 opacity-[0.03]"
-        style={{
-          backgroundImage: `
-            linear-gradient(rgba(255,107,44,0.5) 1px, transparent 1px),
-            linear-gradient(90deg, rgba(255,107,44,0.5) 1px, transparent 1px)
-          `,
-          backgroundSize: "32px 32px",
-        }}
-      />
-
-      {/* Corner Decorations */}
-      <div className="absolute top-4 left-4 text-sm font-mono text-muted-foreground z-30 space-y-1">
-        <div className="flex items-center gap-2">
-          <Terminal className="w-4 h-4" />
-          <span>SYS_ID: 0x84F2</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <Shield className="w-4 h-4" />
-          <span>ENCRYPT: AES-256</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <Fingerprint className="w-4 h-4" />
-          <span>AUTH: READY</span>
-        </div>
-      </div>
-
-      <div className="absolute top-4 right-4 text-sm font-mono text-muted-foreground text-right z-30 space-y-1">
-        <div>SECURE_CONN: TRUE</div>
-        <div>PORT: 443</div>
-        <div>TLS: 1.3</div>
-      </div>
-
-      <div className="absolute bottom-4 left-4 text-sm font-mono text-muted-foreground z-30">
-        DEEPAUDIT_AUTH_v3
-      </div>
-
-      <div className="absolute bottom-4 right-4 text-sm font-mono text-muted-foreground z-30">
-        {new Date().toISOString().split("T")[0]}
-      </div>
-
-      {/* Main Card */}
-      <div className="w-full max-w-md relative z-30 px-4">
-        {/* Logo & Title */}
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center p-3 cyber-dialog border border-border/60 rounded-lg mb-6"
-               style={{ boxShadow: '0 0 30px rgba(255,107,44,0.1)' }}>
-            <img
-              src="/logo_deepaudit.png"
-              alt="DeepAudit"
-              className="w-14 h-14 object-contain"
-            />
-          </div>
-          <div
-            className="text-3xl font-bold tracking-wider mb-2 font-mono"
-            style={{ textShadow: "0 0 30px rgba(255,107,44,0.5), 0 0 60px rgba(255,107,44,0.3)" }}
+    <AuthShell
+      title="欢迎登录"
+      description="使用你的 DeepAudit 账号进入控制台，继续进行项目治理、任务分析和 Agent 审计。"
+      footer={
+        <div className="flex items-center justify-between gap-4">
+          <span>还没有账号？</span>
+          <button
+            type="button"
+            className="font-medium text-primary hover:underline"
+            onClick={() => navigate("/register")}
           >
-            <span className="text-primary">DEEP</span>
-            <span className="text-foreground">AUDIT</span>
+            立即注册
+          </button>
+        </div>
+      }
+    >
+      <form onSubmit={handleSubmit} className="space-y-5">
+        <div className="space-y-2">
+          <Label htmlFor="email" className="text-sm font-medium text-foreground">
+            邮箱地址
+          </Label>
+          <div className="relative">
+            <Input
+              id="email"
+              type="email"
+              placeholder="you@company.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+              className="h-12 pl-11"
+            />
+            <Mail className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           </div>
-          <p className="text-base font-mono text-muted-foreground">
-            // Autonomous Security Agent
-          </p>
         </div>
 
-        {/* Login Form Card */}
-        <div className="cyber-dialog border border-border/60 rounded-lg overflow-hidden"
-             style={{ boxShadow: '0 4px 30px rgba(0,0,0,0.5)' }}>
-          {/* Card Header */}
-          <div className="flex items-center gap-2 px-4 py-3 cyber-bg-elevated border-b border-border">
-            <div className="flex items-center gap-1.5">
-              <div className="w-3 h-3 rounded-full bg-red-500/80" />
-              <div className="w-3 h-3 rounded-full bg-yellow-500/80" />
-              <div className="w-3 h-3 rounded-full bg-green-500/80" />
-            </div>
-            <span className="ml-2 font-mono text-sm text-muted-foreground tracking-wider">
-              authentication@deepaudit
+        <div className="space-y-2">
+          <Label htmlFor="password" className="text-sm font-medium text-foreground">
+            密码
+          </Label>
+          <div className="relative">
+            <Input
+              id="password"
+              type="password"
+              placeholder="请输入密码"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              className="h-12 pl-11"
+            />
+            <Lock className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          </div>
+        </div>
+
+        <div className="flex items-center justify-between rounded-2xl bg-slate-50 px-4 py-3">
+          <div className="flex items-center gap-2">
+            <Checkbox
+              id="remember"
+              checked={rememberMe}
+              onCheckedChange={(checked) => setRememberMe(checked as boolean)}
+              className="border-border data-[state=checked]:bg-primary data-[state=checked]:border-primary"
+            />
+            <Label htmlFor="remember" className="cursor-pointer text-sm text-muted-foreground">
+              记住我的登录状态
+            </Label>
+          </div>
+          <span className="text-xs text-muted-foreground">安全连接已启用</span>
+        </div>
+
+        <Button type="submit" className="h-12 w-full text-base" disabled={loading}>
+          {loading ? (
+            <span className="flex items-center gap-2">
+              <span className="h-4 w-4 rounded-full border-2 border-white/30 border-t-white animate-spin" />
+              登录中...
             </span>
-          </div>
-
-          <div className="p-6">
-            <form onSubmit={handleSubmit} className="flex flex-col gap-5">
-              <div className="space-y-2">
-                <Label
-                  htmlFor="email"
-                  className="font-mono text-sm text-muted-foreground uppercase tracking-wider"
-                >
-                  邮箱地址
-                </Label>
-                <div className="relative">
-                  <Input
-                    id="email"
-                    type="email"
-                    placeholder="your@email.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    required
-                    className="h-12 pl-11 font-mono cyber-bg-elevated border-border/50 text-foreground placeholder:text-muted-foreground focus:border-primary/50 focus:ring-0"
-                  />
-                  <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label
-                  htmlFor="password"
-                  className="font-mono text-sm text-muted-foreground uppercase tracking-wider"
-                >
-                  密码
-                </Label>
-                <div className="relative">
-                  <Input
-                    id="password"
-                    type="password"
-                    placeholder="••••••••"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
-                    className="h-12 pl-11 font-mono cyber-bg-elevated border-border/50 text-foreground placeholder:text-muted-foreground focus:border-primary/50 focus:ring-0"
-                  />
-                  <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                </div>
-              </div>
-
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-2">
-                  <Checkbox
-                    id="remember"
-                    checked={rememberMe}
-                    onCheckedChange={(checked) =>
-                      setRememberMe(checked as boolean)
-                    }
-                    className="border-border data-[state=checked]:bg-primary data-[state=checked]:border-primary"
-                  />
-                  <Label
-                    htmlFor="remember"
-                    className="text-base font-mono text-muted-foreground cursor-pointer"
-                  >
-                    记住我
-                  </Label>
-                </div>
-              </div>
-
-              <Button
-                type="submit"
-                className="w-full h-12 text-base font-bold uppercase tracking-wider bg-primary hover:bg-primary/90 text-foreground border border-primary/50 transition-all"
-                style={{ boxShadow: '0 0 20px rgba(255,107,44,0.3)' }}
-                disabled={loading}
-              >
-                {loading ? (
-                  <span className="flex items-center gap-2">
-                    <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                    验证中...
-                  </span>
-                ) : (
-                  "登 录"
-                )}
-              </Button>
-            </form>
-
-            {/* Footer */}
-            <div className="mt-6 pt-5 border-t border-border text-center">
-              <p className="text-base font-mono text-muted-foreground">
-                还没有账号？{" "}
-                <span
-                  className="text-primary font-bold cursor-pointer hover:underline"
-                  onClick={() => navigate("/register")}
-                >
-                  立即注册
-                </span>
-              </p>
-            </div>
-          </div>
-        </div>
-
-        {/* Version Info */}
-        <div className="mt-6 text-center">
-          <p className="font-mono text-sm text-muted-foreground uppercase">
-            Version {version} · Secure Connection
-          </p>
-        </div>
-      </div>
-    </div>
+          ) : (
+            "登录 DeepAudit"
+          )}
+        </Button>
+      </form>
+    </AuthShell>
   );
 }
