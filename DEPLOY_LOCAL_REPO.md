@@ -25,8 +25,10 @@ chmod +x scripts/deploy-local-repo.sh
 
 - 读取当前 `git` 分支和提交号
 - 生成本地镜像标签
-- 使用 `docker-compose.localrepo.yml` 基于当前仓库代码重建前端、后端和沙箱镜像
+- 使用 `docker-compose.localrepo.yml` 基于当前仓库代码重建前端和后端镜像
 - 输出当前运行容器对应的镜像版本
+
+默认不会构建 `sandbox`，因为沙箱镜像依赖额外安全工具下载，部分服务器会因为访问 GitHub 失败而中断整个部署。
 
 ## 适用场景
 
@@ -41,7 +43,26 @@ chmod +x scripts/deploy-local-repo.sh
 ```bash
 cd /data/DeepAudit
 export DEPLOY_TAG="$(git branch --show-current | tr '/:@ ' '-')-$(git rev-parse --short HEAD)"
+export SANDBOX_ENABLED=false
 docker compose -f docker-compose.localrepo.yml up -d --build --remove-orphans
+```
+
+## 如需构建本地 sandbox
+
+仅当你的服务器 Docker 构建环境可以稳定访问外网时，再启用：
+
+```bash
+cd /data/DeepAudit
+./scripts/deploy-local-repo.sh --with-sandbox
+```
+
+等价手动命令：
+
+```bash
+cd /data/DeepAudit
+export DEPLOY_TAG="$(git branch --show-current | tr '/:@ ' '-')-$(git rev-parse --short HEAD)"
+export SANDBOX_ENABLED=true
+docker compose -f docker-compose.localrepo.yml --profile sandbox up -d --build --remove-orphans
 ```
 
 ## 验证是否生效

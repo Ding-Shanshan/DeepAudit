@@ -7,7 +7,11 @@
 # - 避免误用官方 latest 镜像导致代码变更不生效
 #
 # 部署命令：
-#   DEPLOY_TAG=$(git rev-parse --short HEAD) docker compose -f docker-compose.localrepo.yml up -d --build
+#   默认（不构建 sandbox）：
+#   DEPLOY_TAG=$(git rev-parse --short HEAD) SANDBOX_ENABLED=false docker compose -f docker-compose.localrepo.yml up -d --build
+#
+#   如需同时构建本地 sandbox：
+#   DEPLOY_TAG=$(git rev-parse --short HEAD) SANDBOX_ENABLED=true docker compose -f docker-compose.localrepo.yml --profile sandbox up -d --build
 #
 # 推荐方式：
 #   ./scripts/deploy-local-repo.sh
@@ -64,8 +68,8 @@ services:
       - DATABASE_URL=postgresql+asyncpg://postgres:postgres@db:5432/deepaudit
       - REDIS_URL=redis://redis:6379/0
       - AGENT_ENABLED=true
-      - SANDBOX_ENABLED=true
-      - SANDBOX_IMAGE=deepaudit-sandbox:${DEPLOY_TAG:-localrepo}
+      - SANDBOX_ENABLED=${SANDBOX_ENABLED:-false}
+      - SANDBOX_IMAGE=${SANDBOX_IMAGE:-deepaudit-sandbox:${DEPLOY_TAG:-localrepo}}
       - LLM_PROVIDER=${LLM_PROVIDER:-openai}
       - LLM_MODEL=${LLM_MODEL:-gpt-4o}
       - LLM_API_KEY=${LLM_API_KEY:-your-api-key-here}
@@ -84,8 +88,6 @@ services:
       redis:
         condition: service_healthy
       db-migrate:
-        condition: service_completed_successfully
-      sandbox:
         condition: service_completed_successfully
     networks:
       - deepaudit-network
@@ -141,6 +143,7 @@ services:
       - deepaudit-network
 
   sandbox:
+    profiles: ["sandbox"]
     build:
       context: ./docker/sandbox
       dockerfile: Dockerfile
