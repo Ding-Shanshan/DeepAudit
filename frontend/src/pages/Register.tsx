@@ -11,6 +11,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
 import { User, Mail, Lock } from 'lucide-react';
+import { BRAND_NAME } from '@/shared/constants/branding';
 
 export default function Register() {
   const [email, setEmail] = useState('');
@@ -48,7 +49,7 @@ export default function Register() {
   return (
     <AuthShell
       title="创建账号"
-      description="注册新的 DeepAudit 账号后即可进入控制台，继续配置项目、规则与安全审计工作流。"
+      description={`注册新的${BRAND_NAME}账号后即可进入控制台，继续配置项目、规则与安全审计工作流。`}
       footer={
         <div className="flex items-center justify-between gap-4">
           <span>已有账号？</span>

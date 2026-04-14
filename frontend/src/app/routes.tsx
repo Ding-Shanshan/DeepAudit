@@ -10,7 +10,9 @@ import AdminDashboard from "@/pages/AdminDashboard";
 import Account from "@/pages/Account";
 import AuditRules from "@/pages/AuditRules";
 import PromptManager from "@/pages/PromptManager";
-import type { ReactNode } from 'react';
+import { AGENT_AUDIT_ROUTE, CONSOLE_HOME_ROUTE } from "@/shared/constants/branding";
+import type { ReactNode } from "react";
+import { Navigate } from "react-router-dom";
 
 export interface RouteConfig {
   name: string;
@@ -21,10 +23,16 @@ export interface RouteConfig {
 
 const routes: RouteConfig[] = [
   {
-    name: "Agent审计",
+    name: "控制台首页",
     path: "/",
+    element: <Navigate to={CONSOLE_HOME_ROUTE} replace />,
+    visible: false,
+  },
+  {
+    name: "Agent审计",
+    path: AGENT_AUDIT_ROUTE,
     element: <AgentAudit />,
-    visible: true,
+    visible: false,
   },
   {
     name: "Agent审计任务",
@@ -34,7 +42,7 @@ const routes: RouteConfig[] = [
   },
   {
     name: "仪表盘",
-    path: "/dashboard",
+    path: CONSOLE_HOME_ROUTE,
     element: <Dashboard />,
     visible: true,
   },

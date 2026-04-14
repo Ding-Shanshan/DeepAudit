@@ -48,6 +48,7 @@ import {
 import { apiClient } from "@/shared/api/serverClient";
 import { downloadAgentReport } from "@/shared/api/agentTasks";
 import type { AgentTask, AgentFinding } from "@/shared/api/agentTasks";
+import { BRAND_NAME } from "@/shared/constants/branding";
 
 // ============ Types ============
 
@@ -1392,8 +1393,8 @@ export const ReportExportDialog = memo(function ReportExportDialog({
     <div class="container">
       <div class="header-content">
         <div class="brand">
-          <div class="brand-logo">D</div>
-          <span class="brand-text">DeepAudit</span>
+          <div class="brand-logo">天</div>
+          <span class="brand-text">${BRAND_NAME}</span>
         </div>
         <h1 class="header-title">${taskName}</h1>
         <div class="header-meta">${generateDate}</div>
@@ -1485,8 +1486,8 @@ export const ReportExportDialog = memo(function ReportExportDialog({
     <div class="container">
       <div class="footer-content">
         <div class="footer-brand">
-          <div class="footer-brand-icon">D</div>
-          DeepAudit
+          <div class="footer-brand-icon">天</div>
+          ${BRAND_NAME}
         </div>
         <span>·</span>
         <span>${generateDate}</span>

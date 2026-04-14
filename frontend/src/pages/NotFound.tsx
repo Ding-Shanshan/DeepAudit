@@ -6,6 +6,7 @@ import { Link } from "react-router-dom";
 import PageMeta from "@/components/layout/PageMeta";
 import { Button } from "@/components/ui/button";
 import { AlertTriangle, ArrowLeft, Home } from "lucide-react";
+import { BRAND_NAME, CONSOLE_HOME_ROUTE } from "@/shared/constants/branding";
 
 export default function NotFound() {
   return (
@@ -26,7 +27,7 @@ export default function NotFound() {
                 你访问的地址当前不可用。它可能已经被删除、路径发生变化，或链接本身不正确。
               </p>
               <div className="mt-8 flex flex-wrap gap-3">
-                <Link to="/">
+                <Link to={CONSOLE_HOME_ROUTE}>
                   <Button className="h-11 px-5">
                     <Home className="mr-1 h-4 w-4" />
                     返回首页
@@ -43,9 +44,9 @@ export default function NotFound() {
               </div>
             </div>
 
-            <div className="rounded-[28px] border border-orange-100 bg-gradient-to-br from-orange-50 via-white to-white p-6 lg:w-[280px]">
+            <div className="rounded-[28px] border border-primary/10 bg-[linear-gradient(180deg,rgba(217,38,37,0.08),rgba(255,255,255,0.92))] p-6 lg:w-[280px]">
               <div className="text-6xl font-semibold tracking-tight text-primary/90">404</div>
-              <div className="mt-3 text-sm font-medium text-foreground">DeepAudit 页面错误</div>
+              <div className="mt-3 text-sm font-medium text-foreground">{BRAND_NAME}</div>
               <p className="mt-2 text-sm leading-6 text-muted-foreground">
                 建议从首页重新进入对应模块，或通过左侧导航查找项目、任务和审计页面。
               </p>

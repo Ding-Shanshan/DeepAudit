@@ -38,6 +38,7 @@ import ExportReportDialog from "@/components/reports/ExportReportDialog";
 import { calculateTaskProgress } from "@/shared/utils/utils";
 import { getAgentTasks, cancelAgentTask, getAgentFindings, type AgentTask, type AgentFinding } from "@/shared/api/agentTasks";
 import ReportExportDialog from "@/pages/AgentAudit/components/ReportExportDialog";
+import { AGENT_AUDIT_ROUTE } from "@/shared/constants/branding";
 
 // Zombie task detection config
 const ZOMBIE_TIMEOUT = 180000; // 3 minutes without progress is potentially stuck
@@ -574,7 +575,7 @@ export default function AuditTasks() {
             </Button>
           )}
           {activeTab === "agent" && (
-            <Button className="cyber-btn-primary h-10" onClick={() => navigate("/")}>
+            <Button className="cyber-btn-primary h-10" onClick={() => navigate(AGENT_AUDIT_ROUTE)}>
               <Bot className="w-4 h-4 mr-2" />
               新建Agent审计
             </Button>
@@ -790,7 +791,7 @@ export default function AuditTasks() {
                 {searchTerm || statusFilter !== "all" ? '尝试调整搜索条件或筛选器' : '创建第一个Agent审计任务开始智能安全审计'}
               </p>
               {!searchTerm && statusFilter === "all" && (
-                <Button className="cyber-btn-primary" onClick={() => navigate("/")}>
+                <Button className="cyber-btn-primary" onClick={() => navigate(AGENT_AUDIT_ROUTE)}>
                   <Bot className="w-4 h-4 mr-2" />
                   创建Agent审计
                 </Button>

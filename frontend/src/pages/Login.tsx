@@ -13,6 +13,7 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 import { Lock, Mail } from "lucide-react";
+import { BRAND_NAME, CONSOLE_HOME_ROUTE } from "@/shared/constants/branding";
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -23,7 +24,7 @@ export default function Login() {
   const location = useLocation();
   const { login, isAuthenticated } = useAuth();
 
-  const from = location.state?.from?.pathname || "/";
+  const from = location.state?.from?.pathname || CONSOLE_HOME_ROUTE;
 
   useEffect(() => {
     const savedEmail = localStorage.getItem("remembered_email");
@@ -79,7 +80,7 @@ export default function Login() {
   return (
     <AuthShell
       title="欢迎登录"
-      description="使用你的 DeepAudit 账号进入控制台，继续进行项目治理、任务分析和 Agent 审计。"
+      description={`使用你的${BRAND_NAME}账号进入控制台，继续进行项目治理、任务分析和智能安全审计。`}
       footer={
         <div className="flex items-center justify-between gap-4">
           <span>还没有账号？</span>
@@ -152,7 +153,7 @@ export default function Login() {
               登录中...
             </span>
           ) : (
-            "登录 DeepAudit"
+            "登录平台"
           )}
         </Button>
       </form>
