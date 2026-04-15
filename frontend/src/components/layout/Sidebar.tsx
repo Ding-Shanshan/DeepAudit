@@ -69,44 +69,44 @@ export default function Sidebar({ collapsed, setCollapsed }: SidebarProps) {
 
       {mobileOpen && (
         <div
-          className="fixed inset-0 z-40 bg-[#09111b]/45 md:hidden"
+          className="fixed inset-0 z-40 bg-slate-950/22 md:hidden"
           onClick={() => setMobileOpen(false)}
         />
       )}
 
       <aside
-        className={`fixed left-0 top-0 z-40 h-screen border-r border-[#7f1d1d] bg-[linear-gradient(180deg,#78161d_0%,#5b1218_22%,#222f41_58%,#1a2433_100%)] text-white shadow-[0_22px_60px_rgba(8,15,28,0.38)] transition-all duration-300 ease-in-out ${
+        className={`fixed left-0 top-0 z-40 h-screen border-r border-[#e5e7eb] bg-[#f8fafc] text-[#15202d] shadow-[0_18px_48px_rgba(15,23,42,0.12)] transition-all duration-300 ease-in-out ${
           collapsed ? "w-20" : "w-72"
         } ${mobileOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"}`}
       >
         <div className="flex h-full flex-col">
           <div
-            className={`flex min-h-24 items-center border-b border-white/12 ${
+            className={`flex min-h-24 items-center border-b border-[#e5e7eb] ${
               collapsed ? "justify-center px-4" : "gap-3 px-5"
             }`}
           >
             <Link
               to={CONSOLE_HOME_ROUTE}
-              className={`flex min-w-0 flex-1 items-center text-white hover:text-white ${
+              className={`flex min-w-0 flex-1 items-center text-[#15202d] hover:text-[#15202d] ${
                 collapsed ? "justify-center" : "gap-4"
               }`}
               onClick={() => setMobileOpen(false)}
             >
-              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-white/15 bg-[linear-gradient(180deg,rgba(255,255,255,0.18),rgba(255,255,255,0.08))] shadow-[0_12px_30px_rgba(217,38,37,0.2)]">
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-[#f2c5c5] bg-[linear-gradient(180deg,#fff7f7,#feecec)] shadow-[0_12px_24px_rgba(217,38,37,0.12)]">
                 <img src={BRAND_LOGO_PATH} alt={BRAND_COMPANY_NAME} className="h-7 w-7 object-contain" />
               </div>
               {!collapsed && (
                 <div className="min-w-0">
-                  <div className="truncate text-sm font-semibold tracking-[0.02em] text-white">
+                  <div className="truncate text-sm font-semibold tracking-[0.02em] text-[#15202d]">
                     {BRAND_NAME}
                   </div>
-                  <div className="truncate text-xs text-slate-100/80">{BRAND_COMPANY_NAME}</div>
+                  <div className="truncate text-xs text-slate-500">{BRAND_COMPANY_NAME}</div>
                 </div>
               )}
             </Link>
 
             <button
-              className="hidden h-9 w-9 items-center justify-center rounded-full border border-white/15 bg-white/10 text-white/85 transition-colors hover:border-white/25 hover:bg-white/16 hover:text-white md:flex"
+              className="hidden h-9 w-9 items-center justify-center rounded-full border border-[#e5e7eb] bg-white text-slate-600 transition-colors hover:border-[#f2c5c5] hover:bg-[#fff5f5] hover:text-[#b42323] md:flex"
               onClick={() => setCollapsed(!collapsed)}
               aria-label={collapsed ? "展开导航" : "收起导航"}
             >
@@ -116,15 +116,15 @@ export default function Sidebar({ collapsed, setCollapsed }: SidebarProps) {
 
           <div className="px-4 pt-5">
             {!collapsed && (
-              <div className="rounded-3xl border border-white/14 bg-[linear-gradient(180deg,rgba(255,255,255,0.18),rgba(255,255,255,0.08))] px-4 py-4 shadow-[0_18px_35px_rgba(8,15,28,0.24)]">
-                <div className="text-xs font-semibold uppercase tracking-[0.18em] text-[#ffd3d2]">
+              <div className="rounded-3xl border border-[#f3d4d4] bg-[linear-gradient(180deg,#fff8f8,#fff1f1)] px-4 py-4 shadow-[0_12px_28px_rgba(217,38,37,0.08)]">
+                <div className="text-xs font-semibold uppercase tracking-[0.18em] text-[#c43737]">
                   Tianrongxin
                 </div>
-                <div className="mt-2 flex items-center gap-2 text-sm font-medium text-white">
-                  <Building2 className="h-4 w-4 text-[#ffd3d2]" />
+                <div className="mt-2 flex items-center gap-2 text-sm font-medium text-[#15202d]">
+                  <Building2 className="h-4 w-4 text-[#d92625]" />
                   {BRAND_TAGLINE}
                 </div>
-                <p className="mt-2 text-xs leading-5 text-slate-100/78">
+                <p className="mt-2 text-xs leading-5 text-slate-600">
                   聚合项目治理、审计任务、规则运营与智能工作区，统一承载企业级代码安全运营。
                 </p>
               </div>
@@ -144,8 +144,8 @@ export default function Sidebar({ collapsed, setCollapsed }: SidebarProps) {
                     to={route.path}
                     className={`group flex items-center rounded-2xl px-3 py-3 transition-all duration-200 ${
                       isActive
-                        ? "bg-[linear-gradient(135deg,#f4d2d2,#f0b1b0)] text-[#6f1117] shadow-[0_12px_30px_rgba(217,38,37,0.24)] ring-1 ring-white/35"
-                        : "text-slate-50/92 hover:bg-white/14 hover:text-white"
+                        ? "bg-[#fde8e8] text-[#7f1d1d] shadow-[0_10px_24px_rgba(217,38,37,0.12)] ring-1 ring-[#f4caca]"
+                        : "text-slate-700 hover:bg-white hover:text-[#15202d]"
                     } ${collapsed ? "justify-center" : "gap-3"}`}
                     onClick={() => setMobileOpen(false)}
                     title={collapsed ? route.name : undefined}
@@ -153,8 +153,8 @@ export default function Sidebar({ collapsed, setCollapsed }: SidebarProps) {
                     <span
                       className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl transition-colors ${
                         isActive
-                          ? "bg-white/75 text-[#b21d22]"
-                          : "bg-white/10 text-slate-100/88 group-hover:bg-white/18 group-hover:text-white"
+                          ? "bg-[#fff7f7] text-[#c02626]"
+                          : "bg-[#eef2f7] text-slate-600 group-hover:bg-[#f9fafb] group-hover:text-[#15202d]"
                       }`}
                     >
                       {routeIcons[route.path] || <BriefcaseBusiness className="h-[18px] w-[18px]" />}
@@ -168,8 +168,8 @@ export default function Sidebar({ collapsed, setCollapsed }: SidebarProps) {
                       <ChevronRight
                         className={`h-4 w-4 transition-transform ${
                           isActive
-                            ? "text-[#b21d22]"
-                            : "translate-x-0 text-transparent group-hover:translate-x-0.5 group-hover:text-white/75"
+                            ? "text-[#c02626]"
+                            : "translate-x-0 text-transparent group-hover:translate-x-0.5 group-hover:text-slate-400"
                         }`}
                       />
                     )}
@@ -179,13 +179,13 @@ export default function Sidebar({ collapsed, setCollapsed }: SidebarProps) {
             </div>
           </nav>
 
-          <div className="border-t border-white/12 bg-[#162131] p-4">
+          <div className="border-t border-[#e5e7eb] bg-[#f3f6f9] p-4">
             <Link
               to="/account"
               className={`group flex items-center rounded-2xl px-3 py-3 transition-all ${
                 location.pathname === "/account"
-                  ? "bg-[linear-gradient(135deg,#f4d2d2,#f0b1b0)] text-[#6f1117] ring-1 ring-white/30"
-                  : "text-slate-50/92 hover:bg-white/14 hover:text-white"
+                  ? "bg-[#fde8e8] text-[#7f1d1d] ring-1 ring-[#f4caca]"
+                  : "text-slate-700 hover:bg-white hover:text-[#15202d]"
               } ${collapsed ? "justify-center" : "gap-3"}`}
               onClick={() => setMobileOpen(false)}
               title={collapsed ? "账号管理" : undefined}
@@ -193,8 +193,8 @@ export default function Sidebar({ collapsed, setCollapsed }: SidebarProps) {
               <span
                 className={`flex h-10 w-10 items-center justify-center rounded-xl ${
                   location.pathname === "/account"
-                    ? "bg-white/75 text-[#b21d22]"
-                    : "bg-white/10 text-slate-100/88"
+                    ? "bg-[#fff7f7] text-[#c02626]"
+                    : "bg-white text-slate-600"
                 }`}
               >
                 <UserCircle className="h-[18px] w-[18px]" />
@@ -202,14 +202,14 @@ export default function Sidebar({ collapsed, setCollapsed }: SidebarProps) {
               {!collapsed && (
                 <div className="min-w-0 flex-1">
                   <div className="text-sm font-semibold">账号管理</div>
-                  <div className="text-xs text-slate-100/72">个人信息与认证状态</div>
+                  <div className="text-xs text-slate-500">个人信息与认证状态</div>
                 </div>
               )}
             </Link>
 
             <div className={`mt-4 flex items-center ${collapsed ? "justify-center" : "justify-between"}`}>
               <div
-                className={`inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-2.5 py-1 text-xs text-slate-50/88 ${
+                className={`inline-flex items-center gap-2 rounded-full border border-[#e5e7eb] bg-white px-2.5 py-1 text-xs text-slate-600 ${
                   collapsed ? "px-2" : ""
                 }`}
                 title={`v${version}`}
