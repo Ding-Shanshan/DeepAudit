@@ -21,7 +21,8 @@ import {
   LogOut,
   UserPlus,
   GitBranch,
-  Terminal
+  Terminal,
+  UserCircle2
 } from "lucide-react";
 import { apiClient } from "@/shared/api/serverClient";
 import { useAuth } from "@/shared/context/AuthContext";
@@ -121,8 +122,9 @@ export default function Account() {
     });
   };
 
-  const getInitials = (name?: string, email?: string) => {
+  const getInitials = (name?: string, username?: string, email?: string) => {
     if (name) return name.charAt(0).toUpperCase();
+    if (username) return username.charAt(0).toUpperCase();
     if (email) return email.charAt(0).toUpperCase();
     return "U";
   };
@@ -163,10 +165,10 @@ export default function Account() {
           </div>
           <div className="p-6 text-center">
             <div className="relative inline-block mb-4">
-              <Avatar className="w-24 h-24 border-2 border-primary/30">
+                <Avatar className="w-24 h-24 border-2 border-primary/30">
                 <AvatarImage src={profile?.avatar_url} />
                 <AvatarFallback className="bg-primary/20 text-primary text-2xl font-bold">
-                  {getInitials(profile?.full_name, profile?.email)}
+                  {getInitials(profile?.full_name, profile?.username, profile?.email)}
                 </AvatarFallback>
               </Avatar>
               <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-emerald-500 rounded-full border-2 border-background flex items-center justify-center">
@@ -176,7 +178,8 @@ export default function Account() {
             <h4 className="text-lg font-bold text-foreground uppercase mb-1">
               {profile?.full_name || "未设置姓名"}
             </h4>
-            <p className="text-muted-foreground text-sm">{profile?.email}</p>
+            <p className="text-muted-foreground text-sm">@{profile?.username}</p>
+            {profile?.email && <p className="text-muted-foreground/80 text-xs mt-1">{profile.email}</p>}
 
             <div className="mt-6 pt-6 border-t border-border space-y-3 text-left">
               <div className="flex items-center gap-3 text-sm">
@@ -222,6 +225,18 @@ export default function Account() {
           </div>
           <div className="p-6 space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="username" className="text-xs font-bold text-muted-foreground uppercase flex items-center gap-2">
+                  <UserCircle2 className="w-3 h-3" /> 用户名
+                </Label>
+                <Input
+                  id="username"
+                  value={profile?.username || ""}
+                  disabled
+                  className="cyber-input bg-muted text-muted-foreground cursor-not-allowed"
+                />
+                <p className="text-xs text-muted-foreground">用户名不可修改</p>
+              </div>
               <div className="space-y-2">
                 <Label htmlFor="email" className="text-xs font-bold text-muted-foreground uppercase flex items-center gap-2">
                   <Mail className="w-3 h-3" /> 邮箱

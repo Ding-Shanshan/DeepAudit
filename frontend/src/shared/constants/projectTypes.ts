@@ -13,12 +13,12 @@ export const PROJECT_SOURCE_TYPES: Array<{
     {
       value: 'repository',
       label: '远程仓库',
-      description: '从 GitHub/GitLab 等远程仓库拉取代码'
+      description: '从 GitHub/GitLab/Gitea/SVN 等远程仓库拉取代码'
     },
     {
       value: 'zip',
-      label: 'ZIP上传',
-      description: '上传本地ZIP压缩包进行扫描'
+      label: '归档上传',
+      description: '上传 zip、rar、7z、tar、gz 等本地归档进行扫描'
     }
   ];
 
@@ -27,6 +27,7 @@ export const REPOSITORY_PLATFORM_LABELS: Record<RepositoryPlatform, string> = {
   github: 'GitHub',
   gitlab: 'GitLab',
   gitea: 'Gitea',
+  svn: 'SVN',
   other: '其他',
 };
 
@@ -66,5 +67,6 @@ export const PLATFORM_COLORS: Record<RepositoryPlatform, {
   github: { bg: 'bg-foreground', text: 'text-background' },
   gitlab: { bg: 'bg-orange-500', text: 'text-white' },
   gitea: { bg: 'bg-green-600', text: 'text-white' },
+  svn: { bg: 'bg-cyan-600', text: 'text-white' },
   other: { bg: 'bg-muted-foreground', text: 'text-background' }
 };

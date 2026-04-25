@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel
 
 from app.api import deps
 from app.core import security
@@ -17,7 +17,7 @@ from app.schemas.user import User as UserSchema, UserCreate
 router = APIRouter()
 
 class RegisterRequest(BaseModel):
-    email: EmailStr
+    username: str
     password: str
     full_name: str
 
@@ -28,13 +28,13 @@ async def login(
 ) -> Any:
     """
     OAuth2 compatible token login, get an access token for future requests.
-    Username field should contain the email address.
+    Username field should contain the local username.
     """
-    result = await db.execute(select(User).where(User.email == form_data.username))
+    result = await db.execute(select(User).where(User.username == form_data.username))
     user = result.scalars().first()
     
     if not user or not security.verify_password(form_data.password, user.hashed_password):
-        raise HTTPException(status_code=400, detail="邮箱或密码错误")
+        raise HTTPException(status_code=400, detail="用户名或密码错误")
     elif not user.is_active:
         raise HTTPException(status_code=400, detail="用户已被禁用")
         
@@ -53,32 +53,9 @@ async def register(
     user_in: RegisterRequest,
 ) -> Any:
     """
-    Register a new user.
+    Public registration is disabled. Users must be created by administrators.
     """
-    # Check if user already exists
-    result = await db.execute(select(User).where(User.email == user_in.email))
-    existing_user = result.scalars().first()
-    if existing_user:
-        raise HTTPException(
-            status_code=400,
-            detail="该邮箱已被注册",
-        )
-    
-    # Check if this is the first user (make them admin)
-    count_result = await db.execute(select(User))
-    all_users = count_result.scalars().all()
-    is_first_user = len(all_users) == 0
-    
-    # Create new user
-    db_user = User(
-        email=user_in.email,
-        hashed_password=security.get_password_hash(user_in.password),
-        full_name=user_in.full_name,
-        is_active=True,
-        is_superuser=is_first_user,
-        role="admin" if is_first_user else "member",
+    raise HTTPException(
+        status_code=status.HTTP_403_FORBIDDEN,
+        detail="已关闭公开注册，请联系管理员创建账户",
     )
-    db.add(db_user)
-    await db.commit()
-    await db.refresh(db_user)
-    return db_user

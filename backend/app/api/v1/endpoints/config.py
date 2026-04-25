@@ -24,7 +24,10 @@ SENSITIVE_LLM_FIELDS = [
     'qwenApiKey', 'deepseekApiKey', 'zhipuApiKey', 'moonshotApiKey',
     'baiduApiKey', 'minimaxApiKey', 'doubaoApiKey'
 ]
-SENSITIVE_OTHER_FIELDS = ['githubToken', 'gitlabToken']
+SENSITIVE_OTHER_FIELDS = [
+    'githubToken', 'gitlabToken', 'giteaToken', 'sshPrivateKey',
+    'svnUsername', 'svnPassword'
+]
 
 
 def encrypt_config(config: dict, sensitive_fields: list) -> dict:
@@ -81,10 +84,17 @@ class OtherConfigSchema(BaseModel):
     """其他配置Schema"""
     githubToken: Optional[str] = None
     gitlabToken: Optional[str] = None
+    giteaToken: Optional[str] = None
+    sshPrivateKey: Optional[str] = None
+    svnUsername: Optional[str] = None
+    svnPassword: Optional[str] = None
     maxAnalyzeFiles: Optional[int] = None
     llmConcurrency: Optional[int] = None
     llmGapMs: Optional[int] = None
     outputLanguage: Optional[str] = None
+    functionWhitelist: Optional[list[str]] = None
+    vulnerabilityWhitelist: Optional[list[str]] = None
+    sanitizerFunctions: Optional[list[str]] = None
 
 
 class UserConfigRequest(BaseModel):
@@ -140,10 +150,17 @@ def get_default_config() -> dict:
         "otherConfig": {
             "githubToken": settings.GITHUB_TOKEN or "",
             "gitlabToken": settings.GITLAB_TOKEN or "",
+            "giteaToken": settings.GITEA_TOKEN or "",
+            "sshPrivateKey": "",
+            "svnUsername": "",
+            "svnPassword": "",
             "maxAnalyzeFiles": settings.MAX_ANALYZE_FILES,
             "llmConcurrency": settings.LLM_CONCURRENCY,
             "llmGapMs": settings.LLM_GAP_MS,
             "outputLanguage": settings.OUTPUT_LANGUAGE,
+            "functionWhitelist": [],
+            "vulnerabilityWhitelist": [],
+            "sanitizerFunctions": [],
         }
     }
 
@@ -557,4 +574,3 @@ async def get_llm_providers() -> Any:
         })
     
     return {"providers": providers}
-

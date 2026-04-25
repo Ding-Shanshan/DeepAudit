@@ -60,7 +60,7 @@ describe("projectUtils", () => {
 		});
 
 		it("should return Chinese label for zip", () => {
-			expect(getSourceTypeLabel("zip")).toBe("ZIP\u4E0A\u4F20");
+			expect(getSourceTypeLabel("zip")).toBe("\u5F52\u6863\u4E0A\u4F20");
 		});
 
 		it("should return unknown label for invalid type", () => {
@@ -95,6 +95,10 @@ describe("projectUtils", () => {
 
 		it("should return Gitea for gitea", () => {
 			expect(getRepositoryPlatformLabel("gitea")).toBe("Gitea");
+		});
+
+		it("should return SVN for svn", () => {
+			expect(getRepositoryPlatformLabel("svn")).toBe("SVN");
 		});
 
 		it("should return fallback for unknown platform", () => {
@@ -157,10 +161,10 @@ describe("projectUtils", () => {
 			expect(description).toContain("\u4ED3\u5E93");
 		});
 
-		it("should describe ZIP upload for zip projects", () => {
+		it("should describe archive upload for zip projects", () => {
 			const project = createMockProject({ source_type: "zip" });
 			const description = getScanMethodDescription(project);
-			expect(description).toContain("ZIP");
+			expect(description).toContain("\u5F52\u6863");
 		});
 	});
 

@@ -119,11 +119,18 @@ function IssuesList({ issues, onStatusChange }: { issues: AuditIssue[]; onStatus
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="outline" size="sm" className="text-xs font-mono">
-                  {issue.status === 'resolved' ? '已解决' : issue.status === 'false_positive' ? '误报' : '待处理'}
+                  {issue.status === 'resolved'
+                    ? '已解决'
+                    : issue.status === 'false_positive'
+                      ? '误报'
+                      : issue.status === 'pending_review'
+                        ? '存疑'
+                        : '待处理'}
                   <ChevronDown className="w-3 h-3 ml-1" />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => onStatusChange(issue, "pending_review")}>存疑</DropdownMenuItem>
                 <DropdownMenuItem onClick={() => onStatusChange(issue, "resolved")}>已解决</DropdownMenuItem>
                 <DropdownMenuItem onClick={() => onStatusChange(issue, "false_positive")}>误报</DropdownMenuItem>
                 <DropdownMenuItem onClick={() => onStatusChange(issue, "open")}>恢复</DropdownMenuItem>

@@ -13,6 +13,7 @@ import type { IssuesSummary, LatestProblem } from "@/shared/types";
 
 const STATUS_LABELS: Record<string, string> = {
   open: "待处理",
+  pending_review: "存疑",
   new: "待处理",
   resolved: "已解决",
   false_positive: "误报",
@@ -34,6 +35,9 @@ function getStatusBadgeClass(status?: string): string {
     case "resolved":
     case "fixed":
       return "bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border-emerald-500/30";
+    case "pending_review":
+    case "needs_review":
+      return "bg-sky-500/20 text-sky-600 dark:text-sky-400 border-sky-500/30";
     case "false_positive":
     case "wont_fix":
     case "duplicate":
@@ -131,6 +135,7 @@ export function ProjectIssuesTab(props: {
                       <DropdownMenuContent align="end">
                         {issue.kind === "audit" ? (
                           <>
+                            <DropdownMenuItem onClick={() => onStatusChange(issue, "pending_review")}>存疑</DropdownMenuItem>
                             <DropdownMenuItem onClick={() => onStatusChange(issue, "resolved")}>已解决</DropdownMenuItem>
                             <DropdownMenuItem onClick={() => onStatusChange(issue, "false_positive")}>误报</DropdownMenuItem>
                             <DropdownMenuItem onClick={() => onStatusChange(issue, "open")}>恢复</DropdownMenuItem>

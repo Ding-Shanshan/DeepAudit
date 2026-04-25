@@ -85,6 +85,9 @@ RUN apt-get update && \
         curl \
         git \
         openssh-client \
+        subversion \
+        p7zip-full \
+        unrar-free \
         libpango-1.0-0 \
         libpangoft2-1.0-0 \
         libpangocairo-1.0-0 \
@@ -100,6 +103,9 @@ RUN apt-get update && \
 # 从构建阶段复制虚拟环境和 uv
 COPY --from=builder /app/.venv /app/.venv
 COPY --from=builder /usr/local/bin/uv /usr/local/bin/uv
+
+# Semgrep 作为快速扫描的本地规则引擎运行在后端容器中
+RUN /app/.venv/bin/pip install --no-cache-dir "semgrep>=1.75.0,<2.0.0"
 
 # 复制应用代码
 COPY . .

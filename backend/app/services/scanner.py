@@ -4,6 +4,12 @@
 
 import asyncio
 import httpx
+import json
+import os
+from pathlib import Path
+import shutil
+import subprocess
+import tempfile
 from typing import List, Dict, Any, Optional
 from datetime import datetime, timezone
 from urllib.parse import urlparse, quote
@@ -14,6 +20,16 @@ from app.models.audit import AuditTask, AuditIssue
 from app.models.project import Project
 from app.services.llm.service import LLMService
 from app.core.config import settings
+from app.services.quick_scan import (
+    calculate_quality_score,
+    collect_source_files,
+    deduplicate_findings,
+    get_language_from_path as local_language_from_path,
+    is_text_file as local_is_text_file,
+    run_pattern_scan,
+    run_semgrep_scan,
+    should_exclude as local_should_exclude,
+)
 
 
 def get_analysis_config(user_config: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
@@ -35,47 +51,19 @@ def get_analysis_config(user_config: Optional[Dict[str, Any]] = None) -> Dict[st
     }
 
 
-# 支持的文本文件扩展名
-TEXT_EXTENSIONS = [
-    ".js", ".ts", ".tsx", ".jsx", ".py", ".java", ".go", ".rs", 
-    ".cpp", ".c", ".h", ".cc", ".hh", ".cs", ".php", ".rb", 
-    ".kt", ".swift", ".sql", ".sh", ".json", ".yml", ".yaml"
-]
-
-# 排除的目录和文件模式
-EXCLUDE_PATTERNS = [
-    "node_modules/", "vendor/", "dist/", "build/", ".git/",
-    "__pycache__/", ".pytest_cache/", "coverage/", ".nyc_output/",
-    ".vscode/", ".idea/", ".vs/", "target/", "out/",
-    "__MACOSX/", ".DS_Store", "package-lock.json", "yarn.lock",
-    "pnpm-lock.yaml", ".min.js", ".min.css", ".map"
-]
-
-
 def is_text_file(path: str) -> bool:
     """检查是否为文本文件"""
-    return any(path.lower().endswith(ext) for ext in TEXT_EXTENSIONS)
+    return local_is_text_file(path)
 
 
 def should_exclude(path: str, exclude_patterns: List[str] = None) -> bool:
     """检查是否应该排除该文件"""
-    all_patterns = EXCLUDE_PATTERNS + (exclude_patterns or [])
-    return any(pattern in path for pattern in all_patterns)
+    return local_should_exclude(path, exclude_patterns)
 
 
 def get_language_from_path(path: str) -> str:
     """从文件路径获取语言类型"""
-    ext = path.split('.')[-1].lower() if '.' in path else ''
-    language_map = {
-        'js': 'javascript', 'jsx': 'javascript',
-        'ts': 'typescript', 'tsx': 'typescript',
-        'py': 'python', 'java': 'java', 'go': 'go',
-        'rs': 'rust', 'cpp': 'cpp', 'c': 'cpp',
-        'cc': 'cpp', 'h': 'cpp', 'hh': 'cpp',
-        'cs': 'csharp', 'php': 'php', 'rb': 'ruby',
-        'kt': 'kotlin', 'swift': 'swift'
-    }
-    return language_map.get(ext, 'text')
+    return local_language_from_path(path)
 
 
 class TaskControlManager:
@@ -294,6 +282,270 @@ async def get_gitea_files(repo_url: str, branch: str, token: str = None, exclude
             })
     
     return files
+
+
+def _write_workspace_file(workspace_dir: str, relative_path: str, content: str) -> None:
+    target_path = os.path.join(workspace_dir, relative_path)
+    os.makedirs(os.path.dirname(target_path), exist_ok=True)
+    with open(target_path, "w", encoding="utf-8", errors="ignore") as handle:
+        handle.write(content)
+
+
+def _llm_is_configured(user_config: Optional[Dict[str, Any]] = None) -> bool:
+    llm_config = (user_config or {}).get("llmConfig", {})
+    key_fields = [
+        "llmApiKey",
+        "geminiApiKey",
+        "openaiApiKey",
+        "claudeApiKey",
+        "qwenApiKey",
+        "deepseekApiKey",
+        "zhipuApiKey",
+        "moonshotApiKey",
+        "baiduApiKey",
+        "minimaxApiKey",
+        "doubaoApiKey",
+    ]
+    if any(llm_config.get(field) for field in key_fields):
+        return True
+    return any(
+        [
+            settings.LLM_API_KEY,
+            settings.OPENAI_API_KEY,
+            settings.GEMINI_API_KEY,
+            settings.CLAUDE_API_KEY,
+            settings.QWEN_API_KEY,
+            settings.DEEPSEEK_API_KEY,
+            settings.ZHIPU_API_KEY,
+            settings.MOONSHOT_API_KEY,
+            settings.BAIDU_API_KEY,
+            settings.MINIMAX_API_KEY,
+            settings.DOUBAO_API_KEY,
+        ]
+    )
+
+
+def _is_whitelisted_finding(
+    finding: Dict[str, Any],
+    other_config: Optional[Dict[str, Any]] = None,
+) -> bool:
+    other_config = other_config or {}
+    vuln_whitelist = {item.lower() for item in other_config.get("vulnerabilityWhitelist", []) if item}
+    function_whitelist = {item.lower() for item in other_config.get("functionWhitelist", []) if item}
+    sanitizer_functions = {item.lower() for item in other_config.get("sanitizerFunctions", []) if item}
+
+    haystacks = [
+        str(finding.get("rule_id", "")).lower(),
+        str(finding.get("title", "")).lower(),
+        str(finding.get("issue_type", "")).lower(),
+        str(finding.get("code_snippet", "")).lower(),
+    ]
+    if vuln_whitelist and any(item in hay for item in vuln_whitelist for hay in haystacks):
+        return True
+
+    snippet = str(finding.get("code_snippet", "")).lower()
+    if function_whitelist and any(item in snippet for item in function_whitelist):
+        return True
+    if sanitizer_functions and any(item in snippet for item in sanitizer_functions):
+        return True
+    return False
+
+
+async def materialize_repository_workspace(
+    project: Project,
+    branch: str,
+    user_config: Optional[Dict[str, Any]] = None,
+    exclude_patterns: Optional[List[str]] = None,
+) -> str:
+    workspace_dir = tempfile.mkdtemp(prefix=f"deepaudit_repo_{project.id}_")
+    repo_type = (project.repository_type or "other").lower()
+    repo_url = project.repository_url or ""
+    user_other_config = (user_config or {}).get("otherConfig", {})
+
+    if repo_type == "svn":
+        cmd = ["svn", "export", "--force", repo_url, workspace_dir]
+        if user_other_config.get("svnUsername"):
+            cmd.extend(["--username", user_other_config["svnUsername"]])
+        if user_other_config.get("svnPassword"):
+            cmd.extend(["--password", user_other_config["svnPassword"], "--non-interactive", "--trust-server-cert-failures=unknown-ca"])
+        subprocess.run(cmd, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+        return workspace_dir
+
+    github_token = user_other_config.get("githubToken") or settings.GITHUB_TOKEN
+    gitlab_token = user_other_config.get("gitlabToken") or settings.GITLAB_TOKEN
+    gitea_token = user_other_config.get("giteaToken") or settings.GITEA_TOKEN
+    ssh_private_key = user_other_config.get("sshPrivateKey")
+
+    files: List[Dict[str, str]] = []
+    headers: Dict[str, str] = {}
+
+    from app.services.git_ssh_service import GitSSHOperations
+
+    if GitSSHOperations.is_ssh_url(repo_url):
+        if not ssh_private_key:
+            raise Exception("仓库使用 SSH 地址，但当前用户未配置 SSH 私钥")
+        files_with_content = GitSSHOperations.get_repo_files_via_ssh(
+            repo_url, ssh_private_key, branch, exclude_patterns or []
+        )
+        for item in files_with_content:
+            _write_workspace_file(workspace_dir, item["path"], item.get("content", ""))
+        return workspace_dir
+
+    if repo_type == "github":
+        files = await get_github_files(repo_url, branch, github_token, exclude_patterns)
+    elif repo_type == "gitlab":
+        files = await get_gitlab_files(repo_url, branch, gitlab_token, exclude_patterns)
+    elif repo_type == "gitea":
+        files = await get_gitea_files(repo_url, branch, gitea_token, exclude_patterns)
+    else:
+        raise Exception("不支持的仓库类型，仅支持 GitHub、GitLab、Gitea 和 SVN")
+
+    for file_info in files:
+        headers = {}
+        if repo_type == "gitlab":
+            token_to_use = file_info.get("token") or gitlab_token
+            if token_to_use:
+                headers["PRIVATE-TOKEN"] = token_to_use
+        elif repo_type == "gitea":
+            token_to_use = file_info.get("token") or gitea_token
+            if token_to_use:
+                headers["Authorization"] = f"token {token_to_use}"
+        elif repo_type == "github" and github_token:
+            headers["Authorization"] = f"Bearer {github_token}"
+
+        content = await fetch_file_content(file_info["url"], headers)
+        if content is None:
+            continue
+        _write_workspace_file(workspace_dir, file_info["path"], content)
+
+    return workspace_dir
+
+
+async def scan_local_workspace(
+    task: AuditTask,
+    db: AsyncSession,
+    workspace_dir: str,
+    user_config: Optional[Dict[str, Any]] = None,
+) -> None:
+    scan_config = (user_config or {}).get("scan_config", {})
+    exclude_patterns = scan_config.get("exclude_patterns", [])
+    target_files = scan_config.get("file_paths", [])
+    analysis_config = get_analysis_config(user_config)
+    other_config = (user_config or {}).get("otherConfig", {})
+
+    source_files = collect_source_files(
+        workspace_dir,
+        exclude_patterns=exclude_patterns,
+        target_files=target_files,
+        max_file_size=settings.MAX_FILE_SIZE_BYTES,
+    )
+    if analysis_config["max_analyze_files"] > 0:
+        source_files = source_files[: analysis_config["max_analyze_files"]]
+
+    task.total_files = len(source_files)
+    await db.commit()
+
+    semgrep_findings = run_semgrep_scan(workspace_dir, source_files)
+    pattern_findings = run_pattern_scan(source_files)
+    findings = deduplicate_findings(semgrep_findings + pattern_findings)
+
+    for finding in findings:
+        if _is_whitelisted_finding(finding, other_config):
+            continue
+        db.add(
+            AuditIssue(
+                task_id=task.id,
+                file_path=finding["file_path"],
+                line_number=finding.get("line_number"),
+                column_number=finding.get("column_number"),
+                issue_type=finding.get("issue_type", "security"),
+                severity=finding.get("severity", "medium"),
+                title=finding.get("title"),
+                message=finding.get("description"),
+                description=finding.get("description"),
+                suggestion=finding.get("suggestion"),
+                code_snippet=finding.get("code_snippet"),
+                ai_explanation=json.dumps(
+                    {
+                        "review_status": "rule_hit",
+                        "tool": finding.get("tool"),
+                        "rule_id": finding.get("rule_id"),
+                    },
+                    ensure_ascii=False,
+                ),
+                status="open",
+            )
+        )
+
+    await db.flush()
+
+    llm_failures = 0
+    if _llm_is_configured(user_config):
+        llm_service = LLMService(user_config=user_config or {})
+        llm_target_files = source_files[: min(10, len(source_files))]
+        for source_file in llm_target_files:
+            try:
+                content = Path(source_file["absolute_path"]).read_text(errors="ignore")
+                rule_set_id = scan_config.get("rule_set_id")
+                prompt_template_id = scan_config.get("prompt_template_id")
+                if rule_set_id or prompt_template_id:
+                    analysis = await llm_service.analyze_code_with_rules(
+                        content,
+                        source_file["language"],
+                        rule_set_id=rule_set_id,
+                        prompt_template_id=prompt_template_id,
+                        db_session=db,
+                    )
+                else:
+                    analysis = await llm_service.analyze_code(content, source_file["language"])
+
+                for issue in analysis.get("issues", []):
+                    llm_finding = {
+                        "rule_id": issue.get("type"),
+                        "title": issue.get("title", "Issue"),
+                        "issue_type": issue.get("type", "maintainability"),
+                        "code_snippet": issue.get("code_snippet"),
+                    }
+                    if _is_whitelisted_finding(llm_finding, other_config):
+                        continue
+                    db.add(
+                        AuditIssue(
+                            task_id=task.id,
+                            file_path=source_file["path"],
+                            line_number=issue.get("line", 1),
+                            column_number=issue.get("column"),
+                            issue_type=issue.get("type", "maintainability"),
+                            severity=issue.get("severity", "low"),
+                            title=issue.get("title", "Issue"),
+                            message=issue.get("description") or issue.get("title", "Issue"),
+                            description=issue.get("description"),
+                            suggestion=issue.get("suggestion"),
+                            code_snippet=issue.get("code_snippet"),
+                            ai_explanation=json.dumps(issue.get("xai"), ensure_ascii=False) if issue.get("xai") else issue.get("ai_explanation"),
+                            status="pending_review" if findings else "open",
+                        )
+                    )
+            except Exception:
+                llm_failures += 1
+            finally:
+                await asyncio.sleep(analysis_config["llm_gap_ms"] / 1000)
+
+    await db.commit()
+
+    issues_result = await db.execute(select(AuditIssue).where(AuditIssue.task_id == task.id))
+    issues = issues_result.scalars().all()
+    task.scanned_files = len(source_files)
+    task.total_lines = sum(
+        len(Path(item["absolute_path"]).read_text(errors="ignore").splitlines())
+        for item in source_files
+    )
+    task.issues_count = len(issues)
+    task.quality_score = calculate_quality_score(len(source_files), len(issues))
+    task.status = "completed" if source_files or findings else "failed"
+    task.completed_at = datetime.now(timezone.utc)
+    await db.commit()
+
+
 async def scan_repo_task(task_id: str, db_session_factory, user_config: dict = None):
     """
     后台仓库扫描任务
@@ -309,341 +561,37 @@ async def scan_repo_task(task_id: str, db_session_factory, user_config: dict = N
             return
 
         try:
-            # 1. 更新状态为运行中
             task.status = "running"
             task.started_at = datetime.now(timezone.utc)
             await db.commit()
-            
-            # 创建使用用户配置的LLM服务实例
-            llm_service = LLMService(user_config=user_config or {})
 
-            # 2. 获取项目信息
             project = await db.get(Project, task.project_id)
             if not project:
                 raise Exception("项目不存在")
-            
-            # 检查项目类型 - 仅支持仓库类型项目
+
             source_type = getattr(project, 'source_type', 'repository')
             if source_type == 'zip':
                 raise Exception("ZIP类型项目请使用ZIP上传扫描接口")
-            
             if not project.repository_url:
                 raise Exception("仓库地址不存在")
 
-            repo_url = project.repository_url
             branch = task.branch_name or project.default_branch or "main"
-            repo_type = project.repository_type or "other"
-            
-            # 解析任务的排除模式
-            import json as json_module
             task_exclude_patterns = []
             if task.exclude_patterns:
                 try:
-                    task_exclude_patterns = json_module.loads(task.exclude_patterns)
+                    task_exclude_patterns = json.loads(task.exclude_patterns)
                 except:
                     pass
-
-            print(f"🚀 开始扫描仓库: {repo_url}, 分支: {branch}, 类型: {repo_type}, 来源: {source_type}")
-            if task_exclude_patterns:
-                print(f"📋 排除模式: {task_exclude_patterns}")
-
-            # 3. 获取文件列表
-            # 从用户配置中读取 GitHub/GitLab Token（优先使用用户配置，然后使用系统配置）
-            user_other_config = (user_config or {}).get('otherConfig', {})
-            github_token = user_other_config.get('githubToken') or settings.GITHUB_TOKEN
-            gitlab_token = user_other_config.get('gitlabToken') or settings.GITLAB_TOKEN
-            gitea_token = user_other_config.get('giteaToken') or settings.GITEA_TOKEN
-
-            
-
-            # 获取SSH私钥（如果配置了）
-            ssh_private_key = None
-            if 'sshPrivateKey' in user_other_config:
-                from app.core.encryption import decrypt_sensitive_data
-                ssh_private_key = decrypt_sensitive_data(user_other_config['sshPrivateKey'])
-
-            files: List[Dict[str, str]] = []
-            extracted_gitlab_token = None
-
-            # 检查是否为SSH URL
-            from app.services.git_ssh_service import GitSSHOperations
-            is_ssh_url = GitSSHOperations.is_ssh_url(repo_url)
-
-            if is_ssh_url:
-                # 使用SSH方式获取文件
-                if not ssh_private_key:
-                    raise Exception("仓库使用SSH URL，但未配置SSH密钥。请先生成并配置SSH密钥。")
-
-                print(f"🔐 使用SSH方式访问仓库: {repo_url}")
-                try:
-                    files_with_content = GitSSHOperations.get_repo_files_via_ssh(
-                        repo_url, ssh_private_key, branch, task_exclude_patterns
-                    )
-                    # 转换为统一格式
-                    files = [{'path': f['path'], 'content': f['content']} for f in files_with_content]
-                    actual_branch = branch
-                    print(f"✅ 通过SSH成功获取 {len(files)} 个文件")
-                except Exception as e:
-                    raise Exception(f"SSH方式获取仓库文件失败: {str(e)}")
-            else:
-                # 使用API方式获取文件（原有逻辑）
-                # 构建分支尝试顺序（分支降级机制）
-                branches_to_try = [branch]
-                if project.default_branch and project.default_branch != branch:
-                    branches_to_try.append(project.default_branch)
-                for common_branch in ["main", "master"]:
-                    if common_branch not in branches_to_try:
-                        branches_to_try.append(common_branch)
-
-                actual_branch = branch  # 实际使用的分支
-                last_error = None
-
-                for try_branch in branches_to_try:
-                    try:
-                        print(f"🔄 尝试获取分支 {try_branch} 的文件列表...")
-                        if repo_type == "github":
-                            files = await get_github_files(repo_url, try_branch, github_token, task_exclude_patterns)
-                        elif repo_type == "gitlab":
-                            files = await get_gitlab_files(repo_url, try_branch, gitlab_token, task_exclude_patterns)
-                            # GitLab文件可能带有token
-                            if files and 'token' in files[0]:
-                                extracted_gitlab_token = files[0].get('token')
-                        elif repo_type == "gitea":
-                            files = await get_gitea_files(repo_url, try_branch, gitea_token, task_exclude_patterns)
-                        else:
-                            raise Exception("不支持的仓库类型，仅支持 GitHub, GitLab 和 Gitea 仓库")
-
-                        if files:
-                            actual_branch = try_branch
-                            if try_branch != branch:
-                                print(f"⚠️ 分支 {branch} 不存在或无法访问，已降级到分支 {try_branch}")
-                            break
-                    except Exception as e:
-                        last_error = str(e)
-                        print(f"⚠️ 获取分支 {try_branch} 失败: {last_error[:100]}")
-                        continue
-
-                if not files:
-                    error_msg = f"无法获取仓库文件，所有分支尝试均失败"
-                    if last_error:
-                        if "404" in last_error or "Not Found" in last_error:
-                            error_msg = f"仓库或分支不存在: {branch}"
-                        elif "401" in last_error or "403" in last_error:
-                            error_msg = "无访问权限，请检查 Token 配置"
-                        else:
-                            error_msg = f"获取文件失败: {last_error[:100]}"
-                    raise Exception(error_msg)
-
-            print(f"✅ 成功获取分支 {actual_branch} 的文件列表")
-
-            # 获取分析配置（优先使用用户配置）
-            analysis_config = get_analysis_config(user_config)
-            max_analyze_files = analysis_config['max_analyze_files']
-            llm_gap_ms = analysis_config['llm_gap_ms']
-
-            # 限制文件数量
-            # 如果指定了特定文件，则只分析这些文件
-            target_files = (user_config or {}).get('scan_config', {}).get('file_paths', [])
-            if target_files:
-                print(f"🎯 指定分析 {len(target_files)} 个文件")
-                files = [f for f in files if f['path'] in target_files]
-            elif max_analyze_files > 0:
-                files = files[:max_analyze_files]
-
-            task.total_files = len(files)
-            await db.commit()
-
-            print(f"📊 获取到 {len(files)} 个文件，开始分析 (最大文件数: {max_analyze_files}, 请求间隔: {llm_gap_ms}ms)")
-
-            # 4. 分析文件
-            total_issues = 0
-            total_lines = 0
-            quality_scores = []
-            scanned_files = 0
-            failed_files = 0
-            skipped_files = 0  # 跳过的文件（空文件、太大等）
-            consecutive_failures = 0
-            MAX_CONSECUTIVE_FAILURES = 5
-
-            for file_info in files:
-                # 检查是否取消
-                if task_control.is_cancelled(task_id):
-                    print(f"🛑 任务 {task_id} 已被用户取消")
-                    task.status = "cancelled"
-                    task.completed_at = datetime.now(timezone.utc)
-                    await db.commit()
-                    task_control.cleanup_task(task_id)
-                    return
-
-                # 检查连续失败次数
-                if consecutive_failures >= MAX_CONSECUTIVE_FAILURES:
-                    print(f"❌ 任务 {task_id}: 连续失败 {consecutive_failures} 次，停止分析")
-                    raise Exception(f"连续失败 {consecutive_failures} 次，可能是 LLM API 服务异常")
-
-                try:
-                    # 获取文件内容
-
-                    if is_ssh_url:
-                        # SSH方式已经包含了文件内容
-                        content = file_info.get('content', '')
-                        print(f"📥 正在处理SSH文件: {file_info['path']}")
-                    else:
-                        headers = {}
-                        # 使用提取的 token 或用户配置的 token
-                        
-                        if repo_type == "gitlab":
-                            token_to_use = file_info.get('token') or gitlab_token
-                            if token_to_use:
-                                headers["PRIVATE-TOKEN"] = token_to_use
-                        elif repo_type == "gitea":
-                            token_to_use = file_info.get('token') or gitea_token
-                            if token_to_use:
-                                headers["Authorization"] = f"token {token_to_use}"
-                        elif repo_type == "github":
-                            # GitHub raw URL 也是直接下载，通常public不需要token，private需要
-                            # GitHub raw user content url: raw.githubusercontent.com
-                            if github_token:
-                                headers["Authorization"] = f"Bearer {github_token}"
-                        
-                        print(f"📥 正在获取文件: {file_info['path']}")
-                        content = await fetch_file_content(file_info["url"], headers)
-
-                    if not content or not content.strip():
-                        print(f"⚠️ 文件内容为空，跳过: {file_info['path']}")
-                        skipped_files += 1
-                        continue
-                    
-                    if len(content) > settings.MAX_FILE_SIZE_BYTES:
-                        print(f"⚠️ 文件太大，跳过: {file_info['path']}")
-                        skipped_files += 1
-                        continue
-                    
-                    file_lines = content.split('\n')
-                    total_lines = len(file_lines) + 1
-                    language = get_language_from_path(file_info["path"])
-                    
-                    print(f"🤖 正在调用 LLM 分析: {file_info['path']} ({language}, {len(content)} bytes)")
-                    # LLM分析 - 支持规则集和提示词模板
-                    scan_config = (user_config or {}).get('scan_config', {})
-                    rule_set_id = scan_config.get('rule_set_id')
-                    prompt_template_id = scan_config.get('prompt_template_id')
-                    
-                    if rule_set_id or prompt_template_id:
-                        analysis = await llm_service.analyze_code_with_rules(
-                            content, language,
-                            rule_set_id=rule_set_id,
-                            prompt_template_id=prompt_template_id,
-                            db_session=db
-                        )
-                    else:
-                        analysis = await llm_service.analyze_code(content, language)
-                    print(f"✅ LLM 分析完成: {file_info['path']}")
-                    
-                    # 再次检查是否取消（LLM分析后）
-                    if task_control.is_cancelled(task_id):
-                        print(f"🛑 任务 {task_id} 在LLM分析后被取消")
-                        task.status = "cancelled"
-                        task.completed_at = datetime.now(timezone.utc)
-                        await db.commit()
-                        task_control.cleanup_task(task_id)
-                        return
-                    
-                    # 保存问题
-                    issues = analysis.get("issues", [])
-                    for issue in issues:
-                        line_num = issue.get("line", 1)
-                        
-                        # 健壮的代码片段提取逻辑
-                        # 优先使用 LLM 返回的片段，如果为空则从源码提取
-                        code_snippet = issue.get("code_snippet")
-                        if not code_snippet or len(code_snippet.strip()) < 5:
-                            # 从源码提取上下文 (前后2行)
-                            try:
-                                # line_num 是 1-based
-                                idx = max(0, int(line_num) - 1)
-                                start = max(0, idx - 2)
-                                end = min(len(file_lines), idx + 3)
-                                code_snippet = '\n'.join(file_lines[start:end])
-                            except Exception:
-                                code_snippet = ""
-
-                        audit_issue = AuditIssue(
-                            task_id=task.id,
-                            file_path=file_info["path"],
-                            line_number=line_num,
-                            column_number=issue.get("column"),
-                            issue_type=issue.get("type", "maintainability"),
-                            severity=issue.get("severity", "low"),
-                            title=issue.get("title", "Issue"),
-                            message=issue.get("description") or issue.get("title", "Issue"),
-                            suggestion=issue.get("suggestion"),
-                            code_snippet=code_snippet,
-                            ai_explanation=issue.get("ai_explanation"),
-                            status="open"
-                        )
-                        db.add(audit_issue)
-                        total_issues += 1
-                    
-                    if "quality_score" in analysis:
-                        quality_scores.append(analysis["quality_score"])
-                    
-                    consecutive_failures = 0  # 成功后重置
-                    scanned_files += 1
-                    
-                    # 更新进度
-                    task.scanned_files = scanned_files
-                    task.total_lines = total_lines
-                    task.issues_count = total_issues
-                    await db.commit()
-                    
-                    print(f"📈 任务 {task_id}: 进度 {scanned_files}/{len(files)} ({int(scanned_files/len(files)*100)}%)")
-                    
-                    # 请求间隔
-                    await asyncio.sleep(llm_gap_ms / 1000)
-                    
-                except Exception as file_error:
-                    failed_files += 1
-                    consecutive_failures += 1
-                    # 打印详细错误信息
-                    import traceback
-                    print(f"❌ 分析文件失败 ({file_info['path']}): {file_error}")
-                    print(f"   错误类型: {type(file_error).__name__}")
-                    print(f"   详细信息: {traceback.format_exc()}")
-                    await asyncio.sleep(llm_gap_ms / 1000)
-
-            # 5. 完成任务
-            avg_quality_score = sum(quality_scores) / len(quality_scores) if quality_scores else 100.0
-            
-            # 判断任务状态
-            # 如果所有文件都被跳过（空文件等），标记为完成但给出提示
-            if len(files) > 0 and scanned_files == 0 and skipped_files == len(files):
-                task.status = "completed"
-                task.completed_at = datetime.now(timezone.utc)
-                task.scanned_files = 0
-                task.total_lines = 0
-                task.issues_count = 0
-                task.quality_score = 100.0
-                await db.commit()
-                print(f"⚠️ 任务 {task_id} 完成: 所有 {len(files)} 个文件均为空或被跳过，无需分析")
-            # 如果有文件需要分析但全部失败（LLM调用失败），标记为失败
-            elif len(files) > 0 and scanned_files == 0 and failed_files > 0:
-                task.status = "failed"
-                task.completed_at = datetime.now(timezone.utc)
-                task.scanned_files = 0
-                task.total_lines = total_lines
-                task.issues_count = 0
-                task.quality_score = 0
-                await db.commit()
-                print(f"❌ 任务 {task_id} 失败: {failed_files} 个文件分析失败，请检查 LLM API 配置")
-            else:
-                task.status = "completed"
-                task.completed_at = datetime.now(timezone.utc)
-                task.scanned_files = scanned_files
-                task.total_lines = total_lines
-                task.issues_count = total_issues
-                task.quality_score = avg_quality_score
-                await db.commit()
-                print(f"✅ 任务 {task_id} 完成: 扫描 {scanned_files} 个文件, 发现 {total_issues} 个问题, 质量分 {avg_quality_score:.1f}")
+            workspace_dir = await materialize_repository_workspace(
+                project,
+                branch,
+                user_config=user_config,
+                exclude_patterns=task_exclude_patterns,
+            )
+            try:
+                await scan_local_workspace(task, db, workspace_dir, user_config=user_config)
+            finally:
+                shutil.rmtree(workspace_dir, ignore_errors=True)
             task_control.cleanup_task(task_id)
 
         except Exception as e:

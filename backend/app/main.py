@@ -7,6 +7,7 @@ from app.core.config import settings
 from app.api.v1.api import api_router
 from app.db.session import AsyncSessionLocal
 from app.db.init_db import init_db
+from app.services.scheduled_scans import scheduled_scan_runner
 
 # 配置日志
 logging.basicConfig(level=logging.INFO)
@@ -53,11 +54,11 @@ async def check_agent_services():
 async def lifespan(app: FastAPI):
     """
     应用生命周期管理
-    启动时初始化数据库（创建默认账户等）
+    启动时初始化数据库（创建默认管理员）
     """
     logger.info("DeepAudit 后端服务启动中...")
 
-    # 初始化数据库（创建默认账户）
+    # 初始化数据库（创建默认管理员）
     # 注意：需要先运行 alembic upgrade head 创建表结构
     try:
         async with AsyncSessionLocal() as db:
@@ -88,11 +89,14 @@ async def lifespan(app: FastAPI):
     logger.info("DeepAudit 后端服务已启动")
     logger.info(f"API 文档: http://localhost:8000/docs")
     logger.info("=" * 50)
-    logger.info("演示账户: demo@example.com / demo123")
+    logger.info("默认管理员: admin / Admin@123456")
     logger.info("=" * 50)
+
+    await scheduled_scan_runner.start()
 
     yield
 
+    await scheduled_scan_runner.stop()
     logger.info("DeepAudit 后端服务已关闭")
 
 
@@ -124,8 +128,8 @@ async def root():
     return {
         "message": "Welcome to DeepAudit API",
         "docs": "/docs",
-        "demo_account": {
-            "email": "demo@example.com",
-            "password": "demo123"
+        "default_admin": {
+            "username": "admin",
+            "password": "Admin@123456"
         }
     }

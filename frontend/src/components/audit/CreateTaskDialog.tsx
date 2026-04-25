@@ -772,7 +772,7 @@ function ZipUploadCard({
           <div className="flex gap-2 items-center">
             <Input
               type="file"
-              accept=".zip"
+              accept=".zip,.rar,.7z,.tar,.gz,.tgz,.tar.gz"
               onChange={(e) => {
                 const file = e.target.files?.[0];
                 if (file) {
@@ -815,12 +815,12 @@ function ZipUploadCard({
         </div>
         <div className="flex-1">
           <p className="text-sm font-bold text-amber-700 dark:text-amber-300 font-mono uppercase">
-            上传 ZIP 文件
+            上传源码归档
           </p>
           <div className="flex gap-2 items-center mt-2">
             <Input
               type="file"
-              accept=".zip"
+              accept=".zip,.rar,.7z,.tar,.gz,.tgz,.tar.gz"
               onChange={(e) => {
                 const file = e.target.files?.[0];
                 if (file) {

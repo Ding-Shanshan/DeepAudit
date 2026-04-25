@@ -1,13 +1,14 @@
 from typing import Any, List, Optional
 from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks, UploadFile, File
-from fastapi.responses import FileResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy.orm import selectinload
 from pydantic import BaseModel
 from datetime import datetime, timezone
+from pathlib import Path
 import shutil
 import os
+import tempfile
 import uuid
 import json
 
@@ -18,8 +19,16 @@ from app.models.user import User
 from app.models.audit import AuditTask, AuditIssue
 from app.models.agent_task import AgentTask, AgentTaskStatus, AgentFinding
 from app.models.user_config import UserConfig
-import zipfile
-from app.services.scanner import scan_repo_task, get_github_files, get_gitlab_files, get_github_branches, get_gitlab_branches, get_gitea_branches, should_exclude, is_text_file
+from app.core.config import settings
+from app.services.archive_utils import extract_archive_recursive, is_supported_archive
+from app.services.quick_scan import collect_source_files
+from app.services.scanner import (
+    get_github_branches,
+    get_gitlab_branches,
+    get_gitea_branches,
+    materialize_repository_workspace,
+    scan_repo_task,
+)
 from app.services.zip_storage import (
     save_project_zip, load_project_zip, get_project_zip_meta,
     delete_project_zip, has_project_zip
@@ -340,13 +349,13 @@ async def permanently_delete_project(
     if project.owner_id != current_user.id:
         raise HTTPException(status_code=403, detail="无权永久删除此项目")
     
-    # 如果是ZIP类型项目，删除关联的ZIP文件和元数据
+    # 如果是归档类型项目，删除关联文件和元数据
     if project.source_type == "zip":
         try:
             await delete_project_zip(id)
-            print(f"[Project] 已删除项目 {id} 的ZIP文件")
+            print(f"[Project] 已删除项目 {id} 的归档文件")
         except Exception as e:
-            print(f"[Warning] 删除ZIP文件失败: {e}")
+            print(f"[Warning] 删除归档文件失败: {e}")
     
     await db.delete(project)
     await db.commit()
@@ -386,103 +395,75 @@ async def get_project_files(
     files = []
     
     if project.source_type == "zip":
-        # Handle ZIP project
         zip_path = await load_project_zip(id)
-        print(f"📦 ZIP项目 {id} 文件路径: {zip_path}")
         if not zip_path or not os.path.exists(zip_path):
-            print(f"⚠️ ZIP文件不存在: {zip_path}")
             return []
-            
+
+        extract_dir = tempfile.mkdtemp(prefix=f"deepaudit_project_{id}_")
         try:
-            with zipfile.ZipFile(zip_path, 'r') as zip_ref:
-                for file_info in zip_ref.infolist():
-                    if not file_info.is_dir():
-                        name = file_info.filename
-                        # 使用统一的排除逻辑，支持用户自定义排除模式
-                        if should_exclude(name, parsed_exclude_patterns):
-                            continue
-                        # 只显示支持的代码文件
-                        if not is_text_file(name):
-                            continue
-                        files.append({"path": name, "size": file_info.file_size})
+            extract_archive_recursive(zip_path, extract_dir)
+            files = [
+                {"path": item["path"], "size": item["size"]}
+                for item in collect_source_files(
+                    extract_dir,
+                    exclude_patterns=parsed_exclude_patterns,
+                    max_file_size=settings.MAX_FILE_SIZE_BYTES,
+                )
+            ]
         except Exception as e:
-            print(f"Error reading zip file: {e}")
-            raise HTTPException(status_code=500, detail="无法读取项目文件")
+            raise HTTPException(status_code=500, detail=f"无法读取项目归档: {str(e)}")
+        finally:
+            shutil.rmtree(extract_dir, ignore_errors=True)
             
     elif project.source_type == "repository":
-        # Handle Repository project
         if not project.repository_url:
             return []
 
-        # Get tokens from user config
         from sqlalchemy.future import select
         from app.core.encryption import decrypt_sensitive_data
-        from app.core.config import settings
-        from app.services.git_ssh_service import GitSSHOperations
 
-        SENSITIVE_OTHER_FIELDS = ['githubToken', 'gitlabToken', 'sshPrivateKey']
+        SENSITIVE_OTHER_FIELDS = [
+            'githubToken', 'gitlabToken', 'giteaToken', 'sshPrivateKey',
+            'svnUsername', 'svnPassword'
+        ]
 
         result = await db.execute(
             select(UserConfig).where(UserConfig.user_id == current_user.id)
         )
         config = result.scalar_one_or_none()
 
-        github_token = settings.GITHUB_TOKEN
-        gitlab_token = settings.GITLAB_TOKEN
-        ssh_private_key = None
+        other_config = {}
 
         if config and config.other_config:
-            other_config = json.loads(config.other_config)
+            encrypted_other_config = json.loads(config.other_config)
             for field in SENSITIVE_OTHER_FIELDS:
-                if field in other_config and other_config[field]:
-                    decrypted_val = decrypt_sensitive_data(other_config[field])
-                    if field == 'githubToken':
-                        github_token = decrypted_val
-                    elif field == 'gitlabToken':
-                        gitlab_token = decrypted_val
-                    elif field == 'sshPrivateKey':
-                        ssh_private_key = decrypted_val
-
-        # 检查是否为SSH URL
-        is_ssh_url = GitSSHOperations.is_ssh_url(project.repository_url)
+                if field in encrypted_other_config and encrypted_other_config[field]:
+                    other_config[field] = decrypt_sensitive_data(encrypted_other_config[field])
         target_branch = branch or project.default_branch or "main"
 
+        workspace_dir = None
         try:
-            if is_ssh_url:
-                # 使用SSH方式获取文件列表
-                if not ssh_private_key:
-                    raise HTTPException(
-                        status_code=400,
-                        detail="仓库使用SSH URL，但未配置SSH密钥。请先在设置中生成SSH密钥。"
-                    )
-
-                print(f"🔐 使用SSH方式获取文件列表: {project.repository_url}")
-                files_with_content = GitSSHOperations.get_repo_files_via_ssh(
-                    project.repository_url,
-                    ssh_private_key,
-                    target_branch,
-                    parsed_exclude_patterns
+            workspace_dir = await materialize_repository_workspace(
+                project,
+                target_branch,
+                user_config={"otherConfig": other_config},
+                exclude_patterns=parsed_exclude_patterns,
+            )
+            files = [
+                {"path": item["path"], "size": item["size"]}
+                for item in collect_source_files(
+                    workspace_dir,
+                    exclude_patterns=parsed_exclude_patterns,
+                    max_file_size=settings.MAX_FILE_SIZE_BYTES,
                 )
-                files = [{"path": f["path"], "size": len(f.get("content", ""))} for f in files_with_content]
-            else:
-                # 使用API方式获取文件列表
-                repo_type = project.repository_type or "other"
-
-                if repo_type == "github":
-                    # 传入用户自定义排除模式
-                    repo_files = await get_github_files(project.repository_url, target_branch, github_token, parsed_exclude_patterns)
-                    files = [{"path": f["path"], "size": 0} for f in repo_files]
-                elif repo_type == "gitlab":
-                    # 传入用户自定义排除模式
-                    repo_files = await get_gitlab_files(project.repository_url, target_branch, gitlab_token, parsed_exclude_patterns)
-                    files = [{"path": f["path"], "size": 0} for f in repo_files]
-                else:
-                    raise HTTPException(status_code=400, detail="不支持的仓库类型")
+            ]
         except HTTPException:
             raise
         except Exception as e:
-             print(f"Error fetching repo files: {e}")
              raise HTTPException(status_code=500, detail=f"无法获取仓库文件: {str(e)}")
+        finally:
+            if workspace_dir:
+                shutil.rmtree(workspace_dir, ignore_errors=True)
 
     return files
 
@@ -535,7 +516,10 @@ async def scan_project(
         'qwenApiKey', 'deepseekApiKey', 'zhipuApiKey', 'moonshotApiKey',
         'baiduApiKey', 'minimaxApiKey', 'doubaoApiKey'
     ]
-    SENSITIVE_OTHER_FIELDS = ['githubToken', 'gitlabToken']
+    SENSITIVE_OTHER_FIELDS = [
+        'githubToken', 'gitlabToken', 'giteaToken', 'sshPrivateKey',
+        'svnUsername', 'svnPassword'
+    ]
 
     def decrypt_config(config_dict: dict, sensitive_fields: list) -> dict:
         """解密配置中的敏感字段"""
@@ -562,8 +546,11 @@ async def scan_project(
         }
 
     # 将扫描配置注入到 user_config 中，以便 scan_repo_task 使用
-    if scan_request and scan_request.file_paths:
-        user_config['scan_config'] = {'file_paths': scan_request.file_paths}
+    if scan_request:
+        user_config['scan_config'] = {
+            'file_paths': scan_request.file_paths or [],
+            'exclude_patterns': scan_request.exclude_patterns or [],
+        }
 
     # Trigger Background Task
     background_tasks.add_task(scan_repo_task, task.id, AsyncSessionLocal, user_config)
@@ -571,7 +558,7 @@ async def scan_project(
     return {"task_id": task.id, "status": "started"}
 
 
-# ============ ZIP文件管理端点 ============
+# ============ 归档文件管理端点 ============
 
 class ZipFileMetaResponse(BaseModel):
     has_file: bool
@@ -587,13 +574,13 @@ async def get_project_zip_info(
     current_user: User = Depends(deps.get_current_user),
 ) -> Any:
     """
-    获取项目ZIP文件信息
+    获取项目归档文件信息
     """
     project = await db.get(Project, id)
     if not project:
         raise HTTPException(status_code=404, detail="项目不存在")
     
-    # 检查是否有ZIP文件
+    # 检查是否有归档文件
     has_file = await has_project_zip(id)
     if not has_file:
         return {"has_file": False}
@@ -619,7 +606,7 @@ async def upload_project_zip(
     current_user: User = Depends(deps.get_current_user),
 ) -> Any:
     """
-    上传或更新项目ZIP文件
+    上传或更新项目归档文件
     """
     project = await db.get(Project, id)
     if not project:
@@ -631,30 +618,32 @@ async def upload_project_zip(
     
     # 检查项目类型
     if project.source_type != "zip":
-        raise HTTPException(status_code=400, detail="仅ZIP类型项目可以上传ZIP文件")
+        raise HTTPException(status_code=400, detail="仅归档类型项目可以上传源代码归档")
     
-    # 验证文件类型
-    if not file.filename.lower().endswith('.zip'):
-        raise HTTPException(status_code=400, detail="请上传ZIP格式文件")
+    if not file.filename or not is_supported_archive(file.filename):
+        raise HTTPException(status_code=400, detail="请上传 zip、rar、7z、tar、gz、tar.gz 等归档文件")
     
     # 保存到临时文件
     temp_file_id = str(uuid.uuid4())
-    temp_file_path = f"/tmp/{temp_file_id}.zip"
+    temp_file_path = f"/tmp/{temp_file_id}{Path(file.filename).suffix or '.zip'}"
     
     try:
+        total_size = 0
         with open(temp_file_path, "wb") as buffer:
-            shutil.copyfileobj(file.file, buffer)
-        
-        # 检查文件大小
-        file_size = os.path.getsize(temp_file_path)
-        if file_size > 500 * 1024 * 1024:  # 500MB limit
-            raise HTTPException(status_code=400, detail="文件大小不能超过500MB")
+            while True:
+                chunk = file.file.read(1024 * 1024)
+                if not chunk:
+                    break
+                total_size += len(chunk)
+                if total_size > settings.UPLOAD_MAX_SIZE_BYTES:
+                    raise HTTPException(status_code=400, detail="文件大小不能超过2GB")
+                buffer.write(chunk)
         
         # 保存到持久化存储
         meta = await save_project_zip(id, temp_file_path, file.filename)
         
         return {
-            "message": "ZIP文件上传成功",
+            "message": "归档文件上传成功",
             "original_filename": meta["original_filename"],
             "file_size": meta["file_size"],
             "uploaded_at": meta["uploaded_at"]
@@ -672,7 +661,7 @@ async def delete_project_zip_file(
     current_user: User = Depends(deps.get_current_user),
 ) -> Any:
     """
-    删除项目ZIP文件
+    删除项目归档文件
     """
     project = await db.get(Project, id)
     if not project:
@@ -685,9 +674,9 @@ async def delete_project_zip_file(
     deleted = await delete_project_zip(id)
     
     if deleted:
-        return {"message": "ZIP文件已删除"}
+        return {"message": "归档文件已删除"}
     else:
-        return {"message": "没有找到ZIP文件"}
+        return {"message": "没有找到归档文件"}
 
 
 # ============ 分支管理端点 ============
@@ -758,6 +747,8 @@ async def get_project_branches(
             if not gitea_token:
                 print("[Branch] 警告: Gitea Token 未配置，可能无法访问私有仓库")
             branches = await get_gitea_branches(project.repository_url, gitea_token)
+        elif repo_type == "svn":
+            branches = ["trunk"]
         else:
             # 对于其他类型，返回默认分支
             print(f"[Branch] 仓库类型 '{repo_type}' 不支持获取分支，返回默认分支")

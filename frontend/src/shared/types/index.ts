@@ -9,6 +9,7 @@ export interface Option {
 // 用户相关类型
 export interface Profile {
   id: string;
+  username?: string;
   phone?: string;
   email?: string;
   full_name?: string;
@@ -24,7 +25,7 @@ export interface Profile {
 export type ProjectSourceType = 'repository' | 'zip';
 
 // 仓库平台类型
-export type RepositoryPlatform = 'github' | 'gitlab' | 'gitea' | 'other';
+export type RepositoryPlatform = 'github' | 'gitlab' | 'gitea' | 'svn' | 'other';
 
 // 项目相关类型
 export interface Project {
@@ -90,7 +91,7 @@ export interface AuditIssue {
   suggestion?: string;
   code_snippet?: string;
   ai_explanation?: string;
-  status: 'open' | 'resolved' | 'false_positive';
+  status: 'open' | 'pending_review' | 'resolved' | 'false_positive';
   resolved_by?: string;
   resolved_at?: string;
   created_at: string;

@@ -24,6 +24,7 @@ import {
   Building2,
 } from "lucide-react";
 import routes from "@/app/routes";
+import { useAuth } from "@/shared/context/AuthContext";
 import {
   BRAND_COMPANY_NAME,
   BRAND_LOGO_PATH,
@@ -53,8 +54,17 @@ interface SidebarProps {
 export default function Sidebar({ collapsed, setCollapsed }: SidebarProps) {
   const location = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const { user } = useAuth();
 
-  const visibleRoutes = routes.filter((route) => route.visible !== false);
+  const visibleRoutes = routes.filter((route) => {
+    if (route.visible === false) {
+      return false;
+    }
+    if (route.path === "/admin" && user?.role !== "admin") {
+      return false;
+    }
+    return true;
+  });
 
   return (
     <>

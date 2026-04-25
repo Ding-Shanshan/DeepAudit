@@ -12,11 +12,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
-import { Lock, Mail } from "lucide-react";
+import { Lock, UserCircle2 } from "lucide-react";
 import { BRAND_NAME, CONSOLE_HOME_ROUTE } from "@/shared/constants/branding";
 
 export default function Login() {
-  const [email, setEmail] = useState("");
+  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [rememberMe, setRememberMe] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -27,9 +27,9 @@ export default function Login() {
   const from = location.state?.from?.pathname || CONSOLE_HOME_ROUTE;
 
   useEffect(() => {
-    const savedEmail = localStorage.getItem("remembered_email");
-    if (savedEmail) {
-      setEmail(savedEmail);
+    const savedUsername = localStorage.getItem("remembered_username");
+    if (savedUsername) {
+      setUsername(savedUsername);
       setRememberMe(true);
     }
   }, []);
@@ -45,7 +45,7 @@ export default function Login() {
     setLoading(true);
     try {
       const formData = new URLSearchParams();
-      formData.append("username", email);
+      formData.append("username", username);
       formData.append("password", password);
 
       const response = await apiClient.post("/auth/login", formData, {
@@ -55,9 +55,9 @@ export default function Login() {
       });
 
       if (rememberMe) {
-        localStorage.setItem("remembered_email", email);
+        localStorage.setItem("remembered_username", username);
       } else {
-        localStorage.removeItem("remembered_email");
+        localStorage.removeItem("remembered_username");
       }
 
       await login(response.data.access_token, rememberMe);
@@ -70,7 +70,7 @@ export default function Login() {
       } else if (typeof detail === 'object') {
         toast.error(detail.msg || detail.message || JSON.stringify(detail));
       } else {
-        toast.error(detail || "登录失败，请检查邮箱和密码");
+        toast.error(detail || "登录失败，请检查用户名和密码");
       }
     } finally {
       setLoading(false);
@@ -80,36 +80,29 @@ export default function Login() {
   return (
     <AuthShell
       title="欢迎登录"
-      description={`使用你的${BRAND_NAME}账号进入控制台，继续进行项目治理、任务分析和智能安全审计。`}
+      description={`使用本地${BRAND_NAME}账号进入控制台，继续进行项目治理、任务分析和智能安全审计。`}
       footer={
-        <div className="flex items-center justify-between gap-4">
-          <span>还没有账号？</span>
-          <button
-            type="button"
-            className="font-medium text-primary hover:underline"
-            onClick={() => navigate("/register")}
-          >
-            立即注册
-          </button>
+        <div className="rounded-2xl bg-slate-50 px-4 py-3 text-sm leading-6 text-muted-foreground">
+          系统已关闭公开注册。默认管理员账号为 <span className="font-semibold text-foreground">admin</span>，其他用户请由管理员在系统管理中创建。
         </div>
       }
     >
       <form onSubmit={handleSubmit} className="space-y-5">
         <div className="space-y-2">
-          <Label htmlFor="email" className="text-sm font-medium text-foreground">
-            邮箱地址
+          <Label htmlFor="username" className="text-sm font-medium text-foreground">
+            用户名
           </Label>
           <div className="relative">
             <Input
-              id="email"
-              type="email"
-              placeholder="you@company.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              id="username"
+              type="text"
+              placeholder="请输入用户名"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
               required
               className="h-12 pl-11"
             />
-            <Mail className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <UserCircle2 className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           </div>
         </div>
 

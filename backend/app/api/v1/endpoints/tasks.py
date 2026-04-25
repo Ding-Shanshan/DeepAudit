@@ -220,10 +220,15 @@ async def update_issue(
         raise HTTPException(status_code=404, detail="问题不存在")
     
     if issue_update.status:
+        if issue_update.status not in {"open", "pending_review", "resolved", "false_positive"}:
+            raise HTTPException(status_code=400, detail="不支持的问题状态")
         issue.status = issue_update.status
         if issue_update.status == "resolved":
             issue.resolved_by = current_user.id
             issue.resolved_at = datetime.now(timezone.utc)
+        else:
+            issue.resolved_by = None
+            issue.resolved_at = None
     
     await db.commit()
     await db.refresh(issue)

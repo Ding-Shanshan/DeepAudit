@@ -84,7 +84,7 @@ export default function Projects() {
 
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
-  // 编辑对话框中的ZIP文件状态
+  // 编辑对话框中的归档文件状态
   const [editZipInfo, setEditZipInfo] = useState<ZipFileMeta | null>(null);
   const [editZipFile, setEditZipFile] = useState<File | null>(null);
   const [loadingEditZipInfo, setLoadingEditZipInfo] = useState(false);
@@ -98,6 +98,8 @@ export default function Projects() {
       'python': 'Python',
       'java': 'Java',
       'go': 'Go',
+      'objective-c': 'Objective-C',
+      'c': 'C',
       'rust': 'Rust',
       'cpp': 'C++',
       'csharp': 'C#',
@@ -198,7 +200,7 @@ export default function Projects() {
 
   const handleUploadAndCreate = async () => {
     if (!selectedFile) {
-      toast.error("请先选择ZIP文件");
+      toast.error("请先选择归档文件");
       return;
     }
 
@@ -231,14 +233,14 @@ export default function Projects() {
       try {
         await uploadZipFile(project.id, selectedFile);
       } catch (error) {
-        console.error('保存ZIP文件失败:', error);
+        console.error('保存归档文件失败:', error);
       }
 
       clearInterval(progressInterval);
       setUploadProgress(100);
 
       import('@/shared/utils/logger').then(({ logger }) => {
-        logger.logUserAction('上传ZIP文件创建项目', {
+        logger.logUserAction('上传归档文件创建项目', {
           projectName: project.name,
           fileName: selectedFile.name,
           fileSize: selectedFile.size,
@@ -250,14 +252,14 @@ export default function Projects() {
       loadProjects();
 
       toast.success(`项目 "${project.name}" 已创建`, {
-        description: 'ZIP文件已保存，您可以启动代码审计',
+        description: '归档文件已保存，您可以启动代码审计',
         duration: 4000
       });
 
     } catch (error: any) {
       console.error('Upload failed:', error);
       import('@/shared/utils/errorHandler').then(({ handleError }) => {
-        handleError(error, '上传ZIP文件失败');
+        handleError(error, '上传归档文件失败');
       });
       const errorMessage = error?.message || '未知错误';
       toast.error(`上传失败: ${errorMessage}`);
@@ -277,6 +279,7 @@ export default function Projects() {
       case 'github': return <Github className="w-5 h-5" />;
       case 'gitlab': return <GitBranch className="w-5 h-5 text-orange-500" />;
       case 'gitea': return <GitBranch className="w-5 h-5 text-green-600" />;
+      case 'svn': return <GitBranch className="w-5 h-5 text-cyan-500" />;
       case 'other': return <Key className="w-5 h-5 text-cyan-500" />;
       default: return <Folder className="w-5 h-5 text-muted-foreground" />;
     }
@@ -312,7 +315,7 @@ export default function Projects() {
         const zipInfo = await getZipFileInfo(project.id);
         setEditZipInfo(zipInfo);
       } catch (error) {
-        console.error('加载ZIP文件信息失败:', error);
+        console.error('加载归档文件信息失败:', error);
       } finally {
         setLoadingEditZipInfo(false);
       }
@@ -333,9 +336,9 @@ export default function Projects() {
       if (editZipFile && editForm.source_type === 'zip') {
         const result = await uploadZipFile(projectToEdit.id, editZipFile);
         if (result.success) {
-          toast.success(`ZIP文件已更新: ${result.original_filename}`);
+          toast.success(`归档文件已更新: ${result.original_filename}`);
         } else {
-          toast.error(`ZIP文件上传失败: ${result.message}`);
+          toast.error(`归档文件上传失败: ${result.message}`);
         }
       }
 
@@ -528,7 +531,12 @@ export default function Projects() {
                         💡 SSH Key认证请使用 git@ 格式的SSH URL
                       </p>
                     )}
-                    {createForm.repository_type !== 'other' && (
+                    {createForm.repository_type === 'svn' && (
+                      <p className="text-xs text-muted-foreground font-mono">
+                        💡 SVN 仓库请使用 http(s):// 或 svn:// 地址，分支通常填写 trunk
+                      </p>
+                    )}
+                    {createForm.repository_type !== 'other' && createForm.repository_type !== 'svn' && (
                       <p className="text-xs text-muted-foreground font-mono">
                         💡 Token认证请使用 https:// 格式的URL
                       </p>
@@ -653,14 +661,14 @@ export default function Projects() {
                       onClick={() => fileInputRef.current?.click()}
                     >
                       <Upload className="w-10 h-10 text-muted-foreground mx-auto mb-3 group-hover:text-primary transition-colors" />
-                      <h3 className="text-base font-bold text-foreground uppercase mb-1">上传 ZIP 归档</h3>
+                      <h3 className="text-base font-bold text-foreground uppercase mb-1">上传源码归档</h3>
                       <p className="text-xs font-mono text-muted-foreground mb-3">
-                        最大: 500MB // 格式: .ZIP
+                        最大: 2GB // 格式: .zip .rar .7z .tar .gz .tgz .tar.gz
                       </p>
                       <input
                         ref={fileInputRef}
                         type="file"
-                        accept=".zip"
+                        accept=".zip,.rar,.7z,.tar,.gz,.tgz,.tar.gz"
                         onChange={handleFileSelect}
                         className="hidden"
                         disabled={uploading}
@@ -721,6 +729,7 @@ export default function Projects() {
                           <li>确保完整的项目代码</li>
                           <li>移除 node_modules 等依赖目录</li>
                           <li>包含必要的配置文件</li>
+                          <li>支持 zip、rar、7z、tar、gz 等归档格式</li>
                         </ul>
                       </div>
                     </div>
@@ -787,7 +796,7 @@ export default function Projects() {
           <div className="cyber-card p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="stat-label">ZIP上传</p>
+                <p className="stat-label">归档上传</p>
                 <p className="stat-value">{projects.filter(p => isZipProject(p)).length}</p>
               </div>
               <div className="stat-icon text-amber-400">
@@ -972,7 +981,7 @@ export default function Projects() {
               编辑项目配置
               {projectToEdit && (
                 <Badge className={`ml-2 ${editForm.source_type === 'repository' ? 'cyber-badge-info' : 'cyber-badge-warning'}`}>
-                  {editForm.source_type === 'repository' ? '远程仓库' : 'ZIP上传'}
+                  {editForm.source_type === 'repository' ? '远程仓库' : '归档上传'}
                 </Badge>
               )}
             </DialogTitle>
@@ -1029,7 +1038,12 @@ export default function Projects() {
                       💡 SSH Key认证请使用 git@ 格式的SSH URL
                     </p>
                   )}
-                  {editForm.repository_type !== 'other' && (
+                  {editForm.repository_type === 'svn' && (
+                    <p className="text-xs text-muted-foreground font-mono mt-1">
+                      💡 SVN 仓库请使用 http(s):// 或 svn:// 地址，分支通常填写 trunk
+                    </p>
+                  )}
+                  {editForm.repository_type !== 'other' && editForm.repository_type !== 'svn' && (
                     <p className="text-xs text-muted-foreground font-mono mt-1">
                       💡 Token认证请使用 https:// 格式的URL
                     </p>
@@ -1070,25 +1084,25 @@ export default function Projects() {
               </div>
             )}
 
-            {/* ZIP项目文件管理 */}
+            {/* 归档项目文件管理 */}
             {editForm.source_type === 'zip' && (
               <div className="space-y-4">
                 <h3 className="font-mono font-bold uppercase text-sm text-muted-foreground border-b border-border pb-2 flex items-center gap-2">
                   <Upload className="w-4 h-4" />
-                  ZIP文件管理
+                  归档文件管理
                 </h3>
 
                 {loadingEditZipInfo ? (
                   <div className="flex items-center space-x-3 p-4 bg-sky-500/10 border border-sky-500/30 rounded">
                     <div className="loading-spinner w-5 h-5"></div>
-                    <p className="text-sm text-sky-400 font-bold font-mono">正在加载ZIP文件信息...</p>
+                    <p className="text-sm text-sky-400 font-bold font-mono">正在加载归档文件信息...</p>
                   </div>
                 ) : editZipInfo?.has_file ? (
                   <div className="bg-emerald-500/10 border border-emerald-500/30 p-4 rounded">
                     <div className="flex items-start space-x-3">
                       <FileText className="w-5 h-5 text-emerald-400 mt-0.5" />
                       <div className="flex-1 text-sm font-mono">
-                        <p className="font-bold text-emerald-300 mb-1 uppercase">当前存储的ZIP文件</p>
+                        <p className="font-bold text-emerald-300 mb-1 uppercase">当前存储的归档文件</p>
                         <p className="text-emerald-400/80 text-xs">
                           文件名: {editZipInfo.original_filename}
                           {editZipInfo.file_size && (
@@ -1111,9 +1125,9 @@ export default function Projects() {
                     <div className="flex items-start space-x-3">
                       <AlertCircle className="w-5 h-5 text-amber-400 mt-0.5" />
                       <div className="text-sm font-mono">
-                        <p className="font-bold text-amber-300 mb-1 uppercase">暂无ZIP文件</p>
+                        <p className="font-bold text-amber-300 mb-1 uppercase">暂无归档文件</p>
                         <p className="text-amber-400/80 text-xs">
-                          此项目还没有上传ZIP文件，请上传文件以便进行代码审计。
+                          此项目还没有上传归档文件，请上传文件以便进行代码审计。
                         </p>
                       </div>
                     </div>
@@ -1123,12 +1137,12 @@ export default function Projects() {
                 {/* 上传新文件 */}
                 <div className="space-y-2">
                   <Label className="font-mono font-bold uppercase text-xs text-muted-foreground">
-                    {editZipInfo?.has_file ? '更新ZIP文件' : '上传ZIP文件'}
+                    {editZipInfo?.has_file ? '更新归档文件' : '上传归档文件'}
                   </Label>
                   <input
                     ref={editZipInputRef}
                     type="file"
-                    accept=".zip"
+                    accept=".zip,.rar,.7z,.tar,.gz,.tgz,.tar.gz"
                     className="hidden"
                     onChange={(e) => {
                       const file = e.target.files?.[0];
@@ -1170,7 +1184,7 @@ export default function Projects() {
                       className="cyber-btn-outline w-full"
                     >
                       <Upload className="w-4 h-4 mr-2" />
-                      {editZipInfo?.has_file ? '选择新文件替换' : '选择ZIP文件'}
+                      {editZipInfo?.has_file ? '选择新文件替换' : '选择归档文件'}
                     </Button>
                   )}
                 </div>

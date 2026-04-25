@@ -849,16 +849,16 @@ export default function ProjectDetail() {
                 </div>
               )}
 
-              {/* ZIP项目提示 */}
+              {/* 归档项目提示 */}
               {editForm.source_type === 'zip' && (
                 <div className="border-t border-border pt-4">
                   <div className="bg-amber-500/10 border border-amber-500/30 p-4 rounded">
                     <div className="flex items-start space-x-3">
                       <Upload className="w-5 h-5 text-amber-400 mt-0.5" />
                       <div className="text-sm font-mono">
-                        <p className="font-bold text-amber-300 mb-1 uppercase">ZIP上传项目</p>
+                        <p className="font-bold text-amber-300 mb-1 uppercase">归档上传项目</p>
                         <p className="text-amber-400/80 text-xs">
-                          此项目通过ZIP文件上传创建。每次进行代码审计时，需要在创建任务时重新上传ZIP文件。
+                          此项目通过本地归档上传创建。每次进行代码审计时，可以复用已存储归档，也可以重新上传新的源码归档。
                         </p>
                       </div>
                     </div>

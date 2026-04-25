@@ -28,7 +28,7 @@ export default function ZipFileSection({
       <div className="bg-amber-50 border-2 border-black p-4 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
         <div className="flex items-center space-x-3 p-4 bg-blue-50 border-2 border-black">
           <div className="animate-spin rounded-none h-5 w-5 border-4 border-blue-600 border-t-transparent" />
-          <p className="text-sm text-blue-800 font-bold">正在检查ZIP文件...</p>
+          <p className="text-sm text-blue-800 font-bold">正在检查归档文件...</p>
         </div>
       </div>
     );
@@ -75,7 +75,7 @@ function StoredZipView({
         <Info className="w-5 h-5 text-green-600 mt-0.5" />
         <div className="flex-1">
           <p className="font-bold text-green-900 text-sm uppercase">
-            已有存储的ZIP文件
+            已有存储的归档文件
           </p>
           <p className="text-xs text-green-700 mt-1 font-bold">
             文件名: {storedZipInfo.original_filename}
@@ -116,12 +116,12 @@ function StoredZipView({
       {!useStoredZip && (
         <div className="space-y-2 pt-2 border-t border-amber-300">
           <Label htmlFor="zipFile" className="font-bold uppercase">
-            选择新的ZIP文件
+            选择新的归档文件
           </Label>
           <Input
             id="zipFile"
             type="file"
-            accept=".zip"
+            accept=".zip,.rar,.7z,.tar,.gz,.tgz,.tar.gz"
             onChange={(e) => {
               const file = e.target.files?.[0];
               onFileSelect(file || null, e.target);
@@ -150,22 +150,22 @@ function NoStoredZipView({
         <AlertCircle className="w-5 h-5 text-amber-600 mt-0.5" />
         <div>
           <p className="font-bold text-amber-900 text-sm uppercase">
-            需要上传ZIP文件
+            需要上传归档文件
           </p>
           <p className="text-xs text-amber-700 mt-1 font-bold">
-            此项目还没有存储的ZIP文件，请上传文件进行扫描
+            此项目还没有存储的归档文件，请上传文件进行扫描
           </p>
         </div>
       </div>
 
       <div className="space-y-2">
         <Label htmlFor="zipFile" className="font-bold uppercase">
-          上传ZIP文件
+          上传源码归档
         </Label>
         <Input
           id="zipFile"
           type="file"
-          accept=".zip"
+          accept=".zip,.rar,.7z,.tar,.gz,.tgz,.tar.gz"
           onChange={(e) => {
             const file = e.target.files?.[0];
             onFileSelect(file || null, e.target);

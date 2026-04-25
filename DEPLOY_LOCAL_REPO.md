@@ -79,3 +79,36 @@ deepaudit-backend-1    deepaudit-backend:qianduanV1.0-b0cf14f
 ```
 
 如果仍然看到 `ghcr.io/lintsinghua/deepaudit-frontend:latest`，说明你还在使用官方镜像部署链路，而不是本地仓库部署链路。
+
+## V4.0 部署差异
+
+V4.0 仍然沿用 `docker-compose.localrepo.yml` 的部署方式，不新增常驻服务，但镜像内容有几处变化：
+
+- `backend` 镜像新增 `subversion`、`p7zip-full`、`unrar-free` 和 `semgrep`
+  - 用于支持 `svn export`
+  - 用于支持 `.rar/.7z/.tar/.gz/.tgz/.tar.gz` 归档解压
+  - 用于快速扫描的本地规则引擎
+- `frontend/nginx.conf` 的 `client_max_body_size` 已提升到 `2g`
+  - 支持大体积源码归档上传
+- 默认管理员账号固定为：
+  - 用户名：`admin`
+  - 密码：`Admin@123456`
+  - 首次启动后会自动初始化；公开注册已关闭，其他用户需在系统管理页面创建
+
+如果你从旧版本升级，请特别注意：
+
+- 先执行数据库迁移：
+
+```bash
+cd /data/DeepAudit/backend
+alembic upgrade head
+```
+
+- 再执行本地仓库部署脚本或 `docker compose ... up -d --build`
+
+升级完成后，建议额外验证以下内容：
+
+- 能否使用 `admin / Admin@123456` 登录
+- 前端是否允许上传大于 `500MB` 的归档
+- 后端容器内是否可执行 `semgrep --version`
+- SVN、RAR、7Z 等新增能力是否在目标环境可用

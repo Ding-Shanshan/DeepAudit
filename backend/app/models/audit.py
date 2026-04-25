@@ -56,7 +56,7 @@ class AuditIssue(Base):
     code_snippet = Column(Text, nullable=True)  # 问题代码片段
     ai_explanation = Column(Text, nullable=True)  # AI解释（JSON格式的xai字段）
     
-    status = Column(String, default="open")  # open, resolved, false_positive
+    status = Column(String, default="open")  # open, pending_review, resolved, false_positive
     resolved_by = Column(String, ForeignKey("users.id"), nullable=True)
     resolved_at = Column(DateTime(timezone=True), nullable=True)
     

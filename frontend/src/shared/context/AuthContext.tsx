@@ -3,8 +3,9 @@ import { apiClient } from '../api/serverClient';
 
 interface User {
   id: string;
-  email: string;
-  full_name: string;
+  username: string;
+  email?: string;
+  full_name?: string;
   role: string;
   avatar_url?: string;
 }
@@ -86,4 +87,3 @@ export const useAuth = () => {
   }
   return context;
 };
-

@@ -1,0 +1,54 @@
+rules:
+  - id: deepaudit.python.sql-injection
+    languages: [python]
+    severity: ERROR
+    message: Python SQL 语句中可能拼接了不可信输入
+    patterns:
+      - pattern-either:
+          - pattern: $CURSOR.execute("..." + $INPUT)
+          - pattern: $CURSOR.execute(f"...{$INPUT}...")
+
+  - id: deepaudit.java.command-injection
+    languages: [java]
+    severity: ERROR
+    message: Java 中直接执行系统命令，可能存在命令注入
+    pattern-either:
+      - pattern: Runtime.getRuntime().exec(...)
+      - pattern: new ProcessBuilder(...)
+
+  - id: deepaudit.javascript.xss
+    languages: [javascript, typescript]
+    severity: ERROR
+    message: 前端直接写入 innerHTML，可能造成 XSS
+    pattern-either:
+      - pattern: $EL.innerHTML = $VALUE
+      - pattern: dangerouslySetInnerHTML
+
+  - id: deepaudit.php.path-traversal
+    languages: [php]
+    severity: WARNING
+    message: PHP 文件操作中直接使用外部输入，可能存在路径遍历
+    patterns:
+      - pattern-either:
+          - pattern: include($_GET[...])
+          - pattern: require($_GET[...])
+          - pattern: file_get_contents($_GET[...])
+
+  - id: deepaudit.go.ssrf
+    languages: [go]
+    severity: WARNING
+    message: Go 中动态 URL 请求可能引入 SSRF
+    patterns:
+      - pattern-either:
+          - pattern: http.Get($URL)
+          - pattern: http.Post($URL, ...)
+
+  - id: deepaudit.c.buffer-overflow
+    languages: [c, cpp]
+    severity: ERROR
+    message: C/C++ 中使用不安全字符串函数，可能导致缓冲区溢出
+    pattern-either:
+      - pattern: strcpy(...)
+      - pattern: strcat(...)
+      - pattern: gets(...)
+      - pattern: sprintf(...)

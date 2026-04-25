@@ -1,7 +1,17 @@
 import { apiClient } from "@/shared/api/serverClient";
 
+const SUPPORTED_ARCHIVE_EXTENSIONS = [
+  ".zip",
+  ".rar",
+  ".7z",
+  ".tar",
+  ".gz",
+  ".tgz",
+  ".tar.gz",
+];
+
 /**
- * 上传ZIP文件并启动扫描
+ * 上传归档文件并启动扫描
  */
 export async function scanZipFile(params: {
   projectId: string;
@@ -60,15 +70,15 @@ export async function scanStoredZipFile(params: {
 }
 
 export function validateZipFile(file: File): { valid: boolean; error?: string } {
-  // 检查文件类型
-  if (!file.type.includes('zip') && !file.name.toLowerCase().endsWith('.zip')) {
-    return { valid: false, error: '请上传ZIP格式的文件' };
+  const normalizedName = file.name.toLowerCase();
+  const isSupported = SUPPORTED_ARCHIVE_EXTENSIONS.some((ext) => normalizedName.endsWith(ext));
+  if (!isSupported) {
+    return { valid: false, error: '请上传 zip、rar、7z、tar、gz、tgz、tar.gz 等归档文件' };
   }
 
-  // 检查文件大小 (限制为500MB)
-  const maxSize = 500 * 1024 * 1024;
+  const maxSize = 2 * 1024 * 1024 * 1024;
   if (file.size > maxSize) {
-    return { valid: false, error: '文件大小不能超过500MB' };
+    return { valid: false, error: '文件大小不能超过2GB' };
   }
 
   return { valid: true };

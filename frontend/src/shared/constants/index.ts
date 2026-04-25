@@ -7,6 +7,8 @@ export const SUPPORTED_LANGUAGES = [
   'python',
   'java',
   'go',
+  'objective-c',
+  'c',
   'rust',
   'cpp',
   'csharp',

@@ -1,6 +1,5 @@
 from typing import Any, List, Optional
 from fastapi import APIRouter, Body, Depends, HTTPException, Query
-from fastapi.encoders import jsonable_encoder
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy import func, or_
@@ -32,6 +31,7 @@ async def read_users(
     # 搜索条件
     if search:
         search_filter = or_(
+            User.username.ilike(f"%{search}%"),
             User.email.ilike(f"%{search}%"),
             User.full_name.ilike(f"%{search}%"),
             User.phone.ilike(f"%{search}%")
@@ -75,15 +75,22 @@ async def create_user(
     """
     创建新用户（仅管理员）
     """
-    result = await db.execute(select(User).where(User.email == user_in.email))
+    result = await db.execute(select(User).where(User.username == user_in.username))
     user = result.scalars().first()
     if user:
         raise HTTPException(
             status_code=400,
-            detail="该邮箱已被注册",
+            detail="用户名已存在",
         )
+
+    if user_in.email:
+        email_result = await db.execute(select(User).where(User.email == user_in.email))
+        email_user = email_result.scalars().first()
+        if email_user:
+            raise HTTPException(status_code=400, detail="该邮箱已被占用")
     
     db_user = User(
+        username=user_in.username,
         email=user_in.email,
         hashed_password=security.get_password_hash(user_in.password),
         full_name=user_in.full_name,
@@ -122,6 +129,8 @@ async def update_user_me(
     update_data.pop('role', None)
     update_data.pop('is_superuser', None)
     update_data.pop('is_active', None)
+    update_data.pop('username', None)
+    update_data.pop('email', None)
     
     # 如果更新密码
     if 'password' in update_data and update_data['password']:
@@ -167,6 +176,18 @@ async def update_user(
         raise HTTPException(status_code=404, detail="用户不存在")
     
     update_data = user_in.model_dump(exclude_unset=True)
+
+    if "username" in update_data and update_data["username"] != user.username:
+        username_result = await db.execute(select(User).where(User.username == update_data["username"]))
+        username_user = username_result.scalars().first()
+        if username_user:
+            raise HTTPException(status_code=400, detail="用户名已存在")
+
+    if "email" in update_data and update_data["email"] and update_data["email"] != user.email:
+        email_result = await db.execute(select(User).where(User.email == update_data["email"]))
+        email_user = email_result.scalars().first()
+        if email_user:
+            raise HTTPException(status_code=400, detail="该邮箱已被占用")
     
     # 如果更新密码
     if 'password' in update_data and update_data['password']:
@@ -222,7 +243,6 @@ async def toggle_user_status(
     await db.commit()
     await db.refresh(user)
     return user
-
 
 
 
