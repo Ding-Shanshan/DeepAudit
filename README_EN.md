@@ -310,7 +310,9 @@ sudo systemctl restart docker
 
 </details>
 
-> **Started successfully?** Open http://localhost:3000 to begin.
+> **Started successfully?** On a LAN deployment, open `https://<server-lan-ip>:3000` to begin.
+
+> The frontend container automatically generates a self-signed HTTPS certificate. Browser warnings about the certificate not being trusted are expected for this LAN setup; choose to continue to the site.
 
 ---
 

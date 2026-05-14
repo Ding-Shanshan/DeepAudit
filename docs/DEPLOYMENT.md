@@ -30,9 +30,11 @@ cp backend/env.example backend/.env
 docker compose up -d
 
 # 4. 访问应用
-# 前端: http://localhost:3000
+# 前端: https://localhost:3000
 # 后端 API: http://localhost:8000/docs
 ```
+
+> 前端容器默认使用自签 HTTPS 证书。局域网 IP 访问时，浏览器提示证书不受信任是预期现象，选择继续访问即可。
 
 ### 演示账户
 
@@ -105,16 +107,18 @@ docker compose logs -f
 
 | 服务 | 端口 | 说明 |
 |------|------|------|
-| `frontend` | 3000 | React 前端应用（生产构建） |
+| `frontend` | 3000 | React 前端应用（自签 HTTPS） |
 | `backend` | 8000 | FastAPI 后端 API |
 | `db` | 5432 | PostgreSQL 15 数据库 |
 
 ### 访问地址
 
-- 前端应用: http://localhost:3000
+- 前端应用: https://localhost:3000（局域网访问使用 `https://<服务器局域网IP>:3000`）
 - 后端 API: http://localhost:8000
 - API 文档 (Swagger): http://localhost:8000/docs
 - API 文档 (ReDoc): http://localhost:8000/redoc
+
+> 前端 HTTPS 证书由容器自动生成，无需手动准备证书。浏览器提示证书不受信任时继续访问即可。
 
 ### 常用命令
 
@@ -219,7 +223,7 @@ docker compose logs -f backend | grep -i agent
 
 Docker Compose 默认配置已适用于生产环境：
 
-- 前端：构建生产版本，使用 serve 提供静态文件服务
+- 前端：构建生产版本，使用 Nginx 提供自签 HTTPS 静态文件服务
 - 后端：使用 uv 管理依赖，镜像内包含所有依赖
 - 数据库：使用 Docker Volume 持久化数据
 
@@ -253,9 +257,11 @@ server {
 
     # 前端
     location / {
-        proxy_pass http://localhost:3000;
+        proxy_pass https://localhost:3000;
+        proxy_ssl_verify off;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-Proto $scheme;
     }
 
     # API 代理

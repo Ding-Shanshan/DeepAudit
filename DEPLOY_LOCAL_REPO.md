@@ -80,9 +80,9 @@ deepaudit-backend-1    deepaudit-backend:qianduanV1.0-b0cf14f
 
 如果仍然看到 `ghcr.io/lintsinghua/deepaudit-frontend:latest`，说明你还在使用官方镜像部署链路，而不是本地仓库部署链路。
 
-## V4.0 部署差异
+## V5.0 部署差异
 
-V4.0 仍然沿用 `docker-compose.localrepo.yml` 的部署方式，不新增常驻服务，但镜像内容有几处变化：
+V5.0 仍然沿用 `docker-compose.localrepo.yml` 和 `scripts/deploy-local-repo.sh` 的部署方式，不新增常驻服务、不改变外部端口 `3000`，但镜像内容有几处变化：
 
 - `backend` 镜像新增 `subversion`、`p7zip-full`、`unrar-free` 和 `semgrep`
   - 用于支持 `svn export`
@@ -90,6 +90,10 @@ V4.0 仍然沿用 `docker-compose.localrepo.yml` 的部署方式，不新增常�
   - 用于快速扫描的本地规则引擎
 - `frontend/nginx.conf` 的 `client_max_body_size` 已提升到 `2g`
   - 支持大体积源码归档上传
+- `frontend` 容器启动时会自动生成局域网自签 HTTPS 证书
+  - 无需手动准备证书或修改部署脚本
+  - 访问地址改为 `https://<服务器局域网IP>:3000`
+  - 浏览器提示证书不受信任是预期现象，选择继续访问即可
 - 默认管理员账号固定为：
   - 用户名：`admin`
   - 密码：`Admin@123456`

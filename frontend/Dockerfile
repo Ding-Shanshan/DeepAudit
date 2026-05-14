@@ -40,9 +40,12 @@ ENV VITE_API_BASE_URL=__API_BASE_URL__
 RUN pnpm build
 
 # =============================================
-# 生产镜像 - 使用 Nginx (支持 SSE 反向代理)
+# 生产镜像 - 使用 Nginx (支持 HTTPS + SSE 反向代理)
 # =============================================
 FROM nginx:alpine
+
+# 生成局域网自签 HTTPS 证书需要 openssl
+RUN apk add --no-cache openssl
 
 # 复制构建产物
 COPY --from=builder /app/dist /usr/share/nginx/html

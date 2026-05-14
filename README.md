@@ -307,7 +307,9 @@ sudo systemctl restart docker
 
 </details>
 
-> 🎉 **启动成功！** 访问 http://localhost:3000 开始体验。
+> 🎉 **启动成功！** 局域网环境访问 `https://<服务器局域网IP>:3000` 开始体验。
+
+> DeepAudit 前端容器会自动生成自签 HTTPS 证书，无需手动准备证书。浏览器提示“证书不受信任”是局域网自签证书的预期现象，选择继续访问即可。
 
 ---
 
