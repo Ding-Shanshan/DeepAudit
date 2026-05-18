@@ -14,6 +14,7 @@ class ScheduledScan(Base):
     project_id = Column(String, ForeignKey("projects.id"), nullable=False)
     created_by = Column(String, ForeignKey("users.id"), nullable=False)
     name = Column(String(200), nullable=False)
+    scan_mode = Column(String(20), nullable=False, default="fast")
     branch_name = Column(String, nullable=True)
     interval_minutes = Column(Integer, nullable=False, default=60)
     time_window_start = Column(String(5), nullable=True)

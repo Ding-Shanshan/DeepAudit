@@ -1,6 +1,6 @@
 import json
 from datetime import datetime, time, timedelta, timezone
-from typing import Any, List, Optional
+from typing import Any, List, Literal, Optional
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -106,6 +106,7 @@ def _calculate_next_run_at(
 class ScheduledScanBase(BaseModel):
     project_id: str
     name: str
+    scan_mode: Literal["fast", "agent"] = "fast"
     branch_name: Optional[str] = None
     interval_minutes: int = Field(default=60, ge=1, le=10080)
     time_window_start: Optional[str] = None
@@ -124,6 +125,7 @@ class ScheduledScanCreate(ScheduledScanBase):
 
 class ScheduledScanUpdate(BaseModel):
     name: Optional[str] = None
+    scan_mode: Optional[Literal["fast", "agent"]] = None
     branch_name: Optional[str] = None
     interval_minutes: Optional[int] = Field(default=None, ge=1, le=10080)
     time_window_start: Optional[str] = None
@@ -153,6 +155,7 @@ def _serialize_schedule(item: ScheduledScan) -> ScheduledScanResponse:
         id=item.id,
         project_id=item.project_id,
         name=item.name,
+        scan_mode=item.scan_mode or "fast",
         branch_name=item.branch_name,
         interval_minutes=item.interval_minutes,
         time_window_start=item.time_window_start,
@@ -204,6 +207,7 @@ async def create_schedule(
         project_id=payload.project_id,
         created_by=current_user.id,
         name=payload.name,
+        scan_mode=payload.scan_mode or "fast",
         branch_name=payload.branch_name,
         interval_minutes=payload.interval_minutes,
         time_window_start=payload.time_window_start,

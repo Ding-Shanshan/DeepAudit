@@ -46,6 +46,7 @@ type ScheduledScan = {
   id: string;
   project_id: string;
   name: string;
+  scan_mode?: "fast" | "agent";
   branch_name?: string;
   interval_minutes: number;
   time_window_start?: string;
@@ -106,6 +107,7 @@ export default function AdminDashboard() {
   const [scheduleForm, setScheduleForm] = useState({
     project_id: "",
     name: "",
+    scan_mode: "fast",
     branch_name: "main",
     interval_minutes: "60",
     time_window_start: "00:00",
@@ -260,6 +262,7 @@ export default function AdminDashboard() {
       await apiClient.post("/schedules", {
         project_id: scheduleForm.project_id,
         name: scheduleForm.name,
+        scan_mode: scheduleForm.scan_mode,
         branch_name: scheduleForm.branch_name || null,
         interval_minutes: Number(scheduleForm.interval_minutes || 60),
         time_window_start: scheduleForm.time_window_start || null,
@@ -273,6 +276,7 @@ export default function AdminDashboard() {
       setScheduleForm((prev) => ({
         ...prev,
         name: "",
+        scan_mode: "fast",
         branch_name: "main",
         interval_minutes: "60",
         time_window_start: "00:00",
@@ -563,6 +567,18 @@ export default function AdminDashboard() {
                 <Input value={scheduleForm.name} onChange={(e) => setScheduleForm((prev) => ({ ...prev, name: e.target.value }))} className="cyber-input" />
               </div>
               <div className="space-y-2">
+                <Label>审计模式</Label>
+                <Select value={scheduleForm.scan_mode} onValueChange={(value) => setScheduleForm((prev) => ({ ...prev, scan_mode: value }))}>
+                  <SelectTrigger className="cyber-input">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="cyber-dialog border-border">
+                    <SelectItem value="fast">快速审计</SelectItem>
+                    <SelectItem value="agent">Agent 审计</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
                 <Label>分支</Label>
                 <Input value={scheduleForm.branch_name} onChange={(e) => setScheduleForm((prev) => ({ ...prev, branch_name: e.target.value }))} className="cyber-input" />
               </div>
@@ -614,6 +630,7 @@ export default function AdminDashboard() {
                 <TableHeader>
                   <TableRow>
                     <TableHead>名称</TableHead>
+                    <TableHead>模式</TableHead>
                     <TableHead>项目</TableHead>
                     <TableHead>周期</TableHead>
                     <TableHead>时间段</TableHead>
@@ -625,16 +642,21 @@ export default function AdminDashboard() {
                 <TableBody>
                   {loadingSchedules ? (
                     <TableRow>
-                      <TableCell colSpan={7} className="text-center text-muted-foreground">加载中...</TableCell>
+                      <TableCell colSpan={8} className="text-center text-muted-foreground">加载中...</TableCell>
                     </TableRow>
                   ) : schedules.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={7} className="text-center text-muted-foreground">暂无计划</TableCell>
+                      <TableCell colSpan={8} className="text-center text-muted-foreground">暂无计划</TableCell>
                     </TableRow>
                   ) : (
                     schedules.map((item) => (
                       <TableRow key={item.id}>
                         <TableCell className="font-semibold">{item.name}</TableCell>
+                        <TableCell>
+                          <Badge className={item.scan_mode === "agent" ? "cyber-badge-muted" : "cyber-badge-success"}>
+                            {item.scan_mode === "agent" ? "Agent 审计" : "快速审计"}
+                          </Badge>
+                        </TableCell>
                         <TableCell>{projects.find((project) => project.id === item.project_id)?.name || item.project_id}</TableCell>
                         <TableCell>{item.interval_minutes} 分钟</TableCell>
                         <TableCell>{item.time_window_start && item.time_window_end ? `${item.time_window_start}-${item.time_window_end}` : "全天"}</TableCell>

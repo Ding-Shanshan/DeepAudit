@@ -38,13 +38,13 @@ docker compose up -d
 
 ### V6.0 升级注意事项
 
-V6.0 新增了定时扫描时间窗口字段，并会在启动时补种系统知识库。升级旧环境时请先执行数据库迁移：
+V6.0 新增了定时扫描时间窗口字段和扫描模式字段，并会在启动时补种系统知识库。Docker Compose 部署会通过 `db-migrate` 服务或后端启动脚本自动执行数据库迁移；本地非 Docker 部署或需要手动恢复时，可执行：
 
 ```bash
 docker compose exec backend .venv/bin/alembic upgrade head
 ```
 
-本地非 Docker 部署可执行：
+如果是在后端源码目录中执行：
 
 ```bash
 cd backend
@@ -53,7 +53,8 @@ alembic upgrade head
 
 升级后建议验证：
 
-- 快速扫描高级选项是否可设置扫描周期和允许扫描时间段
+- 快速扫描和 Agent 审计高级选项是否可设置扫描周期和允许扫描时间段
+- 系统管理中的定时扫描是否可选择并显示“快速审计 / Agent 审计”
 - 系统管理创建用户时“姓名”是否可留空
 - 系统管理知识库是否自动出现内置通用漏洞知识
 - Agent 审计启动页是否显示 `TopSec Audit`

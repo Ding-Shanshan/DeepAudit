@@ -8,6 +8,7 @@ import asyncio
 import json
 import logging
 from datetime import datetime, time, timedelta, timezone
+from typing import Any
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from sqlalchemy import select
@@ -15,6 +16,7 @@ from sqlalchemy import select
 from app.core.encryption import decrypt_sensitive_data
 from app.db.session import AsyncSessionLocal
 from app.models.audit import AuditTask
+from app.models.agent_task import AgentTask, AgentTaskPhase, AgentTaskStatus
 from app.models.project import Project
 from app.models.scheduled_scan import ScheduledScan
 from app.models.user_config import UserConfig
@@ -130,6 +132,25 @@ def _calculate_next_run_at(schedule: ScheduledScan, base: datetime) -> datetime:
     return _next_allowed_time(schedule, candidate)
 
 
+def _json_list(value: str | None) -> list[str]:
+    if not value:
+        return []
+    try:
+        parsed = json.loads(value)
+    except (TypeError, json.JSONDecodeError):
+        return []
+    return parsed if isinstance(parsed, list) else []
+
+
+def _schedule_scan_mode(schedule: ScheduledScan) -> str:
+    return "agent" if getattr(schedule, "scan_mode", "fast") == "agent" else "fast"
+
+
+def _agent_task_name(schedule: ScheduledScan, now: datetime) -> str:
+    local_now = now.astimezone(_zoneinfo(getattr(schedule, "timezone", None)))
+    return f"{schedule.name}-{local_now.strftime('%Y%m%d_%H%M%S')}"
+
+
 class ScheduledScanRunner:
     def __init__(self) -> None:
         self._task: asyncio.Task | None = None
@@ -162,6 +183,7 @@ class ScheduledScanRunner:
 
     async def run_once(self) -> None:
         now = datetime.now(timezone.utc)
+        pending_jobs: list[dict[str, Any]] = []
         async with AsyncSessionLocal() as db:
             result = await db.execute(
                 select(ScheduledScan).where(
@@ -181,49 +203,115 @@ class ScheduledScanRunner:
                     schedule.next_run_at = _next_allowed_time(schedule, now)
                     continue
 
-                task = AuditTask(
-                    project_id=project.id,
-                    created_by=schedule.created_by,
-                    task_type="scheduled_scan",
-                    status="pending",
-                    branch_name=schedule.branch_name or project.default_branch or "main",
-                    exclude_patterns=schedule.exclude_patterns or "[]",
-                    scan_config=json.dumps(
-                        {
-                            "file_paths": json.loads(schedule.file_paths or "[]"),
-                            "exclude_patterns": json.loads(schedule.exclude_patterns or "[]"),
+                file_paths = _json_list(schedule.file_paths)
+                exclude_patterns = _json_list(schedule.exclude_patterns)
+
+                if _schedule_scan_mode(schedule) == "agent":
+                    task = AgentTask(
+                        project_id=project.id,
+                        created_by=schedule.created_by,
+                        name=_agent_task_name(schedule, now),
+                        status=AgentTaskStatus.PENDING,
+                        current_phase=AgentTaskPhase.PLANNING,
+                        audit_scope={
                             "scheduled_scan_id": schedule.id,
-                            "rule_set_id": schedule.rule_set_id,
-                            "prompt_template_id": schedule.prompt_template_id,
-                        }
-                    ),
-                )
-                db.add(task)
-                await db.flush()
-
-                user_config = await _load_user_config(schedule.created_by)
-                user_config["scan_config"] = {
-                    "file_paths": json.loads(schedule.file_paths or "[]"),
-                    "exclude_patterns": json.loads(schedule.exclude_patterns or "[]"),
-                    "rule_set_id": schedule.rule_set_id,
-                    "prompt_template_id": schedule.prompt_template_id,
-                }
-
-                if project.source_type == "zip":
-                    archive_path = await load_project_zip(project.id)
-                    if archive_path:
-                        from app.api.v1.endpoints.scan import process_zip_task
-
-                        asyncio.create_task(
-                            process_zip_task(task.id, archive_path, AsyncSessionLocal, user_config)
-                        )
+                            "schedule_name": schedule.name,
+                        },
+                        target_vulnerabilities=[
+                            "sql_injection",
+                            "xss",
+                            "command_injection",
+                            "path_traversal",
+                            "ssrf",
+                        ],
+                        verification_level="sandbox",
+                        branch_name=(
+                            schedule.branch_name or project.default_branch or "main"
+                            if project.source_type == "repository"
+                            else None
+                        ),
+                        exclude_patterns=exclude_patterns,
+                        target_files=file_paths or None,
+                        max_iterations=50,
+                        timeout_seconds=1800,
+                    )
+                    db.add(task)
+                    await db.flush()
+                    pending_jobs.append({"mode": "agent", "task_id": task.id})
                 else:
-                    asyncio.create_task(scan_repo_task(task.id, AsyncSessionLocal, user_config))
+                    task = AuditTask(
+                        project_id=project.id,
+                        created_by=schedule.created_by,
+                        task_type="scheduled_scan",
+                        status="pending",
+                        branch_name=schedule.branch_name or project.default_branch or "main",
+                        exclude_patterns=schedule.exclude_patterns or "[]",
+                        scan_config=json.dumps(
+                            {
+                                "file_paths": file_paths,
+                                "exclude_patterns": exclude_patterns,
+                                "scheduled_scan_id": schedule.id,
+                                "rule_set_id": schedule.rule_set_id,
+                                "prompt_template_id": schedule.prompt_template_id,
+                            }
+                        ),
+                    )
+                    db.add(task)
+                    await db.flush()
+
+                    user_config = await _load_user_config(schedule.created_by)
+                    user_config["scan_config"] = {
+                        "file_paths": file_paths,
+                        "exclude_patterns": exclude_patterns,
+                        "rule_set_id": schedule.rule_set_id,
+                        "prompt_template_id": schedule.prompt_template_id,
+                    }
+
+                    if project.source_type == "zip":
+                        archive_path = await load_project_zip(project.id)
+                        if archive_path:
+                            pending_jobs.append(
+                                {
+                                    "mode": "zip",
+                                    "task_id": task.id,
+                                    "archive_path": archive_path,
+                                    "user_config": user_config,
+                                }
+                            )
+                    else:
+                        pending_jobs.append(
+                            {
+                                "mode": "fast",
+                                "task_id": task.id,
+                                "user_config": user_config,
+                            }
+                        )
 
                 schedule.last_run_at = now
                 schedule.next_run_at = _calculate_next_run_at(schedule, now)
 
             await db.commit()
+
+        for job in pending_jobs:
+            if job["mode"] == "agent":
+                from app.api.v1.endpoints.agent_tasks import _execute_agent_task
+
+                asyncio.create_task(_execute_agent_task(job["task_id"]))
+            elif job["mode"] == "zip":
+                from app.api.v1.endpoints.scan import process_zip_task
+
+                asyncio.create_task(
+                    process_zip_task(
+                        job["task_id"],
+                        job["archive_path"],
+                        AsyncSessionLocal,
+                        job["user_config"],
+                    )
+                )
+            else:
+                asyncio.create_task(
+                    scan_repo_task(job["task_id"], AsyncSessionLocal, job["user_config"])
+                )
 
 
 scheduled_scan_runner = ScheduledScanRunner()

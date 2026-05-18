@@ -14,7 +14,9 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Switch } from "@/components/ui/switch";
 import {
   Collapsible,
   CollapsibleContent,
@@ -40,9 +42,11 @@ import {
   Play,
   Upload,
   FolderOpen,
+  CalendarClock,
 } from "lucide-react";
 import { toast } from "sonner";
 import { api } from "@/shared/config/database";
+import { apiClient } from "@/shared/api/serverClient";
 import { createAgentTask } from "@/shared/api/agentTasks";
 import { isRepositoryProject, isZipProject } from "@/shared/utils/projectUtils";
 import { getZipFileInfo, type ZipFileMeta } from "@/shared/utils/zipStorage";
@@ -80,6 +84,10 @@ export default function CreateAgentTaskDialog({
   const [excludePatterns, setExcludePatterns] = useState(DEFAULT_EXCLUDES);
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [creating, setCreating] = useState(false);
+  const [scheduleEnabled, setScheduleEnabled] = useState(false);
+  const [scheduleIntervalMinutes, setScheduleIntervalMinutes] = useState("1440");
+  const [scheduleWindowStart, setScheduleWindowStart] = useState("00:00");
+  const [scheduleWindowEnd, setScheduleWindowEnd] = useState("23:59");
 
   // ZIP 文件状态
   const [zipFile, setZipFile] = useState<File | null>(null);
@@ -114,6 +122,10 @@ export default function CreateAgentTaskDialog({
       setZipFile(null);
       setStoredZipInfo(null);
       setSelectedFiles(undefined);
+      setScheduleEnabled(false);
+      setScheduleIntervalMinutes("1440");
+      setScheduleWindowStart("00:00");
+      setScheduleWindowEnd("23:59");
     }
   }, [open]);
 
@@ -193,6 +205,17 @@ export default function CreateAgentTaskDialog({
   // 创建任务
   const handleCreate = async () => {
     if (!selectedProject) return;
+    if (scheduleEnabled) {
+      const intervalMinutes = Number(scheduleIntervalMinutes);
+      if (!Number.isFinite(intervalMinutes) || intervalMinutes < 1) {
+        toast.error("扫描周期必须大于 0");
+        return;
+      }
+      if (!scheduleWindowStart || !scheduleWindowEnd) {
+        toast.error("请设置完整的扫描时间段");
+        return;
+      }
+    }
 
     setCreating(true);
     try {
@@ -205,8 +228,35 @@ export default function CreateAgentTaskDialog({
         verification_level: "sandbox",
       });
 
+      let scheduleError: string | null = null;
+      if (scheduleEnabled) {
+        try {
+          await apiClient.post("/schedules", {
+            project_id: selectedProject.id,
+            name: `定时Agent审计-${selectedProject.name}`,
+            scan_mode: "agent",
+            branch_name: isRepositoryProject(selectedProject) ? branch : null,
+            interval_minutes: Number(scheduleIntervalMinutes),
+            time_window_start: scheduleWindowStart,
+            time_window_end: scheduleWindowEnd,
+            timezone: "Asia/Shanghai",
+            file_paths: selectedFiles || [],
+            exclude_patterns: excludePatterns,
+            is_active: true,
+          });
+        } catch (error) {
+          scheduleError = error instanceof Error ? error.message : "创建定时计划失败";
+        }
+      }
+
       onOpenChange(false);
-      toast.success("Agent 审计任务已创建");
+      if (scheduleError) {
+        toast.warning(`Agent 审计任务已创建，但定时计划创建失败: ${scheduleError}`);
+      } else if (scheduleEnabled) {
+        toast.success("Agent 审计任务已创建，定时计划已创建");
+      } else {
+        toast.success("Agent 审计任务已创建");
+      }
       navigate(`/agent-audit/${agentTask.id}`);
     } catch (err) {
       const msg = err instanceof Error ? err.message : "创建失败";
@@ -470,6 +520,51 @@ export default function CreateAgentTaskDialog({
                         }
                       }}
                     />
+                  </div>
+
+                  <div className="p-3 border border-dashed border-border rounded bg-muted/50 space-y-3">
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="flex items-center gap-2">
+                        <CalendarClock className="w-4 h-4 text-primary" />
+                        <span className="font-mono text-xs uppercase font-bold text-muted-foreground">
+                          Scheduled Audit
+                        </span>
+                      </div>
+                      <Switch checked={scheduleEnabled} onCheckedChange={setScheduleEnabled} />
+                    </div>
+
+                    {scheduleEnabled && (
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                        <div className="space-y-1.5">
+                          <Label className="text-xs">Interval (min)</Label>
+                          <Input
+                            type="number"
+                            min="1"
+                            value={scheduleIntervalMinutes}
+                            onChange={(e) => setScheduleIntervalMinutes(e.target.value)}
+                            className="h-9 cyber-input text-sm"
+                          />
+                        </div>
+                        <div className="space-y-1.5">
+                          <Label className="text-xs">Start</Label>
+                          <Input
+                            type="time"
+                            value={scheduleWindowStart}
+                            onChange={(e) => setScheduleWindowStart(e.target.value)}
+                            className="h-9 cyber-input text-sm"
+                          />
+                        </div>
+                        <div className="space-y-1.5">
+                          <Label className="text-xs">End</Label>
+                          <Input
+                            type="time"
+                            value={scheduleWindowEnd}
+                            onChange={(e) => setScheduleWindowEnd(e.target.value)}
+                            className="h-9 cyber-input text-sm"
+                          />
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </CollapsibleContent>
               </Collapsible>

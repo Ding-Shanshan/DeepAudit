@@ -182,7 +182,7 @@ Users only need to import a project, and DeepAudit automatically starts the work
 ## V6.0 Highlights
 
 - **Faster quick scans**: quick scan now defaults to a pure local rule engine instead of implicitly invoking LLM review; file discovery prunes excluded directories early and rule matching uses precompiled patterns with parallel file processing.
-- **Scheduled scans**: quick-scan creation supports recurring scan intervals and allowed scan windows in Advanced Options. The current scan starts immediately, while future scans are saved as a schedule.
+- **Scheduled scans**: quick-scan and Agent audit creation support recurring scan intervals and allowed scan windows in Advanced Options. The current scan starts immediately, while future scans are saved with the selected scan mode.
 - **Brand update**: the Agent audit splash screen now displays `TopSec Audit`.
 - **Admin improvements**: full name is optional when creating users; the system knowledge base is seeded with built-in general vulnerability knowledge.
 - **Dialog fix**: file selection in Advanced Options stays centered and no longer jitters in the lower-right corner.

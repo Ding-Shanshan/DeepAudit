@@ -216,7 +216,7 @@ export default function CreateTaskDialog({
   }, [excludePatterns]);
 
   const createScheduleIfEnabled = async (project: Project) => {
-    if (!scheduleEnabled || auditMode === "agent") {
+    if (!scheduleEnabled) {
       return null;
     }
 
@@ -230,7 +230,8 @@ export default function CreateTaskDialog({
 
     const response = await apiClient.post("/schedules", {
       project_id: project.id,
-      name: `定时扫描-${project.name}`,
+      name: auditMode === "agent" ? `定时Agent审计-${project.name}` : `定时扫描-${project.name}`,
+      scan_mode: auditMode,
       branch_name: isRepositoryProject(project) ? branch : null,
       interval_minutes: intervalMinutes,
       time_window_start: scheduleWindowStart,
@@ -238,8 +239,8 @@ export default function CreateTaskDialog({
       timezone: "Asia/Shanghai",
       file_paths: selectedFiles || [],
       exclude_patterns: excludePatterns,
-      rule_set_id: selectedRuleSetId || null,
-      prompt_template_id: selectedPromptTemplateId || null,
+      rule_set_id: auditMode === "fast" ? selectedRuleSetId || null : null,
+      prompt_template_id: auditMode === "fast" ? selectedPromptTemplateId || null : null,
       is_active: true,
     });
 
@@ -251,7 +252,7 @@ export default function CreateTaskDialog({
       toast.error("请选择项目");
       return;
     }
-    if (auditMode !== "agent" && scheduleEnabled) {
+    if (scheduleEnabled) {
       const intervalMinutes = Number(scheduleIntervalMinutes);
       if (!Number.isFinite(intervalMinutes) || intervalMinutes < 1) {
         toast.error("扫描周期必须大于 0");
@@ -277,14 +278,28 @@ export default function CreateTaskDialog({
           verification_level: "sandbox",
         });
 
+        let scheduleError: string | null = null;
+        try {
+          await createScheduleIfEnabled(selectedProject);
+        } catch (error) {
+          scheduleError = error instanceof Error ? error.message : "创建定时计划失败";
+        }
+
         onOpenChange(false);
         onTaskCreated();
-        toast.success("Agent 审计任务已创建");
+        if (scheduleError) {
+          toast.warning(`Agent 审计任务已创建，但定时计划创建失败: ${scheduleError}`);
+        } else if (scheduleEnabled) {
+          toast.success("Agent 审计任务已创建，定时计划已创建");
+        } else {
+          toast.success("Agent 审计任务已创建");
+        }
         navigate(`/agent-audit/${agentTask.id}`);
 
         setSelectedProjectId("");
         setSelectedFiles(undefined);
         setExcludePatterns(DEFAULT_EXCLUDES);
+        setScheduleEnabled(false);
         return;
       }
 
@@ -666,52 +681,50 @@ export default function CreateTaskDialog({
                       );
                     })()}
 
-                    {auditMode !== "agent" && (
-                      <div className="p-3 border border-dashed border-border rounded bg-muted/50 space-y-3">
-                        <div className="flex items-center justify-between gap-3">
-                          <div className="flex items-center gap-2">
-                            <CalendarClock className="w-4 h-4 text-primary" />
-                            <span className="font-mono text-xs uppercase font-bold text-muted-foreground">
-                              定时扫描
-                            </span>
-                          </div>
-                          <Switch checked={scheduleEnabled} onCheckedChange={setScheduleEnabled} />
+                    <div className="p-3 border border-dashed border-border rounded bg-muted/50 space-y-3">
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="flex items-center gap-2">
+                          <CalendarClock className="w-4 h-4 text-primary" />
+                          <span className="font-mono text-xs uppercase font-bold text-muted-foreground">
+                            定时扫描
+                          </span>
                         </div>
-
-                        {scheduleEnabled && (
-                          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                            <div className="space-y-1.5">
-                              <Label className="text-xs">周期（分钟）</Label>
-                              <Input
-                                type="number"
-                                min="1"
-                                value={scheduleIntervalMinutes}
-                                onChange={(e) => setScheduleIntervalMinutes(e.target.value)}
-                                className="h-9 cyber-input text-sm"
-                              />
-                            </div>
-                            <div className="space-y-1.5">
-                              <Label className="text-xs">开始时间</Label>
-                              <Input
-                                type="time"
-                                value={scheduleWindowStart}
-                                onChange={(e) => setScheduleWindowStart(e.target.value)}
-                                className="h-9 cyber-input text-sm"
-                              />
-                            </div>
-                            <div className="space-y-1.5">
-                              <Label className="text-xs">结束时间</Label>
-                              <Input
-                                type="time"
-                                value={scheduleWindowEnd}
-                                onChange={(e) => setScheduleWindowEnd(e.target.value)}
-                                className="h-9 cyber-input text-sm"
-                              />
-                            </div>
-                          </div>
-                        )}
+                        <Switch checked={scheduleEnabled} onCheckedChange={setScheduleEnabled} />
                       </div>
-                    )}
+
+                      {scheduleEnabled && (
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                          <div className="space-y-1.5">
+                            <Label className="text-xs">周期（分钟）</Label>
+                            <Input
+                              type="number"
+                              min="1"
+                              value={scheduleIntervalMinutes}
+                              onChange={(e) => setScheduleIntervalMinutes(e.target.value)}
+                              className="h-9 cyber-input text-sm"
+                            />
+                          </div>
+                          <div className="space-y-1.5">
+                            <Label className="text-xs">开始时间</Label>
+                            <Input
+                              type="time"
+                              value={scheduleWindowStart}
+                              onChange={(e) => setScheduleWindowStart(e.target.value)}
+                              className="h-9 cyber-input text-sm"
+                            />
+                          </div>
+                          <div className="space-y-1.5">
+                            <Label className="text-xs">结束时间</Label>
+                            <Input
+                              type="time"
+                              value={scheduleWindowEnd}
+                              onChange={(e) => setScheduleWindowEnd(e.target.value)}
+                              className="h-9 cyber-input text-sm"
+                            />
+                          </div>
+                        </div>
+                      )}
+                    </div>
                   </CollapsibleContent>
                 </Collapsible>
               </div>
