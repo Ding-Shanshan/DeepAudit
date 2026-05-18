@@ -80,6 +80,39 @@ deepaudit-backend-1    deepaudit-backend:qianduanV1.0-b0cf14f
 
 如果仍然看到 `ghcr.io/lintsinghua/deepaudit-frontend:latest`，说明你还在使用官方镜像部署链路，而不是本地仓库部署链路。
 
+## V6.0 部署差异
+
+V6.0 仍然沿用 `docker-compose.localrepo.yml` 和 `scripts/deploy-local-repo.sh` 的部署方式，不新增外部端口，但需要执行最新数据库迁移以添加定时扫描窗口字段：
+
+```bash
+cd /data/DeepAudit/backend
+alembic upgrade head
+```
+
+V6.0 镜像内容和运行行为有以下变化：
+
+- 快速扫描默认改为纯规则引擎：
+  - 默认不再隐式调用 LLM 精查，适合批量快速检测
+  - 后端会提前剪枝排除目录，并行执行本地规则扫描
+- 创建快速扫描任务时，高级选项新增定时扫描：
+  - 支持扫描周期
+  - 支持允许扫描时间段
+  - 本次扫描立即启动，后续扫描由计划任务自动生成
+- 系统管理：
+  - 创建用户时“姓名”可留空
+  - 知识库启动时会幂等补种内置通用漏洞知识
+- Agent 审计启动页品牌显示为 `TopSec Audit`
+- 前端文件选择弹窗修复居中定位，不再在右下角抖动
+
+升级完成后，建议额外验证：
+
+- 创建快速扫描任务时是否能保存定时扫描计划
+- 时间窗口外的定时扫描是否会顺延到下一个允许时间
+- 系统管理创建用户时是否允许姓名为空
+- 系统管理知识库是否已有内置漏洞知识条目
+- Agent 审计入口是否显示 `TopSec Audit`
+- 高级选项中的“选择文件”弹窗是否居中
+
 ## V5.0 部署差异
 
 V5.0 仍然沿用 `docker-compose.localrepo.yml` 和 `scripts/deploy-local-repo.sh` 的部署方式，不新增常驻服务、不改变外部端口 `3000`，但镜像内容有几处变化：

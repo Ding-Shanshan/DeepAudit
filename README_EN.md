@@ -179,6 +179,14 @@ Users only need to import a project, and DeepAudit automatically starts the work
 
 > **Core philosophy**: Let AI attack like a hacker and defend like an expert.
 
+## V6.0 Highlights
+
+- **Faster quick scans**: quick scan now defaults to a pure local rule engine instead of implicitly invoking LLM review; file discovery prunes excluded directories early and rule matching uses precompiled patterns with parallel file processing.
+- **Scheduled scans**: quick-scan creation supports recurring scan intervals and allowed scan windows in Advanced Options. The current scan starts immediately, while future scans are saved as a schedule.
+- **Brand update**: the Agent audit splash screen now displays `TopSec Audit`.
+- **Admin improvements**: full name is optional when creating users; the system knowledge base is seeded with built-in general vulnerability knowledge.
+- **Dialog fix**: file selection in Advanced Options stays centered and no longer jitters in the lower-right corner.
+
 ## Why Choose DeepAudit?
 
 <div align="center">
@@ -474,11 +482,14 @@ Supports API relay/proxy endpoints to address network access issues. See [LLM Pl
 | **Agent deep audit** | Multi-Agent collaboration with autonomous audit strategy orchestration | Agent |
 | **RAG knowledge enhancement** | Code semantic understanding with CWE/CVE knowledge-base retrieval | Agent |
 | **Sandbox PoC verification** | Docker-isolated execution to verify exploitability | Agent |
+| **Pure-rule quick scan** | Local rule-engine scan, no default LLM calls, suitable for fast batch detection | General |
+| **Scheduled scan** | Recurring scan interval and allowed scan window for automatic follow-up tasks | General |
 | **Project management** | GitHub/GitLab/Gitea import, ZIP upload, 10+ language support | General |
 | **Instant analysis** | Analyze code snippets in seconds by pasting them directly | General |
 | **Five-dimensional inspection** | Bug / Security / Performance / Style / Maintainability | General |
 | **What-Why-How** | Precise issue location, root-cause explanation, and remediation suggestions | General |
 | **Audit rules** | Built-in OWASP Top 10 with support for custom rule sets | General |
+| **Vulnerability knowledge base** | Seeds public general vulnerability knowledge and supports admin maintenance | General |
 | **Prompt templates** | Visual management with bilingual support | General |
 | **Report export** | One-click export to PDF / Markdown / JSON | General |
 | **Runtime configuration** | Configure LLM settings in the browser without restarting services | General |

@@ -1,6 +1,6 @@
 # 部署指南
 
-本文档详细介绍 DeepAudit v3.0.0 的各种部署方式，包括 Docker Compose 一键部署、Agent 审计模式部署和本地开发环境搭建。
+本文档详细介绍 DeepAudit V6.0 的各种部署方式，包括 Docker Compose 一键部署、Agent 审计模式部署和本地开发环境搭建。
 
 ## 目录
 
@@ -35,6 +35,28 @@ docker compose up -d
 ```
 
 > 前端容器默认使用自签 HTTPS 证书。局域网 IP 访问时，浏览器提示证书不受信任是预期现象，选择继续访问即可。
+
+### V6.0 升级注意事项
+
+V6.0 新增了定时扫描时间窗口字段，并会在启动时补种系统知识库。升级旧环境时请先执行数据库迁移：
+
+```bash
+docker compose exec backend .venv/bin/alembic upgrade head
+```
+
+本地非 Docker 部署可执行：
+
+```bash
+cd backend
+alembic upgrade head
+```
+
+升级后建议验证：
+
+- 快速扫描高级选项是否可设置扫描周期和允许扫描时间段
+- 系统管理创建用户时“姓名”是否可留空
+- 系统管理知识库是否自动出现内置通用漏洞知识
+- Agent 审计启动页是否显示 `TopSec Audit`
 
 ### 演示账户
 
@@ -144,7 +166,7 @@ docker compose exec db psql -U postgres -d deepaudit
 
 ## Agent 审计模式部署
 
-v3.0.0 新增的 Multi-Agent 深度审计功能，需要额外的服务支持。
+Multi-Agent 深度审计功能需要额外的服务支持。
 
 ### 功能特点
 

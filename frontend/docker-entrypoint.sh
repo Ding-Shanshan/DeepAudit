@@ -5,7 +5,7 @@ CERT_DIR="${DEEPAUDIT_HTTPS_CERT_DIR:-/etc/nginx/certs}"
 CERT_FILE="${CERT_DIR}/deepaudit.crt"
 KEY_FILE="${CERT_DIR}/deepaudit.key"
 CERT_DAYS="${DEEPAUDIT_HTTPS_CERT_DAYS:-3650}"
-CERT_CN="${DEEPAUDIT_HTTPS_CERT_CN:-DeepAudit Local HTTPS}"
+CERT_CN="${DEEPAUDIT_HTTPS_CERT_CN:-TopSec Audit Local HTTPS}"
 
 is_ipv4() {
   case "$1" in
