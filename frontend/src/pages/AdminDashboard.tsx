@@ -48,6 +48,9 @@ type ScheduledScan = {
   name: string;
   branch_name?: string;
   interval_minutes: number;
+  time_window_start?: string;
+  time_window_end?: string;
+  timezone?: string;
   exclude_patterns: string[];
   file_paths: string[];
   is_active: boolean;
@@ -105,6 +108,9 @@ export default function AdminDashboard() {
     name: "",
     branch_name: "main",
     interval_minutes: "60",
+    time_window_start: "00:00",
+    time_window_end: "23:59",
+    timezone: "Asia/Shanghai",
     file_paths: "",
     exclude_patterns: "",
     is_active: true,
@@ -187,14 +193,14 @@ export default function AdminDashboard() {
   }, [projects, scheduleForm.project_id]);
 
   const handleCreateUser = async () => {
-    if (!userForm.username || !userForm.full_name || !userForm.password) {
-      toast.error("请填写用户名、姓名和密码");
+    if (!userForm.username || !userForm.password) {
+      toast.error("请填写用户名和密码");
       return;
     }
     try {
       await apiClient.post("/users/", {
         username: userForm.username,
-        full_name: userForm.full_name,
+        full_name: userForm.full_name || null,
         password: userForm.password,
         email: userForm.email || null,
         role: userForm.role,
@@ -256,6 +262,9 @@ export default function AdminDashboard() {
         name: scheduleForm.name,
         branch_name: scheduleForm.branch_name || null,
         interval_minutes: Number(scheduleForm.interval_minutes || 60),
+        time_window_start: scheduleForm.time_window_start || null,
+        time_window_end: scheduleForm.time_window_end || null,
+        timezone: scheduleForm.timezone || "Asia/Shanghai",
         file_paths: parseCommaList(scheduleForm.file_paths),
         exclude_patterns: parseCommaList(scheduleForm.exclude_patterns),
         is_active: scheduleForm.is_active,
@@ -266,6 +275,9 @@ export default function AdminDashboard() {
         name: "",
         branch_name: "main",
         interval_minutes: "60",
+        time_window_start: "00:00",
+        time_window_end: "23:59",
+        timezone: "Asia/Shanghai",
         file_paths: "",
         exclude_patterns: "",
         is_active: true,
@@ -416,7 +428,7 @@ export default function AdminDashboard() {
                 <Input value={userForm.username} onChange={(e) => setUserForm((prev) => ({ ...prev, username: e.target.value }))} className="cyber-input" />
               </div>
               <div className="space-y-2">
-                <Label>姓名</Label>
+                <Label>姓名（可选）</Label>
                 <Input value={userForm.full_name} onChange={(e) => setUserForm((prev) => ({ ...prev, full_name: e.target.value }))} className="cyber-input" />
               </div>
               <div className="space-y-2">
@@ -559,6 +571,18 @@ export default function AdminDashboard() {
                 <Input type="number" min="1" value={scheduleForm.interval_minutes} onChange={(e) => setScheduleForm((prev) => ({ ...prev, interval_minutes: e.target.value }))} className="cyber-input" />
               </div>
               <div className="space-y-2">
+                <Label>允许开始时间</Label>
+                <Input type="time" value={scheduleForm.time_window_start} onChange={(e) => setScheduleForm((prev) => ({ ...prev, time_window_start: e.target.value }))} className="cyber-input" />
+              </div>
+              <div className="space-y-2">
+                <Label>允许结束时间</Label>
+                <Input type="time" value={scheduleForm.time_window_end} onChange={(e) => setScheduleForm((prev) => ({ ...prev, time_window_end: e.target.value }))} className="cyber-input" />
+              </div>
+              <div className="space-y-2">
+                <Label>时区</Label>
+                <Input value={scheduleForm.timezone} onChange={(e) => setScheduleForm((prev) => ({ ...prev, timezone: e.target.value }))} className="cyber-input" />
+              </div>
+              <div className="space-y-2">
                 <Label>限定文件（逗号分隔）</Label>
                 <Input value={scheduleForm.file_paths} onChange={(e) => setScheduleForm((prev) => ({ ...prev, file_paths: e.target.value }))} className="cyber-input" placeholder="cmd/main.go,src/App.tsx" />
               </div>
@@ -592,6 +616,7 @@ export default function AdminDashboard() {
                     <TableHead>名称</TableHead>
                     <TableHead>项目</TableHead>
                     <TableHead>周期</TableHead>
+                    <TableHead>时间段</TableHead>
                     <TableHead>状态</TableHead>
                     <TableHead>下次执行</TableHead>
                     <TableHead className="text-right">操作</TableHead>
@@ -600,11 +625,11 @@ export default function AdminDashboard() {
                 <TableBody>
                   {loadingSchedules ? (
                     <TableRow>
-                      <TableCell colSpan={6} className="text-center text-muted-foreground">加载中...</TableCell>
+                      <TableCell colSpan={7} className="text-center text-muted-foreground">加载中...</TableCell>
                     </TableRow>
                   ) : schedules.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={6} className="text-center text-muted-foreground">暂无计划</TableCell>
+                      <TableCell colSpan={7} className="text-center text-muted-foreground">暂无计划</TableCell>
                     </TableRow>
                   ) : (
                     schedules.map((item) => (
@@ -612,6 +637,7 @@ export default function AdminDashboard() {
                         <TableCell className="font-semibold">{item.name}</TableCell>
                         <TableCell>{projects.find((project) => project.id === item.project_id)?.name || item.project_id}</TableCell>
                         <TableCell>{item.interval_minutes} 分钟</TableCell>
+                        <TableCell>{item.time_window_start && item.time_window_end ? `${item.time_window_start}-${item.time_window_end}` : "全天"}</TableCell>
                         <TableCell>
                           <Badge className={item.is_active ? "cyber-badge-success" : "cyber-badge-danger"}>
                             {item.is_active ? "启用" : "停用"}

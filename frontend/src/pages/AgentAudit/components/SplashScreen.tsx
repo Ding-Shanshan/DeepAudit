@@ -6,6 +6,7 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { Shield, Zap } from "lucide-react";
+import { BRAND_AGENT_AUDIT_NAME } from "@/shared/constants/branding";
 
 interface SplashScreenProps {
   onComplete: () => void;
@@ -13,12 +14,14 @@ interface SplashScreenProps {
 
 // Enhanced boot sequence messages with icons
 const BOOT_SEQUENCE = [
-  { text: "[INIT] Loading Tianrongxin Audit Core...", delay: 0, type: 'init' },
+  { text: "[INIT] Loading TopSec Audit Core...", delay: 0, type: 'init' },
   { text: "[SCAN] Neural Analysis Engine v3.0", delay: 200, type: 'scan' },
   { text: "[LOAD] Vulnerability Pattern Database", delay: 400, type: 'load' },
   { text: "[SYNC] Agent Orchestration Module", delay: 600, type: 'sync' },
   { text: "[READY] System Online", delay: 800, type: 'ready' },
 ];
+
+const [BRAND_AGENT_PRIMARY, BRAND_AGENT_SECONDARY = "Audit"] = BRAND_AGENT_AUDIT_NAME.split(" ");
 
 // Available commands
 const COMMANDS: Record<string, { action: string; output?: string }> = {
@@ -234,17 +237,17 @@ export function SplashScreen({ onComplete }: SplashScreenProps) {
               <div
                 className="text-5xl sm:text-6xl md:text-7xl font-bold tracking-wider mb-3 font-mono relative logo-text"
               >
-                <span className="text-primary">DEEP</span>
-                <span className="text-gray-800 dark:text-white">AUDIT</span>
+                <span className="text-primary">{BRAND_AGENT_PRIMARY}</span>
+                <span className="text-gray-800 dark:text-white"> {BRAND_AGENT_SECONDARY}</span>
               </div>
               {/* Glitch layers - dark mode only, opacity controlled by CSS */}
               <div className="glitch-layer glitch-layer-1 text-5xl sm:text-6xl md:text-7xl font-bold tracking-wider font-mono absolute top-0 left-0 w-full opacity-0 dark:opacity-0">
-                <span className="text-cyan-500">DEEP</span>
-                <span className="text-white">AUDIT</span>
+                <span className="text-cyan-500">{BRAND_AGENT_PRIMARY}</span>
+                <span className="text-white"> {BRAND_AGENT_SECONDARY}</span>
               </div>
               <div className="glitch-layer glitch-layer-2 text-5xl sm:text-6xl md:text-7xl font-bold tracking-wider font-mono absolute top-0 left-0 w-full opacity-0 dark:opacity-0">
-                <span className="text-red-500">DEEP</span>
-                <span className="text-white">AUDIT</span>
+                <span className="text-red-500">{BRAND_AGENT_PRIMARY}</span>
+                <span className="text-white"> {BRAND_AGENT_SECONDARY}</span>
               </div>
             </div>
             {/* Subtitle - adaptive styling */}
@@ -282,7 +285,7 @@ export function SplashScreen({ onComplete }: SplashScreenProps) {
               <div className="flex-1 flex items-center justify-center gap-2">
                 <span className="text-primary/60 text-xs">▶</span>
                 <span className="text-xs text-gray-500 dark:text-gray-400 font-mono tracking-[0.15em] uppercase">
-                  ops@tianrongxin:~#
+                  ops@topsec:~#
                 </span>
                 <span className="w-2 h-4 bg-primary/80 animate-pulse" />
               </div>

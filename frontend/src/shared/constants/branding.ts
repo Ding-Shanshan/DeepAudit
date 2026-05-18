@@ -1,4 +1,5 @@
 export const BRAND_NAME = "天融信AI代码审计平台";
+export const BRAND_AGENT_AUDIT_NAME = "TopSec Audit";
 export const BRAND_COMPANY_NAME = "北京天融信网络安全技术有限公司";
 export const BRAND_TAGLINE = "企业级智能代码安全运营平台";
 export const BRAND_DESCRIPTION =

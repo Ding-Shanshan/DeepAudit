@@ -48,7 +48,7 @@ async def init_db(db: AsyncSession) -> None:
     """初始化数据库。"""
     logger.info("开始初始化数据库...")
 
-    await create_default_admin(db)
+    admin_user = await create_default_admin(db)
     await db.commit()
 
     try:
@@ -57,5 +57,13 @@ async def init_db(db: AsyncSession) -> None:
         await init_templates_and_rules(db)
     except Exception as exc:
         logger.warning("初始化模板和规则跳过: %s", exc)
+
+    try:
+        if admin_user:
+            from app.services.init_knowledge import init_builtin_knowledge_entries
+
+            await init_builtin_knowledge_entries(db, admin_user.id)
+    except Exception as exc:
+        logger.warning("初始化知识库跳过: %s", exc)
 
     logger.info("数据库初始化完成")

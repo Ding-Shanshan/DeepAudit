@@ -18,7 +18,7 @@ class UserBase(BaseModel):
 class UserCreate(UserBase):
     username: str
     password: str
-    full_name: str
+    full_name: Optional[str] = None
 
 class UserUpdate(UserBase):
     password: Optional[str] = None
@@ -39,7 +39,6 @@ class UserListResponse(BaseModel):
     total: int
     skip: int
     limit: int
-
 
 
 

@@ -6,9 +6,11 @@ from __future__ import annotations
 
 import fnmatch
 import json
+import os
 import re
 import shutil
 import subprocess
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 from typing import Any
 
@@ -29,8 +31,8 @@ TEXT_EXTENSIONS = {
     ".swift": "swift",
     ".m": "objective-c",
     ".mm": "objective-c",
-    ".c": "c",
-    ".h": "c",
+    ".c": "cpp",
+    ".h": "cpp",
     ".cpp": "cpp",
     ".cc": "cpp",
     ".cxx": "cpp",
@@ -43,6 +45,7 @@ TEXT_EXTENSIONS = {
     ".yaml": "yaml",
     ".yml": "yaml",
     ".json": "json",
+    ".sql": "sql",
     ".xml": "xml",
     ".gradle": "gradle",
     ".tf": "terraform",
@@ -211,10 +214,28 @@ def get_language_from_path(path: str | Path) -> str:
 
 
 def should_exclude(path: str | Path, exclude_patterns: list[str] | None = None) -> bool:
-    normalized = normalize_path(path)
-    for pattern in DEFAULT_EXCLUDES + (exclude_patterns or []):
-        if fnmatch.fnmatch(normalized, pattern) or pattern in normalized:
+    normalized = normalize_path(path).lstrip("./")
+    normalized_with_slashes = f"/{normalized.strip('/')}/"
+
+    for raw_pattern in DEFAULT_EXCLUDES + (exclude_patterns or []):
+        pattern = normalize_path(raw_pattern).strip().lstrip("./")
+        if not pattern:
+            continue
+
+        if (
+            fnmatch.fnmatch(normalized, pattern)
+            or fnmatch.fnmatch(Path(normalized).name, pattern)
+            or pattern in normalized
+        ):
             return True
+
+        directory_pattern = pattern
+        if directory_pattern.endswith("/**"):
+            directory_pattern = directory_pattern[:-3]
+        directory_pattern = directory_pattern.rstrip("/")
+        if directory_pattern and f"/{directory_pattern}/" in normalized_with_slashes:
+            return True
+
     return False
 
 
@@ -243,28 +264,53 @@ def collect_source_files(
     max_size = max_file_size if max_file_size is not None else settings.MAX_FILE_SIZE_BYTES
     files = []
 
-    for file_path in workspace.rglob("*"):
-        if not file_path.is_file():
-            continue
-
-        relative_path = normalize_path(file_path.relative_to(workspace))
+    def append_if_supported(file_path: Path, relative_path: str) -> None:
         if should_exclude(relative_path, exclude_patterns):
-            continue
+            return
         if target_set and relative_path not in target_set:
-            continue
+            return
         if not is_text_file(file_path):
-            continue
-        if file_path.stat().st_size > max_size:
-            continue
+            return
+
+        try:
+            stat = file_path.stat()
+        except OSError:
+            return
+        if stat.st_size > max_size:
+            return
 
         files.append(
             {
                 "path": relative_path,
                 "absolute_path": str(file_path),
                 "language": get_language_from_path(file_path),
-                "size": file_path.stat().st_size,
+                "size": stat.st_size,
             }
         )
+
+    if target_set:
+        for relative_path in sorted(target_set):
+            if Path(relative_path).is_absolute() or ".." in Path(relative_path).parts:
+                continue
+            append_if_supported(workspace / relative_path, relative_path)
+        return sorted(files, key=lambda item: item["path"])
+
+    for root, dirnames, filenames in os.walk(workspace):
+        root_path = Path(root)
+        relative_root = "" if root_path == workspace else normalize_path(root_path.relative_to(workspace))
+        dirnames[:] = [
+            dirname
+            for dirname in dirnames
+            if not should_exclude(
+                f"{relative_root}/{dirname}" if relative_root else dirname,
+                exclude_patterns,
+            )
+        ]
+
+        for filename in filenames:
+            file_path = root_path / filename
+            relative_path = normalize_path(file_path.relative_to(workspace))
+            append_if_supported(file_path, relative_path)
 
     return sorted(files, key=lambda item: item["path"])
 
@@ -272,6 +318,8 @@ def collect_source_files(
 def run_semgrep_scan(
     workspace_dir: str | Path,
     source_files: list[dict[str, Any]],
+    exclude_patterns: list[str] | None = None,
+    timeout_seconds: int = 120,
 ) -> list[dict[str, Any]]:
     if not shutil.which("semgrep"):
         return []
@@ -280,6 +328,7 @@ def run_semgrep_scan(
     if not rules_path.exists():
         return []
 
+    workspace = Path(workspace_dir)
     source_set = {item["path"] for item in source_files}
     command = [
         "semgrep",
@@ -288,15 +337,27 @@ def run_semgrep_scan(
         "--quiet",
         "--config",
         str(rules_path),
-        str(workspace_dir),
     ]
-    result = subprocess.run(
-        command,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        text=True,
-        check=False,
-    )
+
+    for pattern in DEFAULT_EXCLUDES + (exclude_patterns or []):
+        command.extend(["--exclude", pattern])
+
+    if 0 < len(source_files) <= 200:
+        command.extend(str(Path(item["absolute_path"])) for item in source_files)
+    else:
+        command.append(str(workspace))
+
+    try:
+        result = subprocess.run(
+            command,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+            check=False,
+            timeout=timeout_seconds,
+        )
+    except subprocess.TimeoutExpired:
+        return []
     if result.returncode not in {0, 1}:
         return []
 
@@ -308,6 +369,12 @@ def run_semgrep_scan(
     findings = []
     for item in payload.get("results", []):
         relative_path = normalize_path(item.get("path", ""))
+        item_path = Path(relative_path)
+        if item_path.is_absolute():
+            try:
+                relative_path = normalize_path(item_path.relative_to(workspace))
+            except ValueError:
+                continue
         if relative_path not in source_set:
             continue
         line_number = int(item.get("start", {}).get("line", 1))
@@ -329,43 +396,74 @@ def run_semgrep_scan(
     return findings
 
 
-def run_pattern_scan(source_files: list[dict[str, Any]]) -> list[dict[str, Any]]:
+def _compiled_pattern_rules() -> list[dict[str, Any]]:
+    compiled_rules = []
+    for rule in PATTERN_RULES:
+        compiled = rule.get("compiled_patterns")
+        if compiled is None:
+            compiled = [re.compile(pattern, re.IGNORECASE) for pattern in rule["patterns"]]
+            rule["compiled_patterns"] = compiled
+        compiled_rules.append({**rule, "compiled_patterns": compiled})
+    return compiled_rules
+
+
+def _scan_single_file_for_patterns(
+    source_file: dict[str, Any],
+    compiled_rules: list[dict[str, Any]],
+) -> list[dict[str, Any]]:
+    path = Path(source_file["absolute_path"])
+    try:
+        lines = path.read_text(errors="ignore").splitlines()
+    except OSError:
+        source_file["line_count"] = 0
+        return []
+
+    source_file["line_count"] = len(lines)
     findings = []
     seen = set()
 
-    for source_file in source_files:
-        path = Path(source_file["absolute_path"])
-        try:
-            lines = path.read_text(errors="ignore").splitlines()
-        except OSError:
-            continue
+    for index, line in enumerate(lines, start=1):
+        for rule in compiled_rules:
+            if source_file["language"] not in rule["languages"]:
+                continue
+            for pattern in rule["compiled_patterns"]:
+                if pattern.search(line):
+                    key = (rule["rule_id"], source_file["path"], index)
+                    if key in seen:
+                        continue
+                    seen.add(key)
+                    findings.append(
+                        {
+                            "tool": "pattern",
+                            "rule_id": rule["rule_id"],
+                            "title": rule["title"],
+                            "issue_type": rule["issue_type"],
+                            "severity": rule["severity"],
+                            "file_path": source_file["path"],
+                            "line_number": index,
+                            "column_number": None,
+                            "description": f"命中规则 {rule['rule_id']}，请复核该行及上下文是否构成真实风险。",
+                            "suggestion": rule["suggestion"],
+                            "code_snippet": "\n".join(lines[max(0, index - 3): min(len(lines), index + 2)]),
+                        }
+                    )
+                    break
+    return findings
 
-        for index, line in enumerate(lines, start=1):
-            for rule in PATTERN_RULES:
-                if source_file["language"] not in rule["languages"]:
-                    continue
-                for pattern in rule["patterns"]:
-                    if re.search(pattern, line, re.IGNORECASE):
-                        key = (rule["rule_id"], source_file["path"], index)
-                        if key in seen:
-                            continue
-                        seen.add(key)
-                        findings.append(
-                            {
-                                "tool": "pattern",
-                                "rule_id": rule["rule_id"],
-                                "title": rule["title"],
-                                "issue_type": rule["issue_type"],
-                                "severity": rule["severity"],
-                                "file_path": source_file["path"],
-                                "line_number": index,
-                                "column_number": None,
-                                "description": f"命中规则 {rule['rule_id']}，请复核该行及上下文是否构成真实风险。",
-                                "suggestion": rule["suggestion"],
-                                "code_snippet": "\n".join(lines[max(0, index - 3): min(len(lines), index + 2)]),
-                            }
-                        )
-                        break
+
+def run_pattern_scan(source_files: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    findings = []
+    compiled_rules = _compiled_pattern_rules()
+    max_workers = min(32, (os.cpu_count() or 4) + 4, max(1, len(source_files)))
+
+    with ThreadPoolExecutor(max_workers=max_workers) as executor:
+        futures = [
+            executor.submit(_scan_single_file_for_patterns, source_file, compiled_rules)
+            for source_file in source_files
+        ]
+        for future in as_completed(futures):
+            findings.extend(future.result())
+
     return findings
 
 

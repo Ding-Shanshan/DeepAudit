@@ -7,7 +7,8 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, time, timedelta, timezone
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from sqlalchemy import select
 
@@ -21,6 +22,8 @@ from app.services.scanner import scan_repo_task
 from app.services.zip_storage import load_project_zip
 
 logger = logging.getLogger(__name__)
+
+DEFAULT_SCHEDULE_TIMEZONE = "Asia/Shanghai"
 
 SENSITIVE_LLM_FIELDS = [
     "llmApiKey",
@@ -63,6 +66,68 @@ async def _load_user_config(user_id: str) -> dict:
             "llmConfig": _decrypt_config(json.loads(config.llm_config or "{}"), SENSITIVE_LLM_FIELDS),
             "otherConfig": _decrypt_config(json.loads(config.other_config or "{}"), SENSITIVE_OTHER_FIELDS),
         }
+
+
+def _parse_window_time(value: str | None) -> time | None:
+    if not value:
+        return None
+    try:
+        hour_text, minute_text = value.split(":", 1)
+        hour = int(hour_text)
+        minute = int(minute_text)
+    except (TypeError, ValueError):
+        return None
+    if not (0 <= hour <= 23 and 0 <= minute <= 59):
+        return None
+    return time(hour=hour, minute=minute)
+
+
+def _zoneinfo(tz_name: str | None) -> ZoneInfo:
+    try:
+        return ZoneInfo(tz_name or DEFAULT_SCHEDULE_TIMEZONE)
+    except ZoneInfoNotFoundError:
+        logger.warning("无效的定时扫描时区 %s，已回退到 %s", tz_name, DEFAULT_SCHEDULE_TIMEZONE)
+        return ZoneInfo(DEFAULT_SCHEDULE_TIMEZONE)
+
+
+def _is_within_time_window(schedule: ScheduledScan, moment: datetime) -> bool:
+    start_time = _parse_window_time(getattr(schedule, "time_window_start", None))
+    end_time = _parse_window_time(getattr(schedule, "time_window_end", None))
+    if not start_time or not end_time:
+        return True
+
+    local_time = moment.astimezone(_zoneinfo(getattr(schedule, "timezone", None))).time().replace(second=0, microsecond=0)
+    if start_time <= end_time:
+        return start_time <= local_time <= end_time
+    return local_time >= start_time or local_time <= end_time
+
+
+def _next_allowed_time(schedule: ScheduledScan, candidate: datetime) -> datetime:
+    start_time = _parse_window_time(getattr(schedule, "time_window_start", None))
+    end_time = _parse_window_time(getattr(schedule, "time_window_end", None))
+    if not start_time or not end_time or _is_within_time_window(schedule, candidate):
+        return candidate
+
+    zone = _zoneinfo(getattr(schedule, "timezone", None))
+    local = candidate.astimezone(zone)
+    today_start = local.replace(
+        hour=start_time.hour,
+        minute=start_time.minute,
+        second=0,
+        microsecond=0,
+    )
+
+    if start_time <= end_time:
+        next_local = today_start if local.time() < start_time else today_start + timedelta(days=1)
+    else:
+        next_local = today_start
+
+    return next_local.astimezone(timezone.utc)
+
+
+def _calculate_next_run_at(schedule: ScheduledScan, base: datetime) -> datetime:
+    candidate = base + timedelta(minutes=max(1, schedule.interval_minutes))
+    return _next_allowed_time(schedule, candidate)
 
 
 class ScheduledScanRunner:
@@ -112,6 +177,10 @@ class ScheduledScanRunner:
                     schedule.is_active = False
                     continue
 
+                if not _is_within_time_window(schedule, now):
+                    schedule.next_run_at = _next_allowed_time(schedule, now)
+                    continue
+
                 task = AuditTask(
                     project_id=project.id,
                     created_by=schedule.created_by,
@@ -124,6 +193,8 @@ class ScheduledScanRunner:
                             "file_paths": json.loads(schedule.file_paths or "[]"),
                             "exclude_patterns": json.loads(schedule.exclude_patterns or "[]"),
                             "scheduled_scan_id": schedule.id,
+                            "rule_set_id": schedule.rule_set_id,
+                            "prompt_template_id": schedule.prompt_template_id,
                         }
                     ),
                 )
@@ -134,6 +205,8 @@ class ScheduledScanRunner:
                 user_config["scan_config"] = {
                     "file_paths": json.loads(schedule.file_paths or "[]"),
                     "exclude_patterns": json.loads(schedule.exclude_patterns or "[]"),
+                    "rule_set_id": schedule.rule_set_id,
+                    "prompt_template_id": schedule.prompt_template_id,
                 }
 
                 if project.source_type == "zip":
@@ -148,7 +221,7 @@ class ScheduledScanRunner:
                     asyncio.create_task(scan_repo_task(task.id, AsyncSessionLocal, user_config))
 
                 schedule.last_run_at = now
-                schedule.next_run_at = now + timedelta(minutes=max(1, schedule.interval_minutes))
+                schedule.next_run_at = _calculate_next_run_at(schedule, now)
 
             await db.commit()
 

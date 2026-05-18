@@ -2,7 +2,6 @@
 仓库扫描服务 - 支持GitHub, GitLab 和 Gitea 仓库扫描
 """
 
-import asyncio
 import httpx
 import json
 import os
@@ -18,7 +17,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.utils.repo_utils import parse_repository_url
 from app.models.audit import AuditTask, AuditIssue
 from app.models.project import Project
-from app.services.llm.service import LLMService
 from app.core.config import settings
 from app.services.quick_scan import (
     calculate_quality_score,
@@ -291,40 +289,6 @@ def _write_workspace_file(workspace_dir: str, relative_path: str, content: str) 
         handle.write(content)
 
 
-def _llm_is_configured(user_config: Optional[Dict[str, Any]] = None) -> bool:
-    llm_config = (user_config or {}).get("llmConfig", {})
-    key_fields = [
-        "llmApiKey",
-        "geminiApiKey",
-        "openaiApiKey",
-        "claudeApiKey",
-        "qwenApiKey",
-        "deepseekApiKey",
-        "zhipuApiKey",
-        "moonshotApiKey",
-        "baiduApiKey",
-        "minimaxApiKey",
-        "doubaoApiKey",
-    ]
-    if any(llm_config.get(field) for field in key_fields):
-        return True
-    return any(
-        [
-            settings.LLM_API_KEY,
-            settings.OPENAI_API_KEY,
-            settings.GEMINI_API_KEY,
-            settings.CLAUDE_API_KEY,
-            settings.QWEN_API_KEY,
-            settings.DEEPSEEK_API_KEY,
-            settings.ZHIPU_API_KEY,
-            settings.MOONSHOT_API_KEY,
-            settings.BAIDU_API_KEY,
-            settings.MINIMAX_API_KEY,
-            settings.DOUBAO_API_KEY,
-        ]
-    )
-
-
 def _is_whitelisted_finding(
     finding: Dict[str, Any],
     other_config: Optional[Dict[str, Any]] = None,
@@ -445,7 +409,11 @@ async def scan_local_workspace(
     task.total_files = len(source_files)
     await db.commit()
 
-    semgrep_findings = run_semgrep_scan(workspace_dir, source_files)
+    semgrep_findings = run_semgrep_scan(
+        workspace_dir,
+        source_files,
+        exclude_patterns=exclude_patterns,
+    )
     pattern_findings = run_pattern_scan(source_files)
     findings = deduplicate_findings(semgrep_findings + pattern_findings)
 
@@ -479,66 +447,12 @@ async def scan_local_workspace(
 
     await db.flush()
 
-    llm_failures = 0
-    if _llm_is_configured(user_config):
-        llm_service = LLMService(user_config=user_config or {})
-        llm_target_files = source_files[: min(10, len(source_files))]
-        for source_file in llm_target_files:
-            try:
-                content = Path(source_file["absolute_path"]).read_text(errors="ignore")
-                rule_set_id = scan_config.get("rule_set_id")
-                prompt_template_id = scan_config.get("prompt_template_id")
-                if rule_set_id or prompt_template_id:
-                    analysis = await llm_service.analyze_code_with_rules(
-                        content,
-                        source_file["language"],
-                        rule_set_id=rule_set_id,
-                        prompt_template_id=prompt_template_id,
-                        db_session=db,
-                    )
-                else:
-                    analysis = await llm_service.analyze_code(content, source_file["language"])
-
-                for issue in analysis.get("issues", []):
-                    llm_finding = {
-                        "rule_id": issue.get("type"),
-                        "title": issue.get("title", "Issue"),
-                        "issue_type": issue.get("type", "maintainability"),
-                        "code_snippet": issue.get("code_snippet"),
-                    }
-                    if _is_whitelisted_finding(llm_finding, other_config):
-                        continue
-                    db.add(
-                        AuditIssue(
-                            task_id=task.id,
-                            file_path=source_file["path"],
-                            line_number=issue.get("line", 1),
-                            column_number=issue.get("column"),
-                            issue_type=issue.get("type", "maintainability"),
-                            severity=issue.get("severity", "low"),
-                            title=issue.get("title", "Issue"),
-                            message=issue.get("description") or issue.get("title", "Issue"),
-                            description=issue.get("description"),
-                            suggestion=issue.get("suggestion"),
-                            code_snippet=issue.get("code_snippet"),
-                            ai_explanation=json.dumps(issue.get("xai"), ensure_ascii=False) if issue.get("xai") else issue.get("ai_explanation"),
-                            status="pending_review" if findings else "open",
-                        )
-                    )
-            except Exception:
-                llm_failures += 1
-            finally:
-                await asyncio.sleep(analysis_config["llm_gap_ms"] / 1000)
-
     await db.commit()
 
     issues_result = await db.execute(select(AuditIssue).where(AuditIssue.task_id == task.id))
     issues = issues_result.scalars().all()
     task.scanned_files = len(source_files)
-    task.total_lines = sum(
-        len(Path(item["absolute_path"]).read_text(errors="ignore").splitlines())
-        for item in source_files
-    )
+    task.total_lines = sum(int(item.get("line_count") or 0) for item in source_files)
     task.issues_count = len(issues)
     task.quality_score = calculate_quality_score(len(source_files), len(issues))
     task.status = "completed" if source_files or findings else "failed"

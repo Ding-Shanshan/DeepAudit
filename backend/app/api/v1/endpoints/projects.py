@@ -472,6 +472,8 @@ class ScanRequest(BaseModel):
     full_scan: bool = True
     exclude_patterns: Optional[List[str]] = None
     branch_name: Optional[str] = None
+    rule_set_id: Optional[str] = None
+    prompt_template_id: Optional[str] = None
 
 
 @router.post("/{id}/scan")
@@ -550,6 +552,8 @@ async def scan_project(
         user_config['scan_config'] = {
             'file_paths': scan_request.file_paths or [],
             'exclude_patterns': scan_request.exclude_patterns or [],
+            'rule_set_id': scan_request.rule_set_id,
+            'prompt_template_id': scan_request.prompt_template_id,
         }
 
     # Trigger Background Task
