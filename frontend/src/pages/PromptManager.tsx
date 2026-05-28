@@ -1,16 +1,16 @@
 /**
  * Prompt Template Manager Page
- * Cyberpunk Terminal Aesthetic
+ * Cyberpunk Terminal Aesthetic - Table View matching Static Rules style
  */
 
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -25,13 +25,7 @@ import {
   Sparkles,
   Check,
   Loader2,
-  Terminal,
-  MessageSquare,
-  Shield,
-
-  Code,
-  AlertTriangle,
-  Activity,
+  Search,
 } from 'lucide-react';
 import {
   getPromptTemplates,
@@ -50,15 +44,6 @@ const TEMPLATE_TYPES = [
   { value: 'analysis', label: '分析提示词' },
 ];
 
-const getTemplateIcon = (type: string) => {
-  switch (type) {
-    case 'system': return Shield;
-    case 'user': return MessageSquare;
-    case 'analysis': return Code;
-    default: return FileText;
-  }
-};
-
 export default function PromptManager() {
   const [templates, setTemplates] = useState<PromptTemplate[]>([]);
   const [loading, setLoading] = useState(true);
@@ -74,6 +59,9 @@ export default function PromptManager() {
   const [testForm, setTestForm] = useState({ language: 'python', code: TEST_CODE_SAMPLES.python, promptLang: 'zh' as 'zh' | 'en' });
   const [showViewDialog, setShowViewDialog] = useState(false);
   const [viewTemplate, setViewTemplate] = useState<PromptTemplate | null>(null);
+  const [filterName, setFilterName] = useState('');
+  const [filterType, setFilterType] = useState('all');
+  const [filterEnabled, setFilterEnabled] = useState('all');
 
   useEffect(() => { loadTemplates(); }, []);
 
@@ -88,6 +76,14 @@ export default function PromptManager() {
       setLoading(false);
     }
   };
+
+  const filteredTemplates = templates.filter(template => {
+    if (filterName && !template.name.toLowerCase().includes(filterName.toLowerCase())) return false;
+    if (filterType !== 'all' && template.template_type !== filterType) return false;
+    if (filterEnabled === 'enabled' && !template.is_active) return false;
+    if (filterEnabled === 'disabled' && template.is_active) return false;
+    return true;
+  });
 
   const handleCreate = async () => {
     try {
@@ -148,23 +144,13 @@ export default function PromptManager() {
   const openTestDialog = (template: PromptTemplate) => {
     setSelectedTemplate(template);
     setTestResult(null);
-
     const templateCodes = TEMPLATE_TEST_CODES[template.name];
     const defaultLang = 'python';
     if (templateCodes && templateCodes[defaultLang]) {
-      setTestForm(prev => ({
-        ...prev,
-        language: defaultLang,
-        code: templateCodes[defaultLang]
-      }));
+      setTestForm(prev => ({ ...prev, language: defaultLang, code: templateCodes[defaultLang] }));
     } else {
-      setTestForm(prev => ({
-        ...prev,
-        language: defaultLang,
-        code: TEST_CODE_SAMPLES[defaultLang]
-      }));
+      setTestForm(prev => ({ ...prev, language: defaultLang, code: TEST_CODE_SAMPLES[defaultLang] }));
     }
-
     setShowTestDialog(true);
   };
 
@@ -190,125 +176,149 @@ export default function PromptManager() {
   }
 
   return (
-    <div className="space-y-4 px-6 pt-1 pb-6 cyber-bg-elevated min-h-screen font-mono relative">
-      {/* Grid background */}
-      <div className="absolute inset-0 cyber-grid-subtle pointer-events-none" />
-
-      {/* Action Bar */}
-      <div className="cyber-card p-0 relative z-10">
-        <div className="cyber-card-header">
-          <Terminal className="w-5 h-5 text-primary" />
-          <h3 className="text-lg font-bold uppercase tracking-wider text-foreground">提示词模板管理</h3>
-          <div className="ml-auto">
-            <Button onClick={() => { resetForm(); setShowCreateDialog(true); }} className="cyber-btn-primary h-9">
-              <Plus className="w-4 h-4 mr-2" />
-              新建模板
+    <div className="relative z-10">
+      {templates.length === 0 ? (
+        <div className="cyber-card p-16">
+          <div className="empty-state">
+            <FileText className="empty-state-icon" />
+            <p className="empty-state-title">暂无提示词模板</p>
+            <p className="empty-state-description">点击"新建规则"创建自定义提示词</p>
+            <Button className="cyber-btn-primary h-12 px-8 mt-6" onClick={() => { resetForm(); setShowCreateDialog(true); }}>
+              <Plus className="w-5 h-5 mr-2" />
+              创建模板
             </Button>
           </div>
         </div>
-      </div>
-
-      {/* Templates Grid */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 relative z-10">
-        {templates.length === 0 ? (
-          <div className="col-span-full cyber-card p-16">
-            <div className="empty-state">
-              <FileText className="empty-state-icon" />
-              <p className="empty-state-title">暂无提示词模板</p>
-              <p className="empty-state-description">点击"新建模板"创建自定义提示词</p>
-              <Button className="cyber-btn-primary h-12 px-8 mt-6" onClick={() => { resetForm(); setShowCreateDialog(true); }}>
-                <Plus className="w-5 h-5 mr-2" />
-                创建模板
+      ) : (
+        <div className="cyber-card p-0">
+          {/* Toolbar: filters + actions */}
+          <div className="p-4 flex items-center gap-3 border-b border-border flex-wrap">
+            <div className="relative flex-1 min-w-[180px] max-w-[240px]">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+              <Input
+                value={filterName}
+                onChange={e => setFilterName(e.target.value)}
+                placeholder="搜索规则名称"
+                className="h-8 text-sm !pl-9"
+              />
+            </div>
+            <Select value={filterType} onValueChange={setFilterType}>
+              <SelectTrigger className="cyber-input h-8 w-[160px] text-sm">
+                <SelectValue placeholder="模板类型" />
+              </SelectTrigger>
+              <SelectContent className="cyber-dialog border-border">
+                <SelectItem value="all">全部类型</SelectItem>
+                {TEMPLATE_TYPES.map(t => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}
+              </SelectContent>
+            </Select>
+            <Select value={filterEnabled} onValueChange={setFilterEnabled}>
+              <SelectTrigger className="cyber-input h-8 w-[120px] text-sm">
+                <SelectValue placeholder="启用状态" />
+              </SelectTrigger>
+              <SelectContent className="cyber-dialog border-border">
+                <SelectItem value="all">全部状态</SelectItem>
+                <SelectItem value="enabled">已启用</SelectItem>
+                <SelectItem value="disabled">已禁用</SelectItem>
+              </SelectContent>
+            </Select>
+            <div className="ml-auto flex gap-2">
+              <Button onClick={() => { resetForm(); setShowCreateDialog(true); }} className="cyber-btn-primary h-8">
+                <Plus className="w-4 h-4 mr-2" />
+                新建规则
               </Button>
             </div>
           </div>
-        ) : (
-          templates.map(template => {
-            const TemplateIcon = getTemplateIcon(template.template_type);
-            return (
-              <div key={template.id} className={`cyber-card p-0 ${!template.is_active ? 'opacity-60' : ''}`}>
-                {/* Template Header */}
-                <div className="p-5 border-b border-border">
-                  <div className="flex items-start justify-between mb-3">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-muted border border-border flex items-center justify-center rounded">
-                        <TemplateIcon className="w-5 h-5 text-muted-foreground" />
-                      </div>
-                      <div>
-                        <h3 className="font-bold text-base text-foreground uppercase">{template.name}</h3>
-                        <p className="text-xs text-muted-foreground line-clamp-1">{template.description}</p>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="flex flex-wrap gap-2">
-                    {template.is_system && <Badge className="cyber-badge-info">系统</Badge>}
-                    {template.is_default && <Badge className="cyber-badge-success">默认</Badge>}
-                    <Badge className="cyber-badge-muted">{TEMPLATE_TYPES.find(t => t.value === template.template_type)?.label}</Badge>
-                  </div>
-                </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-border text-muted-foreground">
+                  <th className="text-left py-2 px-6 font-medium">规则名称</th>
+                  <th className="text-left py-2 px-3 font-medium">简介</th>
+                  <th className="text-left py-2 px-3 font-medium">模板类型</th>
+                  <th className="text-left py-2 px-3 font-medium">查看详情</th>
+                  <th className="text-left py-2 px-3 font-medium">是否启用</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredTemplates.length === 0 ? (
+                  <tr>
+                    <td colSpan={5} className="py-12 text-center text-muted-foreground">
+                      无匹配规则
+                    </td>
+                  </tr>
+                ) : (
+                  filteredTemplates.map(template => (
+                    <tr key={template.id} className="border-b border-border/50 hover:bg-muted/50 transition-colors">
+                      <td className="py-2.5 px-6">
+                        <span className="font-medium text-foreground">{template.name}</span>
+                      </td>
+                      <td className="py-2.5 px-3 text-muted-foreground max-w-xs truncate">{template.description || '-'}</td>
+                      <td className="py-2.5 px-3">
+                        <span className="text-muted-foreground">{TEMPLATE_TYPES.find(t => t.value === template.template_type)?.label}</span>
+                      </td>
+                      <td className="py-2.5 px-3">
+                        <button onClick={() => openViewDialog(template)} className="text-primary hover:underline">
+                          查看详情
+                        </button>
+                      </td>
+                      <td className="py-2.5 px-3">
+                        <div className="flex items-center gap-2">
+                          <Switch checked={template.is_active} onCheckedChange={() => {
+                            const updated = { ...form, is_active: !template.is_active };
+                            setSelectedTemplate(template);
+                            setForm({
+                              name: template.name,
+                              description: template.description || '',
+                              template_type: template.template_type,
+                              content_zh: template.content_zh || '',
+                              content_en: template.content_en || '',
+                              is_active: !template.is_active,
+                            });
+                            updatePromptTemplate(template.id, {
+                              name: template.name,
+                              description: template.description || '',
+                              template_type: template.template_type,
+                              content_zh: template.content_zh || '',
+                              content_en: template.content_en || '',
+                              is_active: !template.is_active,
+                            }).then(() => {
+                              toast.success(template.is_active ? '已禁用' : '已启用');
+                              loadTemplates();
+                            }).catch(() => toast.error('操作失败'));
+                          }} className="h-5 w-9 data-[state=checked]:bg-violet-300 data-[state=unchecked]:bg-muted [&>[data-slot=switch-thumb]]:w-4 [&>[data-slot=switch-thumb]]:h-4 [&>[data-slot=switch-thumb]]:data-[state=checked]:translate-x-4 [&>[data-slot=switch-thumb]]:data-[state=unchecked]:translate-x-0.5" />
+                          {!template.is_system && (
+                            <>
+                              <Button variant="ghost" size="icon" onClick={() => openEditDialog(template)} className="cyber-btn-ghost h-7 w-7"><Edit className="w-3.5 h-3.5" /></Button>
+                              <Button variant="ghost" size="icon" onClick={() => handleDelete(template.id)} className="h-7 w-7 hover:bg-destructive/12 hover:text-destructive"><Trash2 className="w-3.5 h-3.5" /></Button>
+                            </>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
 
-                {/* Template Content Preview */}
-                <div className="p-4">
-                  <div
-                    className="text-xs text-primary line-clamp-3 cyber-bg-elevated p-3 border border-border font-mono mb-4 cursor-pointer hover:border-border transition-colors rounded"
-                    onClick={() => openViewDialog(template)}
-                    title="点击查看完整内容"
-                  >
-                    {template.content_zh || template.content_en || '(无内容)'}
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <div className="flex gap-1">
-                      <Button variant="ghost" size="sm" onClick={() => openViewDialog(template)} className="cyber-btn-ghost h-8 px-2">
-                        <FileText className="w-4 h-4 mr-1" />
-                        查看
-                      </Button>
-                      <Button variant="ghost" size="sm" onClick={() => openTestDialog(template)} className="cyber-btn-ghost h-8 px-2">
-                        <Play className="w-4 h-4 mr-1" />
-                        测试
-                      </Button>
-                      <Button variant="ghost" size="sm" onClick={() => copyToClipboard(template.content_zh || template.content_en || '')} className="cyber-btn-ghost h-8 px-2">
-                        <Copy className="w-4 h-4 mr-1" />
-                        复制
-                      </Button>
-                    </div>
-                    <div className="flex gap-1">
-                      {!template.is_system && (
-                        <>
-                          <Button variant="ghost" size="icon" onClick={() => openEditDialog(template)} className="cyber-btn-ghost h-8 w-8">
-                            <Edit className="w-4 h-4" />
-                          </Button>
-                          <Button variant="ghost" size="icon" onClick={() => handleDelete(template.id)} className="h-8 w-8 hover:bg-destructive/12 hover:text-destructive">
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
-                        </>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            );
-          })
-        )}
-      </div>
-
-      {/* Create/Edit Dialog */}
-      <Dialog open={showCreateDialog || showEditDialog} onOpenChange={(open) => { if (!open) { setShowCreateDialog(false); setShowEditDialog(false); } }}>
-        <DialogContent className="!w-[min(90vw,700px)] !max-w-none max-h-[85vh] flex flex-col p-0 gap-0 cyber-dialog border border-border rounded-lg">
-          <DialogHeader className="px-6 py-4 border-b border-border flex-shrink-0 bg-muted">
-            <DialogTitle className="flex items-center gap-3 font-mono text-foreground">
+      {/* Create/Edit Sheet */}
+      <Sheet open={showCreateDialog || showEditDialog} onOpenChange={(open) => { if (!open) { setShowCreateDialog(false); setShowEditDialog(false); } }}>
+        <SheetContent side="right" className="!w-[min(90vw,700px)] sm:max-w-[700px] !sm:max-w-none flex flex-col p-0 gap-0 border-border overflow-y-auto">
+          <SheetHeader className="px-6 py-4 border-b border-border flex-shrink-0 bg-muted">
+            <SheetTitle className="flex items-center gap-3 font-mono text-foreground">
               <div className="p-2 bg-primary/20 rounded border border-primary/30">
-                <Terminal className="w-5 h-5 text-primary" />
+                <FileText className="w-5 h-5 text-primary" />
               </div>
-              <div>
-                <span className="text-base font-bold uppercase tracking-wider">
-                  {showEditDialog ? '编辑模板' : '新建模板'}
-                </span>
-                <p className="text-xs text-muted-foreground font-normal mt-0.5">
-                  {showEditDialog ? 'Edit Template' : 'Create Template'}
-                </p>
-              </div>
-            </DialogTitle>
-          </DialogHeader>
+              <span className="text-base font-bold uppercase tracking-wider">
+                {showEditDialog ? '编辑规则' : '新建规则'}
+              </span>
+            </SheetTitle>
+            <SheetDescription className="text-xs text-muted-foreground font-normal">
+              {showEditDialog ? '修改提示词模板配置' : '创建自定义提示词模板'}
+            </SheetDescription>
+          </SheetHeader>
           <div className="flex-1 overflow-y-auto p-6 space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
@@ -350,12 +360,12 @@ export default function PromptManager() {
               <Label className="text-xs font-bold text-muted-foreground uppercase">启用此模板</Label>
             </div>
           </div>
-          <DialogFooter className="flex-shrink-0 flex justify-end gap-3 px-6 py-4 bg-muted border-t border-border">
+          <div className="flex-shrink-0 flex justify-end gap-3 px-6 py-4 bg-muted border-t border-border">
             <Button variant="outline" onClick={() => { setShowCreateDialog(false); setShowEditDialog(false); }} className="cyber-btn-outline">取消</Button>
             <Button onClick={showEditDialog ? handleUpdate : handleCreate} className="cyber-btn-primary">{showEditDialog ? '保存' : '创建'}</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          </div>
+        </SheetContent>
+      </Sheet>
 
       {/* Test Dialog */}
       <Dialog open={showTestDialog} onOpenChange={setShowTestDialog}>
@@ -424,9 +434,9 @@ export default function PromptManager() {
                           <Check className="w-5 h-5" />
                           <span className="uppercase text-sm">分析成功</span>
                         </div>
-                        <Badge className="cyber-badge-muted font-mono">
+                        <span className="text-xs text-muted-foreground font-mono">
                           {testResult.execution_time}s
-                        </Badge>
+                        </span>
                       </div>
 
                       {/* Quality Score */}
@@ -450,9 +460,9 @@ export default function PromptManager() {
                           <div className="space-y-3">
                             <div className="flex items-center justify-between mb-2">
                               <span className="text-xs font-bold uppercase text-muted-foreground">发现问题</span>
-                              <Badge className="cyber-badge-danger">
+                              <span className="text-xs text-destructive font-bold">
                                 {testResult.result.issues.length} 个
-                              </Badge>
+                              </span>
                             </div>
                             {testResult.result.issues.map((issue: any, idx: number) => (
                               <div key={idx} className="cyber-card p-0 overflow-hidden">
@@ -496,13 +506,12 @@ export default function PromptManager() {
                       {/* Error Header */}
                       <div className="flex items-center justify-between p-3 bg-destructive/8 border-b border-destructive/25">
                         <div className="flex items-center gap-2 text-destructive font-bold">
-                          <AlertTriangle className="w-5 h-5" />
                           <span className="uppercase text-sm">测试失败</span>
                         </div>
                         {testResult.execution_time && (
-                          <Badge className="cyber-badge-muted font-mono">
+                          <span className="text-xs text-muted-foreground font-mono">
                             {testResult.execution_time}s
-                          </Badge>
+                          </span>
                         )}
                       </div>
                       {/* Error Details */}
@@ -541,26 +550,12 @@ export default function PromptManager() {
               <div className="p-2 bg-primary/20 rounded border border-primary/30">
                 <FileText className="w-5 h-5 text-primary" />
               </div>
-              <div>
-                <span className="text-base font-bold uppercase tracking-wider">
-                  {viewTemplate?.name}
-                </span>
-                <p className="text-xs text-muted-foreground font-normal mt-0.5">{viewTemplate?.description || 'View Template'}</p>
-              </div>
+              <span className="text-base font-bold uppercase tracking-wider">
+                {viewTemplate?.name}
+              </span>
             </DialogTitle>
           </DialogHeader>
           <div className="flex-1 overflow-y-auto p-6 space-y-4">
-            <div className="flex flex-wrap gap-2 mb-4">
-              {viewTemplate?.is_system && <Badge className="cyber-badge-info">系统模板</Badge>}
-              {viewTemplate?.is_default && <Badge className="cyber-badge-success">默认</Badge>}
-              <Badge className="cyber-badge-muted">{TEMPLATE_TYPES.find(t => t.value === viewTemplate?.template_type)?.label}</Badge>
-              {viewTemplate?.is_active ? (
-                <Badge className="cyber-badge-success">已启用</Badge>
-              ) : (
-                <Badge className="cyber-badge-muted">已禁用</Badge>
-              )}
-            </div>
-
             <Tabs defaultValue="zh" className="w-full">
               <TabsList className="grid w-full grid-cols-2 bg-muted border border-border p-1 h-auto gap-1 rounded">
                 <TabsTrigger value="zh" className="data-[state=active]:bg-primary data-[state=active]:text-foreground font-mono font-bold uppercase py-2 text-muted-foreground transition-all rounded-sm text-xs">

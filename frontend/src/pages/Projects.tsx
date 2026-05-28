@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -421,33 +422,22 @@ export default function Projects() {
       {/* Grid background */}
       <div className="absolute inset-0 cyber-grid-subtle pointer-events-none" />
 
-      {/* 创建项目对话框 */}
-      <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
-        <DialogTrigger asChild className="hidden">
-          <Button className="cyber-btn-primary">
-            <Plus className="w-5 h-5 mr-2" />
-            初始化项目
-          </Button>
-        </DialogTrigger>
-        <DialogContent className="!w-[min(90vw,700px)] !max-w-none max-h-[85vh] flex flex-col p-0 gap-0 cyber-dialog border border-border rounded-lg">
-          {/* Terminal Header */}
-          <div className="flex items-center gap-2 px-4 py-3 cyber-bg-elevated border-b border-border flex-shrink-0">
-            <div className="flex items-center gap-1.5">
-              <div className="w-3 h-3 rounded-full bg-red-500/80" />
-              <div className="w-3 h-3 rounded-full bg-yellow-500/80" />
-              <div className="w-3 h-3 rounded-full bg-green-500/80" />
-            </div>
-            <span className="ml-2 font-mono text-xs text-muted-foreground tracking-wider">
-              new_project@dbapp
-            </span>
-          </div>
-
-          <DialogHeader className="px-6 pt-4 flex-shrink-0">
-            <DialogTitle className="font-mono text-lg uppercase tracking-wider flex items-center gap-2 text-foreground">
-              <Terminal className="w-5 h-5 text-primary" />
-              初始化新项目
-            </DialogTitle>
-          </DialogHeader>
+      {/* 创建项目抽屉 */}
+      <Sheet open={showCreateDialog} onOpenChange={setShowCreateDialog}>
+        <SheetContent side="right" className="!w-[min(90vw,700px)] sm:max-w-[700px] !sm:max-w-none flex flex-col p-0 gap-0 border-border overflow-y-auto">
+          <SheetHeader className="px-6 py-4 border-b border-border flex-shrink-0 bg-muted">
+            <SheetTitle className="flex items-center gap-3 font-mono text-foreground">
+              <div className="p-2 bg-primary/20 rounded border border-primary/30">
+                <Terminal className="w-5 h-5 text-primary" />
+              </div>
+              <span className="text-base font-bold uppercase tracking-wider">
+                新建项目
+              </span>
+            </SheetTitle>
+            <SheetDescription className="text-xs text-muted-foreground font-normal">
+              创建新项目以开始代码审计
+            </SheetDescription>
+          </SheetHeader>
 
           <div className="flex-1 overflow-y-auto p-6">
             <Tabs defaultValue="repository" className="w-full">
@@ -751,8 +741,8 @@ export default function Projects() {
               </TabsContent>
             </Tabs>
           </div>
-        </DialogContent>
-      </Dialog>
+        </SheetContent>
+      </Sheet>
 
       {/* Stats Section */}
       {projects.length > 0 && (
@@ -927,17 +917,11 @@ export default function Projects() {
             <div className="cyber-card p-16 text-center border-dashed">
               <Code className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
               <h3 className="text-xl font-bold text-foreground mb-2">
-                {searchTerm ? '未找到匹配项' : '未初始化项目'}
+                {searchTerm ? '未找到匹配项' : '当前无项目，请添加项目'}
               </h3>
-              <p className="text-muted-foreground font-mono mb-6">
-                {searchTerm ? '调整搜索参数' : '初始化第一个项目以开始'}
+              <p className="text-muted-foreground font-mono">
+                {searchTerm ? '调整搜索参数' : '点击上方新建项目按钮创建项目'}
               </p>
-              {!searchTerm && (
-                <Button onClick={() => setShowCreateDialog(true)} className="cyber-btn-primary">
-                  <Plus className="w-4 h-4 mr-2" />
-                  初始化项目
-                </Button>
-              )}
             </div>
           </div>
         )}

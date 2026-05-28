@@ -13,6 +13,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { toast } from 'sonner';
@@ -271,7 +272,7 @@ export default function AuditRules() {
             <div className="empty-state">
               <Shield className="empty-state-icon" />
               <p className="empty-state-title">暂无规则集</p>
-              <p className="empty-state-description">点击"新建规则集"创建自定义审计规则</p>
+              <p className="empty-state-description">点击"新建规则"创建自定义审计规则</p>
               <Button className="cyber-btn-primary h-12 px-8 mt-6" onClick={() => setShowCreateDialog(true)}>
                 <Plus className="w-5 h-5 mr-2" />
                 创建规则集
@@ -311,13 +312,9 @@ export default function AuditRules() {
                 </SelectContent>
               </Select>
               <div className="ml-auto flex gap-2">
-                <Button variant="outline" onClick={() => setShowImportDialog(true)} className="cyber-btn-outline h-8">
-                  <Upload className="w-4 h-4 mr-2" />
-                  导入规则集
-                </Button>
                 <Button onClick={() => setShowCreateDialog(true)} className="cyber-btn-primary h-8">
                   <Plus className="w-4 h-4 mr-2" />
-                  新建规则集
+                  新建规则
                 </Button>
               </div>
             </div>
@@ -378,17 +375,20 @@ export default function AuditRules() {
           </div>
         )}
       </div>
-      {/* Create Rule Set Dialog */}
-      <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
-        <DialogContent className="!w-[min(90vw,500px)] !max-w-none max-h-[85vh] flex flex-col p-0 gap-0 cyber-dialog border border-border rounded-lg">
-          <DialogHeader className="px-6 py-4 border-b border-border flex-shrink-0 bg-muted">
-            <DialogTitle className="flex items-center gap-3 font-mono text-foreground">
+      {/* Create Rule Set Sheet */}
+      <Sheet open={showCreateDialog} onOpenChange={setShowCreateDialog}>
+        <SheetContent side="right" className="!w-[min(90vw,500px)] sm:max-w-[500px] !sm:max-w-none flex flex-col p-0 gap-0 border-border overflow-y-auto">
+          <SheetHeader className="px-6 py-4 border-b border-border flex-shrink-0 bg-muted">
+            <SheetTitle className="flex items-center gap-3 font-mono text-foreground">
               <div className="p-2 bg-primary/20 rounded border border-primary/30">
                 <Terminal className="w-5 h-5 text-primary" />
               </div>
-              <span className="text-base font-bold uppercase tracking-wider">新建规则集</span>
-            </DialogTitle>
-          </DialogHeader>
+              <span className="text-base font-bold uppercase tracking-wider">新建规则</span>
+            </SheetTitle>
+            <SheetDescription className="text-xs text-muted-foreground font-normal">
+              创建新的规则集
+            </SheetDescription>
+          </SheetHeader>
           <div className="flex-1 overflow-y-auto p-6 space-y-4">
             <div className="space-y-2">
               <Label className="text-xs font-bold text-muted-foreground uppercase">名称 *</Label>
@@ -419,12 +419,12 @@ export default function AuditRules() {
               </div>
             </div>
           </div>
-          <DialogFooter className="flex-shrink-0 flex justify-end gap-3 px-6 py-4 bg-muted border-t border-border">
+          <div className="flex-shrink-0 flex justify-end gap-3 px-6 py-4 bg-muted border-t border-border">
             <Button variant="outline" onClick={() => setShowCreateDialog(false)} className="cyber-btn-outline">取消</Button>
             <Button onClick={handleCreateRuleSet} className="cyber-btn-primary">创建</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          </div>
+        </SheetContent>
+      </Sheet>
 
       {/* Edit Rule Set Dialog */}
       <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
@@ -555,7 +555,7 @@ export default function AuditRules() {
                 <Upload className="w-5 h-5 text-primary" />
               </div>
               <div>
-                <span className="text-base font-bold uppercase tracking-wider">导入规则集</span>
+                <span className="text-base font-bold uppercase tracking-wider">导入规则</span>
                 <p className="text-xs text-muted-foreground font-normal mt-0.5">粘贴导出的 JSON 内容</p>
               </div>
             </DialogTitle>

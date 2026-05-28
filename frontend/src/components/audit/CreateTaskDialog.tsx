@@ -6,11 +6,12 @@
 import { useState, useEffect, useMemo, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetDescription,
+} from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -388,11 +389,11 @@ export default function CreateTaskDialog({
 
   return (
     <>
-      <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="!w-[min(90vw,520px)] !max-w-none max-h-[85vh] flex flex-col p-0 gap-0 cyber-dialog border border-border rounded-lg">
+      <Sheet open={open} onOpenChange={onOpenChange}>
+        <SheetContent side="right" className="!w-[min(90vw,520px)] sm:max-w-[520px] !sm:max-w-none flex flex-col p-0 gap-0 border-border overflow-y-auto">
           {/* Header */}
-          <DialogHeader className="px-5 py-4 border-b border-border flex-shrink-0 bg-muted">
-            <DialogTitle className="flex items-center gap-3 font-mono text-foreground">
+          <SheetHeader className="px-5 py-4 border-b border-border flex-shrink-0 bg-muted">
+            <SheetTitle className="flex items-center gap-3 font-mono text-foreground">
               <div className="p-2 bg-primary/20 rounded border border-primary/30">
                 <Shield className="w-5 h-5 text-primary" />
               </div>
@@ -402,8 +403,11 @@ export default function CreateTaskDialog({
                   Code Security Analysis
                 </p>
               </div>
-            </DialogTitle>
-          </DialogHeader>
+            </SheetTitle>
+            <SheetDescription className="text-xs text-muted-foreground font-normal">
+              选择项目并配置审计参数
+            </SheetDescription>
+          </SheetHeader>
 
           <div className="flex-1 overflow-y-auto p-5 space-y-5">
             {/* 项目选择 */}
@@ -764,8 +768,8 @@ export default function CreateTaskDialog({
               )}
             </Button>
           </div>
-        </DialogContent>
-      </Dialog>
+        </SheetContent>
+      </Sheet>
 
       <FileSelectionDialog
         open={showFileSelection}
