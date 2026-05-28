@@ -9,10 +9,9 @@ import { apiClient } from "@/shared/api/serverClient";
 import AuthShell from "@/components/layout/AuthShell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
-import { Lock, UserCircle2 } from "lucide-react";
+import { User, Lock } from "lucide-react";
 import { BRAND_NAME, CONSOLE_HOME_ROUTE } from "@/shared/constants/branding";
 
 export default function Login() {
@@ -20,6 +19,7 @@ export default function Login() {
   const [password, setPassword] = useState("");
   const [rememberMe, setRememberMe] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [errorMsg, setErrorMsg] = useState("");
   const navigate = useNavigate();
   const location = useLocation();
   const { login, isAuthenticated } = useAuth();
@@ -42,6 +42,7 @@ export default function Login() {
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
+    setErrorMsg("");
     setLoading(true);
     try {
       const formData = new URLSearchParams();
@@ -65,12 +66,11 @@ export default function Login() {
     } catch (error: any) {
       const detail = error.response?.data?.detail;
       if (Array.isArray(detail)) {
-        const messages = detail.map((err: any) => err.msg || err.message || JSON.stringify(err)).join('; ');
-        toast.error(messages || "登录失败");
+        setErrorMsg(detail.map((err: any) => err.msg || err.message || JSON.stringify(err)).join('; '));
       } else if (typeof detail === 'object') {
-        toast.error(detail.msg || detail.message || JSON.stringify(detail));
+        setErrorMsg(detail.msg || detail.message || JSON.stringify(detail));
       } else {
-        toast.error(detail || "登录失败，请检查用户名和密码");
+        setErrorMsg(detail || "登录失败，请检查用户名和密码");
       }
     } finally {
       setLoading(false);
@@ -79,74 +79,73 @@ export default function Login() {
 
   return (
     <AuthShell
-      title="欢迎登录"
-      description={`使用本地${BRAND_NAME}账号进入控制台，继续进行项目治理、任务分析和智能安全审计。`}
-      footer={
-        <div className="rounded-2xl bg-slate-50 px-4 py-3 text-sm leading-6 text-muted-foreground">
-          系统已关闭公开注册。默认管理员账号为 <span className="font-semibold text-foreground">admin</span>，其他用户请由管理员在系统管理中创建。
-        </div>
-      }
+      title="账号登录"
+      description="智能代码安全审计，守护每一行代码"
+      footer={<span></span>}
     >
       <form onSubmit={handleSubmit} className="space-y-5">
-        <div className="space-y-2">
-          <Label htmlFor="username" className="text-sm font-medium text-foreground">
-            用户名
-          </Label>
+        <div className="space-y-1.5">
           <div className="relative">
+            <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#c0c4cc]">
+              <User className="h-4 w-4" />
+            </span>
             <Input
               id="username"
               type="text"
               placeholder="请输入用户名"
               value={username}
-              onChange={(e) => setUsername(e.target.value)}
+              onChange={(e) => { setUsername(e.target.value); setErrorMsg(""); }}
               required
-              className="h-12 pl-11"
+              className={`h-11 pl-10 bg-[#f9fafb] focus:bg-white focus:ring-1 rounded-lg text-sm placeholder:text-[#c0c4cc] ${errorMsg ? "border-red-500 focus:border-red-500 focus:ring-red-500/20" : "border-[#e8ecf1] focus:border-[#0052D9] focus:ring-[#0052D9]/20"}`}
             />
-            <UserCircle2 className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           </div>
         </div>
 
-        <div className="space-y-2">
-          <Label htmlFor="password" className="text-sm font-medium text-foreground">
-            密码
-          </Label>
+        <div className="space-y-1.5">
           <div className="relative">
+            <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#c0c4cc]">
+              <Lock className="h-4 w-4" />
+            </span>
             <Input
               id="password"
               type="password"
               placeholder="请输入密码"
               value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              onChange={(e) => { setPassword(e.target.value); setErrorMsg(""); }}
               required
-              className="h-12 pl-11"
+              className={`h-11 pl-10 bg-[#f9fafb] focus:bg-white focus:ring-1 rounded-lg text-sm placeholder:text-[#c0c4cc] ${errorMsg ? "border-red-500 focus:border-red-500 focus:ring-red-500/20" : "border-[#e8ecf1] focus:border-[#0052D9] focus:ring-[#0052D9]/20"}`}
             />
-            <Lock className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           </div>
         </div>
 
-        <div className="flex items-center justify-between rounded-2xl bg-slate-50 px-4 py-3">
-          <div className="flex items-center gap-2">
+        {errorMsg && (
+          <p className="text-xs text-red-500 -mt-2">{errorMsg}</p>
+        )}
+
+        <div className="flex items-center">
+          <label className="flex cursor-pointer items-center gap-1.5 text-xs text-[#86909c] select-none">
             <Checkbox
               id="remember"
               checked={rememberMe}
               onCheckedChange={(checked) => setRememberMe(checked as boolean)}
-              className="border-border data-[state=checked]:bg-primary data-[state=checked]:border-primary"
+              className="h-3.5 w-3.5 rounded border-[#d0d5dd] data-[state=checked]:bg-[#0052D9] data-[state=checked]:border-[#0052D9]"
             />
-            <Label htmlFor="remember" className="cursor-pointer text-sm text-muted-foreground">
-              记住我的登录状态
-            </Label>
-          </div>
-          <span className="text-xs text-muted-foreground">安全连接已启用</span>
+            记住登录状态
+          </label>
         </div>
 
-        <Button type="submit" className="h-12 w-full text-base" disabled={loading}>
+        <Button
+          type="submit"
+          className="h-11 w-full rounded-lg bg-[#0052D9] text-sm font-medium text-white shadow-none hover:bg-[#0041b8] border-0 focus:ring-2 focus:ring-[#0052D9]/30"
+          disabled={loading}
+        >
           {loading ? (
             <span className="flex items-center gap-2">
               <span className="h-4 w-4 rounded-full border-2 border-white/30 border-t-white animate-spin" />
               登录中...
             </span>
           ) : (
-            "登录平台"
+            "登 录"
           )}
         </Button>
       </form>

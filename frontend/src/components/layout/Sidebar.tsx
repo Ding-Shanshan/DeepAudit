@@ -21,7 +21,6 @@ import {
   Shield,
   MessageSquare,
   BriefcaseBusiness,
-  Building2,
 } from "lucide-react";
 import routes from "@/app/routes";
 import { useAuth } from "@/shared/context/AuthContext";
@@ -29,10 +28,8 @@ import {
   BRAND_COMPANY_NAME,
   BRAND_LOGO_PATH,
   BRAND_NAME,
-  BRAND_TAGLINE,
   CONSOLE_HOME_ROUTE,
 } from "@/shared/constants/branding";
-import { version } from "../../../package.json";
 
 // Icon mapping for routes with consistent sizing
 const routeIcons: Record<string, ReactNode> = {
@@ -124,23 +121,7 @@ export default function Sidebar({ collapsed, setCollapsed }: SidebarProps) {
             </button>
           </div>
 
-          <div className="px-4 pt-5">
-            {!collapsed && (
-              <div className="rounded-3xl border border-[#f3d4d4] bg-[linear-gradient(180deg,#fff8f8,#fff1f1)] px-4 py-4 shadow-[0_12px_28px_rgba(217,38,37,0.08)]">
-                <div className="text-xs font-semibold uppercase tracking-[0.18em] text-[#c43737]">
-                  Tianrongxin
-                </div>
-                <div className="mt-2 flex items-center gap-2 text-sm font-medium text-[#15202d]">
-                  <Building2 className="h-4 w-4 text-[#d92625]" />
-                  {BRAND_TAGLINE}
-                </div>
-                <p className="mt-2 text-xs leading-5 text-slate-600">
-                  聚合项目治理、审计任务、规则运营与智能工作区，统一承载企业级代码安全运营。
-                </p>
-              </div>
-            )}
-          </div>
-
+          
           <nav className="flex-1 overflow-y-auto px-4 py-5">
             <div className="space-y-1.5">
               {visibleRoutes.map((route) => {
@@ -217,25 +198,7 @@ export default function Sidebar({ collapsed, setCollapsed }: SidebarProps) {
               )}
             </Link>
 
-            <div className={`mt-4 flex items-center ${collapsed ? "justify-center" : "justify-between"}`}>
-              <div
-                className={`inline-flex items-center gap-2 rounded-full border border-[#e5e7eb] bg-white px-2.5 py-1 text-xs text-slate-600 ${
-                  collapsed ? "px-2" : ""
-                }`}
-                title={`v${version}`}
-              >
-                <span className="h-2 w-2 rounded-full bg-[#d92625]" />
-                {!collapsed ? <span>v{version}</span> : <span className="sr-only">v{version}</span>}
-              </div>
-
-              {!collapsed && (
-                <div className="inline-flex items-center gap-2 rounded-full bg-emerald-500/12 px-2.5 py-1 text-xs font-medium text-emerald-300">
-                  <span className="h-2 w-2 rounded-full bg-emerald-500" />
-                  Ready
-                </div>
-              )}
-            </div>
-          </div>
+                      </div>
         </div>
       </aside>
     </>

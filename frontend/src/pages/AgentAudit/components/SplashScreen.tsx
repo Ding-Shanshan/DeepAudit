@@ -14,7 +14,7 @@ interface SplashScreenProps {
 
 // Enhanced boot sequence messages with icons
 const BOOT_SEQUENCE = [
-  { text: "[INIT] Loading TopSec Audit Core...", delay: 0, type: 'init' },
+  { text: "[INIT] Loading DBApp Audit Core...", delay: 0, type: 'init' },
   { text: "[SCAN] Neural Analysis Engine v3.0", delay: 200, type: 'scan' },
   { text: "[LOAD] Vulnerability Pattern Database", delay: 400, type: 'load' },
   { text: "[SYNC] Agent Orchestration Module", delay: 600, type: 'sync' },

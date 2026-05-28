@@ -438,7 +438,7 @@ export default function Projects() {
               <div className="w-3 h-3 rounded-full bg-green-500/80" />
             </div>
             <span className="ml-2 font-mono text-xs text-muted-foreground tracking-wider">
-              new_project@tianrongxin
+              new_project@dbapp
             </span>
           </div>
 
@@ -971,7 +971,7 @@ export default function Projects() {
               <div className="w-3 h-3 rounded-full bg-green-500/80" />
             </div>
             <span className="ml-2 font-mono text-xs text-muted-foreground tracking-wider">
-              edit_project@tianrongxin
+              edit_project@dbapp
             </span>
           </div>
 
@@ -1243,7 +1243,7 @@ export default function Projects() {
               <div className="w-3 h-3 rounded-full bg-green-500/80" />
             </div>
             <span className="ml-2 font-mono text-xs text-rose-400 tracking-wider">
-              confirm_delete@tianrongxin
+              confirm_delete@dbapp
             </span>
           </div>
 
