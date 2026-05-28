@@ -266,12 +266,12 @@ export function SplashScreen({ onComplete }: SplashScreenProps) {
 
           {/* Terminal window - adaptive styling */}
           <div
-            className="relative rounded-xl overflow-hidden bg-white dark:bg-transparent border border-gray-200 dark:border-transparent shadow-xl dark:shadow-none"
+            className="relative rounded-md overflow-hidden bg-white dark:bg-transparent border border-gray-200 dark:border-transparent shadow-xl dark:shadow-none"
             onClick={handleTerminalClick}
           >
             {/* Terminal border glow - dark mode only */}
-            <div className="absolute inset-0 rounded-xl border border-primary/30 pointer-events-none hidden dark:block" />
-            <div className="absolute inset-0 rounded-xl shadow-[0_0_30px_rgba(255,107,44,0.2),inset_0_0_30px_rgba(0,0,0,0.5)] pointer-events-none hidden dark:block" />
+            <div className="absolute inset-0 rounded-md border border-primary/30 pointer-events-none hidden dark:block" />
+            <div className="absolute inset-0 rounded-md shadow-[0_0_30px_rgba(255,107,44,0.2),inset_0_0_30px_rgba(0,0,0,0.5)] pointer-events-none hidden dark:block" />
 
             {/* Terminal header - adaptive */}
             <div className="relative flex items-center gap-3 px-4 py-2.5 bg-gray-100 dark:bg-gray-950 border-b border-gray-200 dark:border-primary/20">
@@ -292,7 +292,7 @@ export function SplashScreen({ onComplete }: SplashScreenProps) {
               {/* Status indicator */}
               <div className="flex items-center gap-1.5">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse dark:shadow-[0_0_6px_rgba(52,211,153,0.8)]" />
-                <span className="text-[10px] text-emerald-600 dark:text-emerald-500/80 font-mono">LIVE</span>
+                <span className="text-[10px] text-emerald-600 dark:text-primary/80 font-mono">LIVE</span>
               </div>
             </div>
 
@@ -306,11 +306,11 @@ export function SplashScreen({ onComplete }: SplashScreenProps) {
                 <div
                   key={`boot-${i}`}
                   className={`mb-2 flex items-center gap-2 ${
-                    log.includes("[READY]") ? "text-emerald-600 dark:text-emerald-400" :
+                    log.includes("[READY]") ? "text-emerald-600 dark:text-primary" :
                     log.includes("[INIT]") ? "text-primary" :
-                    log.includes("[SCAN]") ? "text-violet-600 dark:text-violet-400" :
-                    log.includes("[LOAD]") ? "text-amber-600 dark:text-amber-400" :
-                    log.includes("[SYNC]") ? "text-cyan-600 dark:text-cyan-400" :
+                    log.includes("[SCAN]") ? "text-violet-600 dark:text-secondary" :
+                    log.includes("[LOAD]") ? "text-amber-600 dark:text-warning" :
+                    log.includes("[SYNC]") ? "text-secondary dark:text-secondary" :
                     "text-gray-500"
                   }`}
                   style={{
@@ -319,7 +319,7 @@ export function SplashScreen({ onComplete }: SplashScreenProps) {
                     animationDelay: `${i * 0.08}s`
                   }}
                 >
-                  <span className="text-emerald-600 dark:text-emerald-500/60">$</span>
+                  <span className="text-emerald-600 dark:text-primary/60">$</span>
                   <span className={`w-1.5 h-1.5 rounded-full ${
                     log.includes("[READY]") ? "bg-emerald-500 dark:shadow-[0_0_8px_rgba(52,211,153,0.8)]" :
                     log.includes("[INIT]") ? "bg-primary dark:shadow-[0_0_8px_rgba(255,107,44,0.8)]" :
@@ -336,11 +336,11 @@ export function SplashScreen({ onComplete }: SplashScreenProps) {
               {bootComplete && (
                 <div className="mt-5 mb-4 pt-4 border-t border-gray-200 dark:border-primary/20">
                   <div className="flex items-center gap-2 text-primary mb-2">
-                    <Zap className="w-4 h-4 text-cyan-600 dark:text-cyan-400" />
-                    <span className="font-semibold text-cyan-600 dark:text-cyan-400">// SYSTEM READY</span>
+                    <Zap className="w-4 h-4 text-secondary dark:text-secondary" />
+                    <span className="font-semibold text-secondary dark:text-secondary">// SYSTEM READY</span>
                   </div>
                   <div className="text-gray-600 dark:text-gray-400 text-sm pl-6">
-                    Execute <span className="text-emerald-600 dark:text-emerald-400 font-bold px-2 py-0.5 bg-emerald-500/10 dark:bg-emerald-500/20 border border-emerald-500/30 rounded">'audit'</span> to initialize security scan protocol
+                    Execute <span className="text-emerald-600 dark:text-primary font-bold px-2 py-0.5 bg-primary/8 dark:bg-primary/15 border border-primary/25 rounded">'audit'</span> to initialize security scan protocol
                   </div>
                   <div className="text-gray-400 dark:text-gray-600 text-xs pl-6 mt-1">
                     [ Type 'help' for available commands ]
@@ -352,7 +352,7 @@ export function SplashScreen({ onComplete }: SplashScreenProps) {
               {commandHistory.map((entry, i) => (
                 <div key={`cmd-${i}`} className="mb-2">
                   <div className="flex items-center gap-2 text-foreground">
-                    <span className="text-emerald-500">$</span>
+                    <span className="text-primary">$</span>
                     <span>{entry.input}</span>
                   </div>
                   {entry.output && (
@@ -368,7 +368,7 @@ export function SplashScreen({ onComplete }: SplashScreenProps) {
               {/* Current input line */}
               {bootComplete && (
                 <div className="flex items-center gap-2 text-foreground">
-                  <span className="text-emerald-500">$</span>
+                  <span className="text-primary">$</span>
                   <div className="flex-1 relative">
                     <input
                       ref={inputRef}

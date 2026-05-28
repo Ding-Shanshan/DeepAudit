@@ -16,10 +16,10 @@ import {
 // ============ Severity Colors (Enhanced contrast) ============
 
 export const SEVERITY_COLORS: Record<string, string> = {
-  critical: "text-rose-700 dark:text-rose-300 bg-rose-500/20 border border-rose-500/40",
+  critical: "text-rose-700 dark:text-rose-300 bg-destructive/12 border border-rose-500/40",
   high: "text-orange-700 dark:text-orange-300 bg-orange-500/20 border border-orange-500/40",
-  medium: "text-amber-700 dark:text-amber-300 bg-amber-500/20 border border-amber-500/40",
-  low: "text-sky-700 dark:text-sky-300 bg-sky-500/20 border border-sky-500/40",
+  medium: "text-amber-700 dark:text-warning bg-amber-500/20 border border-amber-500/40",
+  low: "text-sky-700 dark:text-secondary bg-secondary/15 border border-sky-500/40",
   info: "text-foreground bg-muted/20 border border-border",
 };
 
@@ -39,14 +39,14 @@ export const LOG_TYPE_CONFIG: Record<string, {
   bgColor: string;
 }> = {
   thinking: {
-    icon: React.createElement(Brain, { className: "w-4 h-4 text-violet-600 dark:text-violet-400" }),
+    icon: React.createElement(Brain, { className: "w-4 h-4 text-violet-600 dark:text-secondary" }),
     borderColor: "border-l-violet-500",
     bgColor: "bg-violet-500/10"
   },
   tool: {
-    icon: React.createElement(Wrench, { className: "w-4 h-4 text-amber-600 dark:text-amber-400" }),
+    icon: React.createElement(Wrench, { className: "w-4 h-4 text-amber-600 dark:text-warning" }),
     borderColor: "border-l-amber-500",
-    bgColor: "bg-amber-500/10"
+    bgColor: "bg-warning/8"
   },
   phase: {
     icon: React.createElement(Target, { className: "w-4 h-4 text-teal-600 dark:text-teal-400" }),
@@ -54,14 +54,14 @@ export const LOG_TYPE_CONFIG: Record<string, {
     bgColor: "bg-teal-500/10"
   },
   finding: {
-    icon: React.createElement(Bug, { className: "w-4 h-4 text-rose-600 dark:text-rose-400" }),
+    icon: React.createElement(Bug, { className: "w-4 h-4 text-rose-600 dark:text-destructive" }),
     borderColor: "border-l-rose-500",
-    bgColor: "bg-rose-500/10"
+    bgColor: "bg-destructive/8"
   },
   dispatch: {
-    icon: React.createElement(Zap, { className: "w-4 h-4 text-sky-600 dark:text-sky-400" }),
+    icon: React.createElement(Zap, { className: "w-4 h-4 text-sky-600 dark:text-secondary" }),
     borderColor: "border-l-sky-500",
-    bgColor: "bg-sky-500/10"
+    bgColor: "bg-secondary/8"
   },
   info: {
     icon: React.createElement(Terminal, { className: "w-4 h-4 text-muted-foreground" }),
@@ -79,9 +79,9 @@ export const LOG_TYPE_CONFIG: Record<string, {
     bgColor: "bg-indigo-500/10"
   },
   progress: {
-    icon: React.createElement(Loader2, { className: "w-4 h-4 text-cyan-600 dark:text-cyan-400 animate-spin" }),
+    icon: React.createElement(Loader2, { className: "w-4 h-4 text-secondary dark:text-secondary animate-spin" }),
     borderColor: "border-l-cyan-500",
-    bgColor: "bg-cyan-500/10"
+    bgColor: "bg-secondary/10"
   },
 };
 
@@ -94,24 +94,24 @@ export const AGENT_STATUS_CONFIG: Record<string, {
   animate?: boolean;
 }> = {
   running: {
-    icon: React.createElement("div", { className: "w-2 h-2 rounded-full bg-emerald-500 dark:bg-emerald-400" }),
-    color: "text-emerald-600 dark:text-emerald-400",
+    icon: React.createElement("div", { className: "w-2 h-2 rounded-full bg-primary dark:bg-primary" }),
+    color: "text-primary dark:text-primary",
     text: "Running",
     animate: true
   },
   completed: {
-    icon: React.createElement(CheckCircle2, { className: "w-3 h-3 text-emerald-600 dark:text-emerald-400" }),
-    color: "text-emerald-600 dark:text-emerald-400",
+    icon: React.createElement(CheckCircle2, { className: "w-3 h-3 text-primary dark:text-primary" }),
+    color: "text-primary dark:text-primary",
     text: "Completed"
   },
   failed: {
-    icon: React.createElement(XCircle, { className: "w-3 h-3 text-rose-600 dark:text-rose-400" }),
-    color: "text-rose-600 dark:text-rose-400",
+    icon: React.createElement(XCircle, { className: "w-3 h-3 text-rose-600 dark:text-destructive" }),
+    color: "text-rose-600 dark:text-destructive",
     text: "Failed"
   },
   waiting: {
-    icon: React.createElement(Clock, { className: "w-3 h-3 text-amber-600 dark:text-amber-400" }),
-    color: "text-amber-600 dark:text-amber-400",
+    icon: React.createElement(Clock, { className: "w-3 h-3 text-amber-600 dark:text-warning" }),
+    color: "text-amber-600 dark:text-warning",
     text: "Waiting"
   },
   created: {
@@ -129,7 +129,7 @@ export const AGENT_TYPE_CONFIG: Record<string, {
   color: string;
 }> = {
   orchestrator: {
-    icon: React.createElement(Cpu, { className: "w-4 h-4 text-violet-600 dark:text-violet-400" }),
+    icon: React.createElement(Cpu, { className: "w-4 h-4 text-violet-600 dark:text-secondary" }),
     label: "Orchestrator",
     color: "violet"
   },
@@ -139,12 +139,12 @@ export const AGENT_TYPE_CONFIG: Record<string, {
     color: "teal"
   },
   analysis: {
-    icon: React.createElement(FileSearch, { className: "w-4 h-4 text-amber-600 dark:text-amber-400" }),
+    icon: React.createElement(FileSearch, { className: "w-4 h-4 text-amber-600 dark:text-warning" }),
     label: "Analysis",
     color: "amber"
   },
   verification: {
-    icon: React.createElement(ShieldCheck, { className: "w-4 h-4 text-emerald-600 dark:text-emerald-400" }),
+    icon: React.createElement(ShieldCheck, { className: "w-4 h-4 text-primary dark:text-primary" }),
     label: "Verification",
     color: "emerald"
   },

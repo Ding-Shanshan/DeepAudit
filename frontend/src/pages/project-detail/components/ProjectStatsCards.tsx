@@ -17,7 +17,7 @@ export function ProjectStatsCards(props: { stats: ProjectCombinedStats }) {
             <p className="stat-label">审计任务</p>
             <p className="stat-value">{stats.totalTasks}</p>
           </div>
-          <div className="stat-icon text-sky-400">
+          <div className="stat-icon text-secondary">
             <Activity className="w-6 h-6" />
           </div>
         </div>
@@ -29,7 +29,7 @@ export function ProjectStatsCards(props: { stats: ProjectCombinedStats }) {
             <p className="stat-label">已完成</p>
             <p className="stat-value">{stats.completedTasks}</p>
           </div>
-          <div className="stat-icon text-emerald-400">
+          <div className="stat-icon text-primary">
             <CheckCircle className="w-6 h-6" />
           </div>
         </div>
@@ -41,7 +41,7 @@ export function ProjectStatsCards(props: { stats: ProjectCombinedStats }) {
             <p className="stat-label">发现问题</p>
             <p className="stat-value">{stats.totalIssues}</p>
           </div>
-          <div className="stat-icon text-amber-400">
+          <div className="stat-icon text-warning">
             <AlertTriangle className="w-6 h-6" />
           </div>
         </div>
@@ -53,7 +53,7 @@ export function ProjectStatsCards(props: { stats: ProjectCombinedStats }) {
             <p className="stat-label">平均质量分</p>
             <p className="stat-value">{stats.avgQualityScore.toFixed(1)}</p>
           </div>
-          <div className="stat-icon text-violet-400">
+          <div className="stat-icon text-secondary">
             <Code className="w-6 h-6" />
           </div>
         </div>

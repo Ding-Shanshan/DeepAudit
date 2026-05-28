@@ -92,7 +92,7 @@ export default function InstantExportDialog({
                         <div className="flex items-center space-x-3 p-4 border border-border rounded bg-muted/50 cursor-pointer hover:bg-muted">
                             <RadioGroupItem value="json" id="json" />
                             <Label htmlFor="json" className="flex items-center gap-3 cursor-pointer flex-1">
-                                <FileJson className="w-5 h-5 text-amber-400" />
+                                <FileJson className="w-5 h-5 text-warning" />
                                 <div>
                                     <div className="font-bold text-foreground">JSON 格式</div>
                                     <div className="text-xs text-muted-foreground">结构化数据，适合程序处理和集成</div>
@@ -102,7 +102,7 @@ export default function InstantExportDialog({
                         <div className={`flex items-center space-x-3 p-4 border border-border rounded bg-muted/50 ${isPdfDisabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:bg-muted'}`}>
                             <RadioGroupItem value="pdf" id="pdf" disabled={isPdfDisabled} />
                             <Label htmlFor="pdf" className={`flex items-center gap-3 flex-1 ${isPdfDisabled ? 'cursor-not-allowed' : 'cursor-pointer'}`}>
-                                <FileText className="w-5 h-5 text-rose-400" />
+                                <FileText className="w-5 h-5 text-destructive" />
                                 <div>
                                     <div className="font-bold text-foreground">PDF 格式</div>
                                     <div className="text-xs text-muted-foreground">
@@ -123,15 +123,15 @@ export default function InstantExportDialog({
                         <div className="p-4 grid grid-cols-2 gap-3 text-xs font-mono">
                             <div className="flex items-center justify-between border-b border-border pb-2">
                                 <span className="text-muted-foreground">编程语言:</span>
-                                <span className="font-bold text-sky-400">{language.toUpperCase()}</span>
+                                <span className="font-bold text-secondary">{language.toUpperCase()}</span>
                             </div>
                             <div className="flex items-center justify-between border-b border-border pb-2">
                                 <span className="text-muted-foreground">质量评分:</span>
-                                <span className="font-bold text-emerald-400">{(analysisResult.quality_score ?? 0).toFixed(1)}/100</span>
+                                <span className="font-bold text-primary">{(analysisResult.quality_score ?? 0).toFixed(1)}/100</span>
                             </div>
                             <div className="flex items-center justify-between border-b border-border pb-2">
                                 <span className="text-muted-foreground">发现问题:</span>
-                                <span className="font-bold text-amber-400">{analysisResult.issues?.length ?? 0}</span>
+                                <span className="font-bold text-warning">{analysisResult.issues?.length ?? 0}</span>
                             </div>
                             <div className="flex items-center justify-between border-b border-border pb-2">
                                 <span className="text-muted-foreground">分析耗时:</span>

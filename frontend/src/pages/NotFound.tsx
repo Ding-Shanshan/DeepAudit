@@ -35,7 +35,7 @@ export default function NotFound() {
                 </Link>
                 <button
                   type="button"
-                  className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-border bg-white px-5 text-sm font-medium text-foreground shadow-sm transition-colors hover:bg-muted"
+                  className="inline-flex h-11 items-center justify-center gap-2 rounded-md border border-border bg-white px-5 text-sm font-medium text-foreground shadow-sm transition-colors hover:bg-muted"
                   onClick={() => window.history.back()}
                 >
                   <ArrowLeft className="h-4 w-4" />

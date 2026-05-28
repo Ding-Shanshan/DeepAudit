@@ -353,17 +353,17 @@ export function SystemConfig() {
   return (
     <div className="space-y-6">
       {/* Status Bar */}
-      <div className={`cyber-card p-4 ${isConfigured ? 'border-emerald-500/30' : 'border-amber-500/30'}`}>
+      <div className={`cyber-card p-4 ${isConfigured ? 'border-primary/25' : 'border-warning/25'}`}>
         <div className="flex items-center justify-between flex-wrap gap-4">
           <div className="flex items-center gap-4">
-            <Info className="h-5 w-5 text-sky-400" />
+            <Info className="h-5 w-5 text-secondary" />
             <span className="font-mono text-sm">
               {isConfigured ? (
-                <span className="text-emerald-400 flex items-center gap-2">
+                <span className="text-primary flex items-center gap-2">
                   <CheckCircle2 className="h-4 w-4" /> LLM 已配置 ({currentProvider?.label})
                 </span>
               ) : (
-                <span className="text-amber-400 flex items-center gap-2">
+                <span className="text-warning flex items-center gap-2">
                   <AlertCircle className="h-4 w-4" /> 请配置 LLM API Key
                 </span>
               )}
@@ -504,13 +504,13 @@ export function SystemConfig() {
               </Button>
             </div>
             {llmTestResult && (
-              <div className={`p-3 rounded-lg ${llmTestResult.success ? 'bg-emerald-500/10 border border-emerald-500/30' : 'bg-rose-500/10 border border-rose-500/30'}`}>
+              <div className={`p-3 rounded-lg ${llmTestResult.success ? 'bg-primary/10 border border-primary/25' : 'bg-destructive/8 border border-destructive/25'}`}>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2 text-sm">
                     {llmTestResult.success ? (
-                      <CheckCircle2 className="h-4 w-4 text-emerald-400" />
+                      <CheckCircle2 className="h-4 w-4 text-primary" />
                     ) : (
-                      <AlertCircle className="h-4 w-4 text-rose-400" />
+                      <AlertCircle className="h-4 w-4 text-destructive" />
                     )}
                     <span className={llmTestResult.success ? 'text-emerald-300/80' : 'text-rose-300/80'}>
                       {llmTestResult.message}
@@ -539,7 +539,7 @@ export function SystemConfig() {
                       {/* 用户保存的配置参数 */}
                       {llmTestResult.debug.saved_config && (
                         <div className="mt-3 pt-2 border-t border-border/30">
-                          <div className="font-bold text-cyan-400 mb-2">已保存的配置参数:</div>
+                          <div className="font-bold text-secondary mb-2">已保存的配置参数:</div>
                           <div className="grid grid-cols-2 gap-x-4 gap-y-1">
                             <div>温度: <span className="text-foreground">{String((llmTestResult.debug.saved_config as Record<string, unknown>).temperature ?? 'N/A')}</span></div>
                             <div>最大Tokens: <span className="text-foreground">{String((llmTestResult.debug.saved_config as Record<string, unknown>).max_tokens ?? 'N/A')}</span></div>
@@ -555,7 +555,7 @@ export function SystemConfig() {
                       {/* 测试时实际使用的参数 */}
                       {llmTestResult.debug.test_params && (
                         <div className="mt-2 pt-2 border-t border-border/30">
-                          <div className="font-bold text-emerald-400 mb-2">测试时使用的参数:</div>
+                          <div className="font-bold text-primary mb-2">测试时使用的参数:</div>
                           <div className="grid grid-cols-3 gap-x-4">
                             <div>温度: <span className="text-foreground">{String((llmTestResult.debug.test_params as Record<string, unknown>).temperature ?? 'N/A')}</span></div>
                             <div>超时: <span className="text-foreground">{String((llmTestResult.debug.test_params as Record<string, unknown>).timeout ?? 'N/A')}s</span></div>
@@ -565,18 +565,18 @@ export function SystemConfig() {
                       )}
 
                       {llmTestResult.debug.error_category && (
-                        <div className="mt-2">错误类型: <span className="text-rose-400">{String(llmTestResult.debug.error_category)}</span></div>
+                        <div className="mt-2">错误类型: <span className="text-destructive">{String(llmTestResult.debug.error_category)}</span></div>
                       )}
                       {llmTestResult.debug.error_type && (
-                        <div>异常类型: <span className="text-rose-400">{String(llmTestResult.debug.error_type)}</span></div>
+                        <div>异常类型: <span className="text-destructive">{String(llmTestResult.debug.error_type)}</span></div>
                       )}
                       {llmTestResult.debug.status_code && (
-                        <div>HTTP 状态码: <span className="text-rose-400">{String(llmTestResult.debug.status_code)}</span></div>
+                        <div>HTTP 状态码: <span className="text-destructive">{String(llmTestResult.debug.status_code)}</span></div>
                       )}
                       {llmTestResult.debug.api_response && (
                         <div className="mt-2">
-                          <div className="font-bold text-amber-400">API 服务器返回:</div>
-                          <pre className="mt-1 p-2 bg-amber-500/10 border border-amber-500/30 rounded text-xs overflow-x-auto">
+                          <div className="font-bold text-warning">API 服务器返回:</div>
+                          <pre className="mt-1 p-2 bg-warning/8 border border-warning/25 rounded text-xs overflow-x-auto">
                             {String(llmTestResult.debug.api_response)}
                           </pre>
                         </div>
@@ -709,7 +709,7 @@ export function SystemConfig() {
           {/* Usage Notes */}
           <div className="bg-muted border border-border p-4 rounded-lg text-xs space-y-2">
             <p className="font-bold uppercase text-muted-foreground flex items-center gap-2">
-              <Info className="w-4 h-4 text-sky-400" />
+              <Info className="w-4 h-4 text-secondary" />
               配置说明
             </p>
             <p className="text-muted-foreground">• <strong className="text-muted-foreground">LiteLLM 统一适配</strong>: 大多数提供商通过 LiteLLM 统一处理，支持自动重试和负载均衡</p>
@@ -827,7 +827,7 @@ export function SystemConfig() {
             </div>
             <div className="bg-muted border border-border p-4 rounded-lg text-xs">
               <p className="font-bold text-muted-foreground flex items-center gap-2 mb-2">
-                <Info className="w-4 h-4 text-sky-400" />
+                <Info className="w-4 h-4 text-secondary" />
                 提示
               </p>
               <p className="text-muted-foreground">• 公开仓库无需配置 Token</p>
@@ -838,14 +838,14 @@ export function SystemConfig() {
           {/* SSH Key Management */}
           <div className="cyber-card p-6 space-y-4">
             <div className="flex items-center gap-3 mb-2">
-              <Key className="w-5 h-5 text-emerald-400" />
+              <Key className="w-5 h-5 text-primary" />
               <h3 className="text-lg font-bold uppercase tracking-wider text-foreground">SSH 密钥管理</h3>
             </div>
 
-            <div className="flex items-start gap-3 p-4 bg-emerald-500/10 border border-emerald-500/20 rounded-lg">
+            <div className="flex items-start gap-3 p-4 bg-primary/10 border border-emerald-500/20 rounded-lg">
               <div className="flex-shrink-0 mt-0.5">
-                <div className="w-8 h-8 rounded-lg bg-emerald-500/20 flex items-center justify-center">
-                  <Key className="w-4 h-4 text-emerald-400" />
+                <div className="w-8 h-8 rounded-lg bg-primary/20 flex items-center justify-center">
+                  <Key className="w-4 h-4 text-primary" />
                 </div>
               </div>
               <div className="flex-1 min-w-0">
@@ -888,7 +888,7 @@ export function SystemConfig() {
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
                     <Label className="text-xs font-bold text-muted-foreground uppercase flex items-center gap-2">
-                      <CheckCircle2 className="w-3 h-3 text-emerald-400" />
+                      <CheckCircle2 className="w-3 h-3 text-primary" />
                       SSH 公钥
                     </Label>
                     <Button
@@ -913,7 +913,7 @@ export function SystemConfig() {
                       <Label className="text-xs font-bold text-muted-foreground uppercase mb-1 block">
                         公钥指纹 (SHA256)
                       </Label>
-                      <code className="text-xs text-emerald-400 font-mono break-all">
+                      <code className="text-xs text-primary font-mono break-all">
                         {sshKey.fingerprint}
                       </code>
                     </div>
@@ -979,7 +979,7 @@ export function SystemConfig() {
                   <Button
                     variant="destructive"
                     onClick={() => setShowDeleteKeyDialog(true)}
-                    className="bg-rose-500/20 hover:bg-rose-500/30 text-rose-400 border border-rose-500/30 h-10"
+                    className="bg-destructive/12 hover:bg-destructive/20 text-destructive border border-destructive/25 h-10"
                   >
                     <Trash2 className="w-4 h-4 mr-2" />
                     删除密钥
@@ -1002,10 +1002,10 @@ export function SystemConfig() {
 
       {/* Delete SSH Key Confirmation Dialog */}
       <AlertDialog open={showDeleteKeyDialog} onOpenChange={setShowDeleteKeyDialog}>
-        <AlertDialogContent className="cyber-card border-rose-500/30 cyber-dialog">
+        <AlertDialogContent className="cyber-card border-destructive/25 cyber-dialog">
           <AlertDialogHeader>
             <AlertDialogTitle className="text-lg font-bold uppercase text-foreground flex items-center gap-2">
-              <Trash2 className="w-5 h-5 text-rose-400" />
+              <Trash2 className="w-5 h-5 text-destructive" />
               确认删除 SSH 密钥？
             </AlertDialogTitle>
             <AlertDialogDescription className="text-muted-foreground">
@@ -1019,7 +1019,7 @@ export function SystemConfig() {
             <AlertDialogAction
               onClick={handleDeleteSSHKey}
               disabled={deletingKey}
-              className="bg-rose-500/20 hover:bg-rose-500/30 text-rose-400 border border-rose-500/30"
+              className="bg-destructive/12 hover:bg-destructive/20 text-destructive border border-destructive/25"
             >
               {deletingKey ? (
                 <>

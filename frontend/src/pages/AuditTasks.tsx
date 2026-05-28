@@ -283,9 +283,9 @@ export default function AuditTasks() {
 
   const getStatusIcon = (status: string) => {
     switch (status) {
-      case 'completed': return <CheckCircle className="w-4 h-4 text-emerald-400" />;
-      case 'running': return <Activity className="w-4 h-4 text-sky-400" />;
-      case 'failed': return <AlertTriangle className="w-4 h-4 text-rose-400" />;
+      case 'completed': return <CheckCircle className="w-4 h-4 text-primary" />;
+      case 'running': return <Activity className="w-4 h-4 text-secondary" />;
+      case 'failed': return <AlertTriangle className="w-4 h-4 text-destructive" />;
       case 'cancelled': return <XCircle className="w-4 h-4 text-muted-foreground" />;
       default: return <Clock className="w-4 h-4 text-muted-foreground" />;
     }
@@ -354,7 +354,7 @@ export default function AuditTasks() {
         <button
           onClick={() => setActiveTab("agent")}
           className={`
-            relative group text-left p-5 rounded-xl font-mono
+            relative group text-left p-5 rounded-md font-mono
             transition-all duration-300 border-2 overflow-hidden
             ${activeTab === "agent"
               ? "bg-gradient-to-br from-primary/20 via-primary/10 to-transparent border-primary shadow-lg shadow-primary/20"
@@ -369,7 +369,7 @@ export default function AuditTasks() {
           <div className="relative flex items-start gap-4">
             {/* 图标区域 */}
             <div className={`
-              flex-shrink-0 w-14 h-14 rounded-xl flex items-center justify-center
+              flex-shrink-0 w-14 h-14 rounded-md flex items-center justify-center
               transition-all duration-300
               ${activeTab === "agent"
                 ? "bg-primary/30 shadow-lg shadow-primary/30"
@@ -407,12 +407,12 @@ export default function AuditTasks() {
                 <span className={`transition-colors duration-300 ${activeTab === "agent" ? "text-muted-foreground" : "text-muted-foreground"}`}>
                   共 <span className="font-bold text-foreground">{agentStats.total}</span> 个任务
                 </span>
-                <span className="text-emerald-400">
+                <span className="text-primary">
                   <CheckCircle className="w-3 h-3 inline mr-1" />
                   {agentStats.completed}
                 </span>
                 {agentStats.failed > 0 && (
-                  <span className="text-rose-400">
+                  <span className="text-destructive">
                     <AlertTriangle className="w-3 h-3 inline mr-1" />
                     {agentStats.failed}
                   </span>
@@ -431,7 +431,7 @@ export default function AuditTasks() {
         <button
           onClick={() => setActiveTab("regular")}
           className={`
-            relative group text-left p-5 rounded-xl font-mono
+            relative group text-left p-5 rounded-md font-mono
             transition-all duration-300 border-2 overflow-hidden
             ${activeTab === "regular"
               ? "bg-gradient-to-br from-cyan-500/20 via-cyan-500/10 to-transparent border-cyan-500 shadow-lg shadow-cyan-500/20"
@@ -440,36 +440,36 @@ export default function AuditTasks() {
           `}
         >
           {/* 背景装饰 */}
-          <div className={`absolute top-0 right-0 w-32 h-32 rounded-full blur-3xl transition-opacity duration-300 ${activeTab === "regular" ? "bg-cyan-500/20 opacity-100" : "bg-cyan-500/5 opacity-0 group-hover:opacity-50"
+          <div className={`absolute top-0 right-0 w-32 h-32 rounded-full blur-3xl transition-opacity duration-300 ${activeTab === "regular" ? "bg-secondary/20 opacity-100" : "bg-secondary/5 opacity-0 group-hover:opacity-50"
             }`} />
 
           <div className="relative flex items-start gap-4">
             {/* 图标区域 */}
             <div className={`
-              flex-shrink-0 w-14 h-14 rounded-xl flex items-center justify-center
+              flex-shrink-0 w-14 h-14 rounded-md flex items-center justify-center
               transition-all duration-300
               ${activeTab === "regular"
-                ? "bg-cyan-500/30 shadow-lg shadow-cyan-500/30"
-                : "bg-muted/80 group-hover:bg-cyan-500/20"
+                ? "bg-secondary/30 shadow-lg shadow-cyan-500/30"
+                : "bg-muted/80 group-hover:bg-secondary/20"
               }
             `}>
-              <Zap className={`w-7 h-7 transition-colors duration-300 ${activeTab === "regular" ? "text-cyan-400" : "text-muted-foreground group-hover:text-cyan-400"
+              <Zap className={`w-7 h-7 transition-colors duration-300 ${activeTab === "regular" ? "text-secondary" : "text-muted-foreground group-hover:text-secondary"
                 }`} />
             </div>
 
             {/* 内容区域 */}
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 mb-1">
-                <h3 className={`text-lg font-mono font-bold uppercase tracking-[0.15em] transition-colors duration-300 ${activeTab === "regular" ? "text-cyan-400 text-glow-cyan" : "text-foreground group-hover:text-cyan-400"}`}>
+                <h3 className={`text-lg font-mono font-bold uppercase tracking-[0.15em] transition-colors duration-300 ${activeTab === "regular" ? "text-secondary text-glow-cyan" : "text-foreground group-hover:text-secondary"}`}>
                   快速扫描任务
                 </h3>
                 {regularStats.running > 0 && (
-                  <span className="px-2 py-0.5 text-xs font-bold rounded-full bg-cyan-500/30 text-cyan-400 border border-cyan-500/50 animate-pulse">
+                  <span className="px-2 py-0.5 text-xs font-bold rounded-full bg-secondary/30 text-secondary border border-cyan-500/50 animate-pulse">
                     {regularStats.running} 运行中
                   </span>
                 )}
                 {activeTab === "regular" && (
-                  <span className="px-2 py-0.5 text-xs font-bold rounded-full bg-cyan-500 text-background">
+                  <span className="px-2 py-0.5 text-xs font-bold rounded-full bg-secondary text-background">
                     当前
                   </span>
                 )}
@@ -484,12 +484,12 @@ export default function AuditTasks() {
                 <span className={`transition-colors duration-300 ${activeTab === "regular" ? "text-muted-foreground" : "text-muted-foreground"}`}>
                   共 <span className="font-bold text-foreground">{regularStats.total}</span> 个任务
                 </span>
-                <span className="text-emerald-400">
+                <span className="text-primary">
                   <CheckCircle className="w-3 h-3 inline mr-1" />
                   {regularStats.completed}
                 </span>
                 {regularStats.failed > 0 && (
-                  <span className="text-rose-400">
+                  <span className="text-destructive">
                     <AlertTriangle className="w-3 h-3 inline mr-1" />
                     {regularStats.failed}
                   </span>
@@ -525,7 +525,7 @@ export default function AuditTasks() {
               <p className="stat-label">已完成</p>
               <p className="stat-value">{currentStats.completed}</p>
             </div>
-            <div className="stat-icon text-emerald-400">
+            <div className="stat-icon text-primary">
               <CheckCircle className="w-6 h-6" />
             </div>
           </div>
@@ -537,7 +537,7 @@ export default function AuditTasks() {
               <p className="stat-label">运行中</p>
               <p className="stat-value">{currentStats.running}</p>
             </div>
-            <div className="stat-icon text-sky-400">
+            <div className="stat-icon text-secondary">
               <Clock className="w-6 h-6" />
             </div>
           </div>
@@ -549,7 +549,7 @@ export default function AuditTasks() {
               <p className="stat-label">失败</p>
               <p className="stat-value">{currentStats.failed}</p>
             </div>
-            <div className="stat-icon text-rose-400">
+            <div className="stat-icon text-destructive">
               <AlertTriangle className="w-6 h-6" />
             </div>
           </div>
@@ -598,14 +598,14 @@ export default function AuditTasks() {
             <Button
               size="sm"
               onClick={() => setStatusFilter("completed")}
-              className={`h-10 ${statusFilter === "completed" ? "bg-emerald-500/90 border-emerald-500/50 text-foreground hover:bg-emerald-500" : "cyber-btn-outline"}`}
+              className={`h-10 ${statusFilter === "completed" ? "bg-primary/90 border-emerald-500/50 text-foreground hover:bg-primary" : "cyber-btn-outline"}`}
             >
               已完成
             </Button>
             <Button
               size="sm"
               onClick={() => setStatusFilter("failed")}
-              className={`h-10 ${statusFilter === "failed" ? "bg-rose-500/90 border-rose-500/50 text-foreground hover:bg-rose-500" : "cyber-btn-outline"}`}
+              className={`h-10 ${statusFilter === "failed" ? "bg-destructive/90 border-destructive/40 text-foreground hover:bg-destructive" : "cyber-btn-outline"}`}
             >
               失败
             </Button>
@@ -623,14 +623,14 @@ export default function AuditTasks() {
                   {/* Task Header */}
                   <div className="flex items-center justify-between mb-4 pb-4 border-b border-border">
                     <div className="flex items-center space-x-4">
-                      <div className={`w-12 h-12 rounded-lg flex items-center justify-center ${task.status === 'completed' ? 'bg-emerald-500/20' :
-                        task.status === 'running' ? 'bg-sky-500/20' :
-                          task.status === 'failed' ? 'bg-rose-500/20' :
+                      <div className={`w-12 h-12 rounded-lg flex items-center justify-center ${task.status === 'completed' ? 'bg-primary/20' :
+                        task.status === 'running' ? 'bg-secondary/15' :
+                          task.status === 'failed' ? 'bg-destructive/12' :
                             'bg-muted'
                         }`}>
-                        <Bot className={`w-6 h-6 ${task.status === 'completed' ? 'text-emerald-400' :
-                          task.status === 'running' ? 'text-sky-400' :
-                            task.status === 'failed' ? 'text-rose-400' :
+                        <Bot className={`w-6 h-6 ${task.status === 'completed' ? 'text-primary' :
+                          task.status === 'running' ? 'text-secondary' :
+                            task.status === 'failed' ? 'text-destructive' :
                               'text-muted-foreground'
                           }`} />
                       </div>
@@ -667,11 +667,11 @@ export default function AuditTasks() {
                       <p className="text-xs text-muted-foreground uppercase">已分析</p>
                     </div>
                     <div className="text-center p-3 bg-muted rounded-lg border border-border">
-                      <p className="text-2xl font-bold text-amber-400">{task.findings_count}</p>
+                      <p className="text-2xl font-bold text-warning">{task.findings_count}</p>
                       <p className="text-xs text-muted-foreground uppercase">发现问题</p>
                     </div>
                     <div className="text-center p-3 bg-muted rounded-lg border border-border">
-                      <p className="text-2xl font-bold text-sky-400">{task.tool_calls_count || 0}</p>
+                      <p className="text-2xl font-bold text-secondary">{task.tool_calls_count || 0}</p>
                       <p className="text-xs text-muted-foreground uppercase">工具调用</p>
                     </div>
                     <div className="text-center p-3 bg-muted rounded-lg border border-border">
@@ -749,7 +749,7 @@ export default function AuditTasks() {
                           </Link>
                           <Button
                             size="sm"
-                            className="cyber-btn bg-rose-500/90 border-rose-500/50 text-foreground hover:bg-rose-500 h-9"
+                            className="cyber-btn bg-destructive/90 border-destructive/40 text-foreground hover:bg-destructive h-9"
                             onClick={() => handleCancelAgentTask(task.id)}
                             disabled={cancellingAgentTaskId === task.id}
                           >
@@ -811,9 +811,9 @@ export default function AuditTasks() {
                   {/* Task Header */}
                   <div className="flex items-center justify-between mb-4 pb-4 border-b border-border">
                     <div className="flex items-center space-x-4">
-                      <div className={`w-12 h-12 rounded-lg flex items-center justify-center ${task.status === 'completed' ? 'bg-emerald-500/20' :
-                        task.status === 'running' ? 'bg-sky-500/20' :
-                          task.status === 'failed' ? 'bg-rose-500/20' :
+                      <div className={`w-12 h-12 rounded-lg flex items-center justify-center ${task.status === 'completed' ? 'bg-primary/20' :
+                        task.status === 'running' ? 'bg-secondary/15' :
+                          task.status === 'failed' ? 'bg-destructive/12' :
                             'bg-muted'
                         }`}>
                         {getStatusIcon(task.status)}
@@ -841,7 +841,7 @@ export default function AuditTasks() {
                       <p className="text-xs text-muted-foreground uppercase">代码行数</p>
                     </div>
                     <div className="text-center p-3 bg-muted rounded-lg border border-border">
-                      <p className="text-2xl font-bold text-amber-400">{task.issues_count}</p>
+                      <p className="text-2xl font-bold text-warning">{task.issues_count}</p>
                       <p className="text-xs text-muted-foreground uppercase">发现问题</p>
                     </div>
                     <div className="text-center p-3 bg-muted rounded-lg border border-border">
@@ -888,7 +888,7 @@ export default function AuditTasks() {
                       {(task.status === 'running' || task.status === 'pending') && (
                         <Button
                           size="sm"
-                          className="cyber-btn bg-rose-500/90 border-rose-500/50 text-foreground hover:bg-rose-500 h-9"
+                          className="cyber-btn bg-destructive/90 border-destructive/40 text-foreground hover:bg-destructive h-9"
                           onClick={() => handleCancelTask(task.id)}
                           disabled={cancellingTaskId === task.id}
                         >

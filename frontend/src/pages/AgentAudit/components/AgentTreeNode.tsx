@@ -14,7 +14,7 @@ const AGENT_TYPE_ICONS: Record<string, React.ReactNode> = {
   orchestrator: <Cpu className="w-4 h-4 text-violet-600 dark:text-violet-500" />,
   recon: <Scan className="w-4 h-4 text-teal-600 dark:text-teal-500" />,
   analysis: <FileSearch className="w-4 h-4 text-amber-600 dark:text-amber-500" />,
-  verification: <ShieldCheck className="w-4 h-4 text-emerald-600 dark:text-emerald-500" />,
+  verification: <ShieldCheck className="w-4 h-4 text-emerald-600 dark:text-primary" />,
 };
 
 // Agent type background colors
@@ -22,7 +22,7 @@ const AGENT_TYPE_BG: Record<string, string> = {
   orchestrator: 'bg-violet-100 dark:bg-violet-500/15 border-violet-300 dark:border-violet-500/30',
   recon: 'bg-teal-100 dark:bg-teal-500/15 border-teal-300 dark:border-teal-500/30',
   analysis: 'bg-amber-100 dark:bg-amber-500/15 border-amber-300 dark:border-amber-500/30',
-  verification: 'bg-emerald-100 dark:bg-emerald-500/15 border-emerald-300 dark:border-emerald-500/30',
+  verification: 'bg-emerald-100 dark:bg-emerald-500/15 border-emerald-300 dark:border-primary/25',
 };
 
 export const AgentTreeNodeItem = memo(function AgentTreeNodeItem({
@@ -144,7 +144,7 @@ export const AgentTreeNodeItem = memo(function AgentTreeNodeItem({
           )}
 
           {!node.parent_agent_id && node.findings_count > 0 && (
-            <Badge className="h-5 px-2 text-xs bg-rose-100 dark:bg-rose-500/20 text-rose-600 dark:text-rose-300 border border-rose-300 dark:border-rose-500/40 font-mono font-bold">
+            <Badge className="h-5 px-2 text-xs bg-rose-100 dark:bg-destructive/12 text-rose-600 dark:text-rose-300 border border-rose-300 dark:border-rose-500/40 font-mono font-bold">
               {node.findings_count}
             </Badge>
           )}

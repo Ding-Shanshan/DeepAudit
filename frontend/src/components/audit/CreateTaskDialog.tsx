@@ -519,7 +519,7 @@ export default function CreateTaskDialog({
                 {auditMode !== "agent" && (
                   <div className="p-3 border border-border rounded bg-violet-50 dark:bg-violet-950/20 space-y-3">
                     <div className="flex items-center gap-2 mb-2">
-                      <Zap className="w-4 h-4 text-violet-600 dark:text-violet-400" />
+                      <Zap className="w-4 h-4 text-violet-600 dark:text-secondary" />
                       <span className="font-mono text-sm font-bold text-violet-700 dark:text-violet-300 uppercase">审计配置</span>
                     </div>
                     <div className="grid grid-cols-2 gap-3">
@@ -586,7 +586,7 @@ export default function CreateTaskDialog({
                         {excludePatterns.map((p) => (
                           <Badge
                             key={p}
-                            className="bg-muted text-foreground border-0 font-mono text-xs cursor-pointer hover:bg-rose-100 dark:hover:bg-rose-900/50 hover:text-rose-600 dark:hover:text-rose-400"
+                            className="bg-muted text-foreground border-0 font-mono text-xs cursor-pointer hover:bg-rose-100 dark:hover:bg-rose-900/50 hover:text-rose-600 dark:hover:text-destructive"
                             onClick={() =>
                               setExcludePatterns((prev) =>
                                 prev.filter((x) => x !== p)
@@ -661,7 +661,7 @@ export default function CreateTaskDialog({
                                 size="sm"
                                 variant="ghost"
                                 onClick={() => setSelectedFiles(undefined)}
-                                className="h-8 text-xs text-rose-600 dark:text-rose-400 hover:bg-rose-100 dark:hover:bg-rose-900/30 hover:text-rose-700 dark:hover:text-rose-300"
+                                className="h-8 text-xs text-rose-600 dark:text-destructive hover:bg-rose-100 dark:hover:bg-rose-900/30 hover:text-rose-700 dark:hover:text-rose-300"
                               >
                                 重置
                               </Button>
@@ -807,7 +807,7 @@ function ProjectCard({
         {isRepo ? (
           <Globe className="w-4 h-4 text-blue-600 dark:text-blue-400" />
         ) : (
-          <Package className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+          <Package className="w-4 h-4 text-amber-600 dark:text-warning" />
         )}
       </div>
 
@@ -819,7 +819,7 @@ function ProjectCard({
           <Badge
             className={`text-xs px-1 py-0 font-mono ${isRepo
                 ? "bg-blue-500/20 text-blue-600 dark:text-blue-400 border-blue-500/30"
-                : "bg-amber-500/20 text-amber-600 dark:text-amber-400 border-amber-500/30"
+                : "bg-amber-500/20 text-amber-600 dark:text-warning border-warning/25"
               }`}
           >
             {isRepo ? "REPO" : "ZIP"}
@@ -859,14 +859,14 @@ function ZipUploadCard({
     return (
       <div className="p-3 border border-border rounded bg-emerald-50 dark:bg-emerald-950/20 space-y-3">
         <div className="flex items-center gap-3">
-          <div className="p-1.5 bg-emerald-500/20 rounded">
-            <Package className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+          <div className="p-1.5 bg-primary/20 rounded">
+            <Package className="w-4 h-4 text-primary dark:text-primary" />
           </div>
           <div className="flex-1">
             <p className="text-sm font-bold text-emerald-700 dark:text-emerald-300 font-mono">
               {zipState.storedZipInfo.original_filename}
             </p>
-            <p className="text-xs text-emerald-600 dark:text-emerald-500 font-mono">
+            <p className="text-xs text-primary dark:text-primary font-mono">
               {zipState.storedZipInfo.file_size &&
                 formatFileSize(zipState.storedZipInfo.file_size)}
               {zipState.storedZipInfo.uploaded_at &&
@@ -939,10 +939,10 @@ function ZipUploadCard({
     <div className="p-3 border border-dashed border-amber-500/50 rounded bg-amber-50 dark:bg-amber-950/20">
       <div className="flex items-start gap-3">
         <div className="p-1.5 bg-amber-500/20 rounded">
-          <Upload className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+          <Upload className="w-4 h-4 text-amber-600 dark:text-warning" />
         </div>
         <div className="flex-1">
-          <p className="text-sm font-bold text-amber-700 dark:text-amber-300 font-mono uppercase">
+          <p className="text-sm font-bold text-amber-700 dark:text-warning font-mono uppercase">
             上传源码归档
           </p>
           <div className="flex gap-2 items-center mt-2">
@@ -979,7 +979,7 @@ function ZipUploadCard({
             )}
           </div>
           {zipState.zipFile && (
-            <p className="text-xs text-amber-600 dark:text-amber-400 mt-2 font-mono">
+            <p className="text-xs text-amber-600 dark:text-warning mt-2 font-mono">
               已选: {zipState.zipFile.name} (
               {formatFileSize(zipState.zipFile.size)})
             </p>

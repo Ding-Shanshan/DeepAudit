@@ -207,7 +207,7 @@ export function DatabaseManager() {
       {/* Health Check */}
       <div className="cyber-card p-0">
         <div className="cyber-card-header">
-          <Activity className="w-5 h-5 text-emerald-400" />
+          <Activity className="w-5 h-5 text-primary" />
           <h3 className="text-lg font-bold uppercase tracking-wider text-foreground">数据库健康检查</h3>
           <div className="ml-auto">
             <Button
@@ -231,11 +231,11 @@ export function DatabaseManager() {
             <div className="space-y-4">
               <div className="flex items-center gap-4 flex-wrap">
                 {health.status === 'healthy' ? (
-                  <CheckCircle2 className="h-5 w-5 text-emerald-400" />
+                  <CheckCircle2 className="h-5 w-5 text-primary" />
                 ) : health.status === 'warning' ? (
-                  <AlertTriangle className="h-5 w-5 text-amber-400" />
+                  <AlertTriangle className="h-5 w-5 text-warning" />
                 ) : (
-                  <AlertCircle className="h-5 w-5 text-rose-400" />
+                  <AlertCircle className="h-5 w-5 text-destructive" />
                 )}
                 <div className="flex items-center gap-2">
                   <span className="font-bold uppercase text-sm text-muted-foreground">状态：</span>
@@ -243,7 +243,7 @@ export function DatabaseManager() {
                 </div>
                 <span className="text-sm text-muted-foreground">
                   数据库连接：
-                  <span className={health.database_connected ? 'text-emerald-400' : 'text-rose-400'}>
+                  <span className={health.database_connected ? 'text-primary' : 'text-destructive'}>
                     {health.database_connected ? '正常' : '异常'}
                   </span>
                   <span className="mx-2">|</span>
@@ -252,8 +252,8 @@ export function DatabaseManager() {
               </div>
 
               {health.issues.length > 0 && (
-                <div className="bg-rose-500/10 border border-rose-500/30 p-4 rounded-lg">
-                  <p className="font-bold text-rose-400 uppercase text-sm mb-2 flex items-center gap-2">
+                <div className="bg-destructive/8 border border-destructive/25 p-4 rounded-lg">
+                  <p className="font-bold text-destructive uppercase text-sm mb-2 flex items-center gap-2">
                     <AlertCircle className="w-4 h-4" />
                     发现的问题
                   </p>
@@ -266,12 +266,12 @@ export function DatabaseManager() {
               )}
 
               {health.warnings.length > 0 && (
-                <div className="bg-amber-500/10 border border-amber-500/30 p-4 rounded-lg">
-                  <p className="font-bold text-amber-400 uppercase text-sm mb-2 flex items-center gap-2">
+                <div className="bg-warning/8 border border-warning/25 p-4 rounded-lg">
+                  <p className="font-bold text-warning uppercase text-sm mb-2 flex items-center gap-2">
                     <AlertTriangle className="w-4 h-4" />
                     警告信息
                   </p>
-                  <ul className="list-disc list-inside space-y-1 text-sm text-amber-300/80">
+                  <ul className="list-disc list-inside space-y-1 text-sm text-warning/80">
                     {health.warnings.map((warning, index) => (
                       <li key={index}>{warning}</li>
                     ))}
@@ -280,9 +280,9 @@ export function DatabaseManager() {
               )}
             </div>
           ) : (
-            <div className="bg-sky-500/10 border border-sky-500/30 p-4 flex items-start gap-3 rounded-lg">
-              <Info className="h-5 w-5 text-sky-400 mt-0.5" />
-              <p className="text-sm text-sky-300/80">无法加载健康检查信息</p>
+            <div className="bg-secondary/8 border border-secondary/25 p-4 flex items-start gap-3 rounded-lg">
+              <Info className="h-5 w-5 text-secondary mt-0.5" />
+              <p className="text-sm text-secondary/80">无法加载健康检查信息</p>
             </div>
           )}
         </div>
@@ -291,7 +291,7 @@ export function DatabaseManager() {
       {/* Detailed Stats */}
       <div className="cyber-card p-0">
         <div className="cyber-card-header">
-          <Database className="w-5 h-5 text-violet-400" />
+          <Database className="w-5 h-5 text-secondary" />
           <h3 className="text-lg font-bold uppercase tracking-wider text-foreground">详细数据统计</h3>
           <div className="ml-auto">
             <Button
@@ -316,28 +316,28 @@ export function DatabaseManager() {
               <div className="cyber-card p-4">
                 <p className="stat-label">项目</p>
                 <p className="stat-value text-primary">{stats.total_projects}</p>
-                <p className="text-xs text-emerald-400 mt-1">活跃: {stats.active_projects}</p>
+                <p className="text-xs text-primary mt-1">活跃: {stats.active_projects}</p>
               </div>
               <div className="cyber-card p-4">
                 <p className="stat-label">任务</p>
-                <p className="stat-value text-emerald-400">{stats.total_tasks}</p>
+                <p className="stat-value text-primary">{stats.total_tasks}</p>
                 <p className="text-xs text-muted-foreground mt-1">完成: {stats.completed_tasks} | 进行中: {stats.running_tasks}</p>
               </div>
               <div className="cyber-card p-4">
                 <p className="stat-label">问题</p>
-                <p className="stat-value text-amber-400">{stats.total_issues}</p>
+                <p className="stat-value text-warning">{stats.total_issues}</p>
                 <p className="text-xs text-muted-foreground mt-1">未解决: {stats.open_issues} | 已解决: {stats.resolved_issues}</p>
               </div>
               <div className="cyber-card p-4">
                 <p className="stat-label">分析记录</p>
-                <p className="stat-value text-violet-400">{stats.total_analyses}</p>
+                <p className="stat-value text-secondary">{stats.total_analyses}</p>
                 <p className="text-xs text-muted-foreground mt-1">即时分析</p>
               </div>
             </div>
           ) : (
-            <div className="bg-sky-500/10 border border-sky-500/30 p-4 flex items-start gap-3 rounded-lg">
-              <Info className="h-5 w-5 text-sky-400 mt-0.5" />
-              <p className="text-sm text-sky-300/80">无法加载统计信息</p>
+            <div className="bg-secondary/8 border border-secondary/25 p-4 flex items-start gap-3 rounded-lg">
+              <Info className="h-5 w-5 text-secondary mt-0.5" />
+              <p className="text-sm text-secondary/80">无法加载统计信息</p>
             </div>
           )}
         </div>
@@ -353,13 +353,13 @@ export function DatabaseManager() {
           {message && (
             <div className={`p-4 flex items-start gap-3 rounded-lg ${
               message.type === 'success'
-                ? 'bg-emerald-500/10 border border-emerald-500/30'
-                : 'bg-rose-500/10 border border-rose-500/30'
+                ? 'bg-primary/10 border border-primary/25'
+                : 'bg-destructive/8 border border-destructive/25'
             }`}>
               {message.type === 'success' ? (
-                <CheckCircle2 className="h-5 w-5 text-emerald-400 mt-0.5" />
+                <CheckCircle2 className="h-5 w-5 text-primary mt-0.5" />
               ) : (
-                <AlertCircle className="h-5 w-5 text-rose-400 mt-0.5" />
+                <AlertCircle className="h-5 w-5 text-destructive mt-0.5" />
               )}
               <p className={`text-sm font-mono ${message.type === 'success' ? 'text-emerald-300/80' : 'text-rose-300/80'}`}>
                 {message.text}
@@ -370,7 +370,7 @@ export function DatabaseManager() {
           <div className="grid gap-6 md:grid-cols-3">
             <div className="space-y-3">
               <h4 className="text-sm font-bold uppercase text-foreground flex items-center gap-2">
-                <Download className="h-4 w-4 text-sky-400" />
+                <Download className="h-4 w-4 text-secondary" />
                 导出数据
               </h4>
               <p className="text-xs text-muted-foreground">将数据导出为 JSON 文件，用于备份或迁移</p>
@@ -386,7 +386,7 @@ export function DatabaseManager() {
 
             <div className="space-y-3">
               <h4 className="text-sm font-bold uppercase text-foreground flex items-center gap-2">
-                <Upload className="h-4 w-4 text-emerald-400" />
+                <Upload className="h-4 w-4 text-primary" />
                 导入数据
               </h4>
               <p className="text-xs text-muted-foreground">从 JSON 文件恢复数据（最大 50MB）</p>
@@ -408,7 +408,7 @@ export function DatabaseManager() {
             </div>
 
             <div className="space-y-3">
-              <h4 className="text-sm font-bold uppercase text-rose-400 flex items-center gap-2">
+              <h4 className="text-sm font-bold uppercase text-destructive flex items-center gap-2">
                 <Trash2 className="h-4 w-4" />
                 清空数据
               </h4>
@@ -416,7 +416,7 @@ export function DatabaseManager() {
               <Button
                 onClick={handleClear}
                 disabled={loading}
-                className="w-full bg-rose-500/20 hover:bg-rose-500/30 text-rose-400 border border-rose-500/30 h-10"
+                className="w-full bg-destructive/12 hover:bg-destructive/20 text-destructive border border-destructive/25 h-10"
               >
                 <Trash2 className="mr-2 h-4 w-4" />
                 清空数据
@@ -425,10 +425,10 @@ export function DatabaseManager() {
           </div>
 
           <div className="pt-6 border-t border-border border-dashed">
-            <div className="bg-sky-500/10 border border-sky-500/30 p-4 flex items-start gap-3 rounded-lg">
-              <Info className="h-5 w-5 text-sky-400 mt-0.5 flex-shrink-0" />
-              <p className="text-sm text-sky-300/80">
-                <strong className="uppercase text-sky-400">提示：</strong>
+            <div className="bg-secondary/8 border border-secondary/25 p-4 flex items-start gap-3 rounded-lg">
+              <Info className="h-5 w-5 text-secondary mt-0.5 flex-shrink-0" />
+              <p className="text-sm text-secondary/80">
+                <strong className="uppercase text-secondary">提示：</strong>
                 {dbMode === 'api'
                   ? '数据存储在后端 PostgreSQL 数据库中，支持多用户、多设备同步。建议定期导出备份。'
                   : '建议定期导出数据备份，以防意外数据丢失。'}

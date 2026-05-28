@@ -246,9 +246,9 @@ export default function EmbeddingConfigPanel() {
                   <div className="flex items-center gap-2">
                     <span>{provider.name}</span>
                     {provider.requires_api_key ? (
-                      <Key className="w-3 h-3 text-amber-400" />
+                      <Key className="w-3 h-3 text-warning" />
                     ) : (
-                      <Cpu className="w-3 h-3 text-emerald-400" />
+                      <Cpu className="w-3 h-3 text-primary" />
                     )}
                   </div>
                 </SelectItem>
@@ -258,7 +258,7 @@ export default function EmbeddingConfigPanel() {
 
           {selectedProviderInfo && (
             <p className="text-xs text-muted-foreground flex items-center gap-1">
-              <Info className="w-3 h-3 text-sky-400" />
+              <Info className="w-3 h-3 text-secondary" />
               {selectedProviderInfo.description}
             </p>
           )}
@@ -302,7 +302,7 @@ export default function EmbeddingConfigPanel() {
           <div className="space-y-2">
             <Label className="text-xs font-bold text-muted-foreground uppercase">
               API Key
-              <span className="text-rose-400 ml-1">*</span>
+              <span className="text-destructive ml-1">*</span>
             </Label>
             <Input
               type="password"
@@ -386,19 +386,19 @@ export default function EmbeddingConfigPanel() {
           <div
             className={`p-4 rounded-lg ${
               testResult.success
-                ? "bg-emerald-500/10 border border-emerald-500/30"
-                : "bg-rose-500/10 border border-rose-500/30"
+                ? "bg-primary/10 border border-primary/25"
+                : "bg-destructive/8 border border-destructive/25"
             }`}
           >
             <div className="flex items-center gap-2 mb-2">
               {testResult.success ? (
-                <CheckCircle2 className="w-5 h-5 text-emerald-400" />
+                <CheckCircle2 className="w-5 h-5 text-primary" />
               ) : (
-                <AlertCircle className="w-5 h-5 text-rose-400" />
+                <AlertCircle className="w-5 h-5 text-destructive" />
               )}
               <span
                 className={`font-bold ${
-                  testResult.success ? "text-emerald-400" : "text-rose-400"
+                  testResult.success ? "text-primary" : "text-destructive"
                 }`}
               >
                 {testResult.success ? "测试成功" : "测试失败"}
@@ -461,7 +461,7 @@ export default function EmbeddingConfigPanel() {
       {/* 说明 */}
       <div className="bg-muted border border-border p-4 rounded-lg text-xs space-y-3">
         <p className="font-bold uppercase text-muted-foreground flex items-center gap-2">
-          <Info className="w-4 h-4 text-sky-400" />
+          <Info className="w-4 h-4 text-secondary" />
           关于嵌入模型
         </p>
         <ul className="text-muted-foreground space-y-1 ml-6">
@@ -473,7 +473,7 @@ export default function EmbeddingConfigPanel() {
 
         {/* OpenAI 兼容 API 引导 */}
         <div className="mt-3 pt-3 border-t border-border/50">
-          <p className="font-bold text-amber-400 flex items-center gap-2 mb-2">
+          <p className="font-bold text-warning flex items-center gap-2 mb-2">
             <Zap className="w-4 h-4" />
             使用 OpenAI 兼容 API
           </p>

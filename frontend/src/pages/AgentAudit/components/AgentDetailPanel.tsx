@@ -102,7 +102,7 @@ export const AgentDetailPanel = memo(function AgentDetailPanel({ agentId, treeNo
       <div className="p-3 grid grid-cols-2 gap-2">
         {/* Iterations */}
         <div className="flex items-center gap-2 p-2 rounded bg-muted/50 border border-border">
-          <Repeat className="w-3.5 h-3.5 text-cyan-400/70" />
+          <Repeat className="w-3.5 h-3.5 text-secondary/70" />
           <div>
             <div className="text-xs text-muted-foreground uppercase">Iterations</div>
             <div className="text-sm text-foreground font-mono">{agent.iterations || 0}</div>
@@ -111,7 +111,7 @@ export const AgentDetailPanel = memo(function AgentDetailPanel({ agentId, treeNo
 
         {/* Tool Calls */}
         <div className="flex items-center gap-2 p-2 rounded bg-muted/50 border border-border">
-          <Zap className="w-3.5 h-3.5 text-amber-400/70" />
+          <Zap className="w-3.5 h-3.5 text-warning/70" />
           <div>
             <div className="text-xs text-muted-foreground uppercase">Tool Calls</div>
             <div className="text-sm text-foreground font-mono">{agent.tool_calls || 0}</div>

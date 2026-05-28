@@ -69,10 +69,10 @@ const getFileIcon = (path: string) => {
     const configExts = ["json", "yml", "yaml", "toml", "xml", "ini"];
 
     if (codeExts.includes(ext)) {
-        return <FileCode className="w-4 h-4 text-sky-400" />;
+        return <FileCode className="w-4 h-4 text-secondary" />;
     }
     if (configExts.includes(ext)) {
-        return <FileJson className="w-4 h-4 text-amber-400" />;
+        return <FileJson className="w-4 h-4 text-warning" />;
     }
     return <File className="w-4 h-4 text-muted-foreground" />;
 };
@@ -373,9 +373,9 @@ export default function FileSelectionDialog({
                                 />
                             </div>
                             {isExpanded ? (
-                                <FolderOpen className="w-4 h-4 text-amber-400" />
+                                <FolderOpen className="w-4 h-4 text-warning" />
                             ) : (
-                                <Folder className="w-4 h-4 text-amber-400" />
+                                <Folder className="w-4 h-4 text-warning" />
                             )}
                             <span
                                 className="text-sm font-mono font-medium flex-1 text-foreground"

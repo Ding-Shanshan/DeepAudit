@@ -419,11 +419,11 @@ export default function TerminalProgressDialog({
     const getLogColor = (type: LogEntry["type"]) => {
         switch (type) {
             case "success":
-                return "text-emerald-600 dark:text-emerald-400";
+                return "text-primary dark:text-primary";
             case "error":
-                return "text-rose-600 dark:text-rose-400";
+                return "text-rose-600 dark:text-destructive";
             case "warning":
-                return "text-amber-600 dark:text-amber-400";
+                return "text-amber-600 dark:text-warning";
             default:
                 return "text-muted-foreground";
         }
@@ -475,13 +475,13 @@ export default function TerminalProgressDialog({
                             {/* 状态指示灯 */}
                             <div className="flex items-center gap-2.5 px-3 py-1.5 bg-slate-100 dark:bg-[#060810] rounded border border-slate-200 dark:border-[#1a2535]">
                                 <div className={`w-2.5 h-2.5 rounded-full transition-all duration-300 ${!isCompleted && !isFailed && !isCancelled
-                                    ? 'bg-emerald-500 dark:bg-[#3dd68c] shadow-[0_0_10px_rgba(61,214,140,0.7)] animate-pulse'
+                                    ? 'bg-primary dark:bg-[#3dd68c] shadow-[0_0_10px_rgba(61,214,140,0.7)] animate-pulse'
                                     : 'bg-slate-300 dark:bg-[#3a4555]'}`} />
                                 <div className={`w-2.5 h-2.5 rounded-full transition-all duration-300 ${isFailed
                                     ? 'bg-rose-500 dark:bg-[#f87171] shadow-[0_0_10px_rgba(248,113,113,0.7)]'
                                     : 'bg-slate-300 dark:bg-[#3a4555]'}`} />
                                 <div className={`w-2.5 h-2.5 rounded-full transition-all duration-300 ${isCompleted
-                                    ? 'bg-cyan-500 dark:bg-[#22d3ee] shadow-[0_0_10px_rgba(34,211,238,0.7)]'
+                                    ? 'bg-secondary dark:bg-[#22d3ee] shadow-[0_0_10px_rgba(34,211,238,0.7)]'
                                     : 'bg-slate-300 dark:bg-[#3a4555]'}`} />
                             </div>
 
@@ -510,7 +510,7 @@ export default function TerminalProgressDialog({
                                 <div className="text-xs font-bold text-slate-500 dark:text-[#5a6577] uppercase tracking-[0.15em]">Type</div>
                                 <div className="flex items-center gap-2 bg-white dark:cyber-bg-elevated p-2.5 rounded border border-slate-200 dark:border-[#1a2535]">
                                     {taskType === 'repository'
-                                        ? <Cpu className="w-3.5 h-3.5 text-cyan-600 dark:text-[#22d3ee]" />
+                                        ? <Cpu className="w-3.5 h-3.5 text-secondary dark:text-[#22d3ee]" />
                                         : <HardDrive className="w-3.5 h-3.5 text-amber-600 dark:text-[#fbbf24]" />}
                                     <span className="text-xs font-bold text-slate-700 dark:text-[#d0d8e8] uppercase tracking-wider">{taskType}</span>
                                 </div>

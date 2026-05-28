@@ -78,7 +78,7 @@ export function ThemeToggle({ collapsed = false, className }: ThemeToggleProps) 
         <CurrentIcon
           className={cn(
             "w-6 h-6 transition-transform duration-200",
-            resolvedTheme === "dark" && "text-amber-400",
+            resolvedTheme === "dark" && "text-warning",
             resolvedTheme === "light" && "text-orange-500"
           )}
         />
@@ -125,9 +125,9 @@ export function ThemeToggle({ collapsed = false, className }: ThemeToggleProps) 
               <Icon
                 className={cn(
                   "w-3.5 h-3.5 transition-all duration-200",
-                  isActive && value === "dark" && "text-amber-400",
+                  isActive && value === "dark" && "text-warning",
                   isActive && value === "light" && "text-orange-500",
-                  isActive && value === "system" && "text-cyan-400"
+                  isActive && value === "system" && "text-secondary"
                 )}
               />
               <span className="hidden sm:inline">{label}</span>
@@ -183,7 +183,7 @@ export function ThemeToggleCompact({ className }: { className?: string }) {
         className={cn(
           "absolute w-5 h-5 transition-all duration-250",
           isDark
-            ? "opacity-100 rotate-0 scale-100 text-amber-400"
+            ? "opacity-100 rotate-0 scale-100 text-warning"
             : "opacity-0 -rotate-90 scale-0"
         )}
       />

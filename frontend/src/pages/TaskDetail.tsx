@@ -92,10 +92,10 @@ function IssuesList({ issues, onStatusChange }: { issues: AuditIssue[]; onStatus
     <div key={issue.id || index} className="cyber-card p-4 hover:border-border transition-all group">
       <div className="flex items-start justify-between mb-3">
         <div className="flex items-start space-x-3">
-          <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${issue.severity === 'critical' ? 'bg-rose-500/20 text-rose-400' :
+          <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${issue.severity === 'critical' ? 'bg-destructive/12 text-destructive' :
               issue.severity === 'high' ? 'bg-orange-500/20 text-orange-400' :
-                issue.severity === 'medium' ? 'bg-amber-500/20 text-amber-400' :
-                  'bg-sky-500/20 text-sky-400'
+                issue.severity === 'medium' ? 'bg-amber-500/20 text-warning' :
+                  'bg-secondary/15 text-secondary'
             }`}>
             {getTypeIcon(issue.issue_type)}
           </div>
@@ -164,14 +164,14 @@ function IssuesList({ issues, onStatusChange }: { issues: AuditIssue[]; onStatus
               <div className="w-4 h-4 bg-primary rounded flex items-center justify-center">
                 <Code className="w-2 h-2 text-foreground" />
               </div>
-              <span className="text-emerald-600 dark:text-emerald-400 text-xs font-bold font-mono uppercase">CODE_SNIPPET</span>
+              <span className="text-primary dark:text-primary text-xs font-bold font-mono uppercase">CODE_SNIPPET</span>
             </div>
             {issue.line_number && (
               <span className="text-muted-foreground text-xs font-mono">LINE: {issue.line_number}</span>
             )}
           </div>
           <div className="bg-slate-100 dark:bg-black/40 p-2 border border-border rounded">
-            <pre className="text-xs text-emerald-700 dark:text-emerald-400 font-mono overflow-x-auto">
+            <pre className="text-xs text-emerald-700 dark:text-primary font-mono overflow-x-auto">
               <code>{issue.code_snippet}</code>
             </pre>
           </div>
@@ -180,12 +180,12 @@ function IssuesList({ issues, onStatusChange }: { issues: AuditIssue[]; onStatus
 
       <div className="space-y-3">
         {issue.suggestion && (
-          <div className="bg-sky-500/10 border border-sky-500/30 p-3 rounded">
-            <div className="flex items-center mb-2 border-b border-sky-500/20 pb-1">
-              <div className="w-5 h-5 bg-sky-500/20 border border-sky-500/40 rounded flex items-center justify-center mr-2">
-                <Lightbulb className="w-3 h-3 text-sky-600 dark:text-sky-400" />
+          <div className="bg-secondary/8 border border-secondary/25 p-3 rounded">
+            <div className="flex items-center mb-2 border-b border-secondary/20 pb-1">
+              <div className="w-5 h-5 bg-secondary/15 border border-sky-500/40 rounded flex items-center justify-center mr-2">
+                <Lightbulb className="w-3 h-3 text-sky-600 dark:text-secondary" />
               </div>
-              <span className="font-bold text-sky-700 dark:text-sky-300 text-sm uppercase">修复建议</span>
+              <span className="font-bold text-sky-700 dark:text-secondary text-sm uppercase">修复建议</span>
             </div>
             <p className="text-sky-800 dark:text-sky-200/80 text-xs leading-relaxed font-mono">{issue.suggestion}</p>
           </div>
@@ -199,7 +199,7 @@ function IssuesList({ issues, onStatusChange }: { issues: AuditIssue[]; onStatus
               <div className="bg-violet-500/10 border border-violet-500/30 p-3 rounded">
                 <div className="flex items-center mb-2 border-b border-violet-500/20 pb-1">
                   <div className="w-5 h-5 bg-violet-500/20 border border-violet-500/40 rounded flex items-center justify-center mr-2">
-                    <Zap className="w-3 h-3 text-violet-600 dark:text-violet-400" />
+                    <Zap className="w-3 h-3 text-violet-600 dark:text-secondary" />
                   </div>
                   <span className="font-bold text-violet-700 dark:text-violet-300 text-sm uppercase">AI 解释</span>
                 </div>
@@ -207,33 +207,33 @@ function IssuesList({ issues, onStatusChange }: { issues: AuditIssue[]; onStatus
                 <div className="space-y-2 text-xs font-mono">
                   {parsedExplanation.what && (
                     <div className="border-l-2 border-rose-500 pl-2">
-                      <span className="font-bold text-rose-600 dark:text-rose-400 uppercase">问题：</span>
+                      <span className="font-bold text-rose-600 dark:text-destructive uppercase">问题：</span>
                       <span className="text-foreground ml-1">{parsedExplanation.what}</span>
                     </div>
                   )}
 
                   {parsedExplanation.why && (
                     <div className="border-l-2 border-amber-500 pl-2">
-                      <span className="font-bold text-amber-600 dark:text-amber-400 uppercase">原因：</span>
+                      <span className="font-bold text-amber-600 dark:text-warning uppercase">原因：</span>
                       <span className="text-foreground ml-1">{parsedExplanation.why}</span>
                     </div>
                   )}
 
                   {parsedExplanation.how && (
                     <div className="border-l-2 border-emerald-500 pl-2">
-                      <span className="font-bold text-emerald-600 dark:text-emerald-400 uppercase">方案：</span>
+                      <span className="font-bold text-primary dark:text-primary uppercase">方案：</span>
                       <span className="text-foreground ml-1">{parsedExplanation.how}</span>
                     </div>
                   )}
 
                   {parsedExplanation.learn_more && (
                     <div className="border-l-2 border-sky-500 pl-2">
-                      <span className="font-bold text-sky-600 dark:text-sky-400 uppercase">链接：</span>
+                      <span className="font-bold text-sky-600 dark:text-secondary uppercase">链接：</span>
                       <a
                         href={parsedExplanation.learn_more}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-sky-600 dark:text-sky-400 hover:text-sky-500 dark:hover:text-sky-300 hover:underline ml-1 font-bold"
+                        className="text-sky-600 dark:text-secondary hover:text-sky-500 dark:hover:text-secondary hover:underline ml-1 font-bold"
                       >
                         {parsedExplanation.learn_more}
                       </a>
@@ -246,7 +246,7 @@ function IssuesList({ issues, onStatusChange }: { issues: AuditIssue[]; onStatus
             return (
               <div className="bg-violet-500/10 border border-violet-500/30 p-3 rounded">
                 <div className="flex items-center mb-2 border-b border-violet-500/20 pb-1">
-                  <Zap className="w-4 h-4 text-violet-600 dark:text-violet-400 mr-2" />
+                  <Zap className="w-4 h-4 text-violet-600 dark:text-secondary mr-2" />
                   <span className="font-bold text-violet-700 dark:text-violet-300 text-sm uppercase">AI 解释</span>
                 </div>
                 <p className="text-foreground text-xs leading-relaxed font-mono">{issue.ai_explanation}</p>
@@ -261,10 +261,10 @@ function IssuesList({ issues, onStatusChange }: { issues: AuditIssue[]; onStatus
   if (issues.length === 0) {
     return (
       <div className="cyber-card p-16 text-center border-dashed">
-        <CheckCircle className="w-16 h-16 text-emerald-600 dark:text-emerald-400 mx-auto mb-4" />
+        <CheckCircle className="w-16 h-16 text-primary dark:text-primary mx-auto mb-4" />
         <h3 className="text-xl font-bold text-emerald-700 dark:text-emerald-300 mb-2 uppercase">代码质量优秀！</h3>
-        <p className="text-emerald-600 dark:text-emerald-400/80 mb-4 font-mono">恭喜！没有发现任何问题</p>
-        <div className="bg-emerald-500/10 border border-emerald-500/30 p-4 max-w-md mx-auto rounded">
+        <p className="text-primary dark:text-primary/80 mb-4 font-mono">恭喜！没有发现任何问题</p>
+        <div className="bg-primary/10 border border-primary/25 p-4 max-w-md mx-auto rounded">
           <p className="text-emerald-700 dark:text-emerald-300/80 text-sm font-mono">
             您的代码通过了所有质量检查，包括安全性、性能、可维护性等各个方面的评估。
           </p>
@@ -302,7 +302,7 @@ function IssuesList({ issues, onStatusChange }: { issues: AuditIssue[]; onStatus
           criticalIssues.map((issue, index) => renderIssue(issue, index))
         ) : (
           <div className="cyber-card p-12 text-center border-dashed">
-            <CheckCircle className="w-16 h-16 text-emerald-400 mx-auto mb-4" />
+            <CheckCircle className="w-16 h-16 text-primary mx-auto mb-4" />
             <h3 className="text-lg font-bold text-foreground uppercase mb-2">没有发现严重问题</h3>
             <p className="text-muted-foreground font-mono">代码在严重级别的检查中表现良好</p>
           </div>
@@ -314,7 +314,7 @@ function IssuesList({ issues, onStatusChange }: { issues: AuditIssue[]; onStatus
           highIssues.map((issue, index) => renderIssue(issue, index))
         ) : (
           <div className="cyber-card p-12 text-center border-dashed">
-            <CheckCircle className="w-16 h-16 text-emerald-400 mx-auto mb-4" />
+            <CheckCircle className="w-16 h-16 text-primary mx-auto mb-4" />
             <h3 className="text-lg font-bold text-foreground uppercase mb-2">没有发现高优先级问题</h3>
             <p className="text-muted-foreground font-mono">代码在高优先级检查中表现良好</p>
           </div>
@@ -326,7 +326,7 @@ function IssuesList({ issues, onStatusChange }: { issues: AuditIssue[]; onStatus
           mediumIssues.map((issue, index) => renderIssue(issue, index))
         ) : (
           <div className="cyber-card p-12 text-center border-dashed">
-            <CheckCircle className="w-16 h-16 text-emerald-400 mx-auto mb-4" />
+            <CheckCircle className="w-16 h-16 text-primary mx-auto mb-4" />
             <h3 className="text-lg font-bold text-foreground uppercase mb-2">没有发现中等优先级问题</h3>
             <p className="text-muted-foreground font-mono">代码在中等优先级检查中表现良好</p>
           </div>
@@ -338,7 +338,7 @@ function IssuesList({ issues, onStatusChange }: { issues: AuditIssue[]; onStatus
           lowIssues.map((issue, index) => renderIssue(issue, index))
         ) : (
           <div className="cyber-card p-12 text-center border-dashed">
-            <CheckCircle className="w-16 h-16 text-emerald-400 mx-auto mb-4" />
+            <CheckCircle className="w-16 h-16 text-primary mx-auto mb-4" />
             <h3 className="text-lg font-bold text-foreground uppercase mb-2">没有发现低优先级问题</h3>
             <p className="text-muted-foreground font-mono">代码在低优先级检查中表现良好</p>
           </div>
@@ -492,9 +492,9 @@ export default function TaskDetail() {
 
   const getStatusIcon = (status: string) => {
     switch (status) {
-      case 'completed': return <CheckCircle className="w-4 h-4 text-emerald-400" />;
-      case 'running': return <Activity className="w-4 h-4 text-sky-400" />;
-      case 'failed': return <AlertTriangle className="w-4 h-4 text-rose-400" />;
+      case 'completed': return <CheckCircle className="w-4 h-4 text-primary" />;
+      case 'running': return <Activity className="w-4 h-4 text-secondary" />;
+      case 'failed': return <AlertTriangle className="w-4 h-4 text-destructive" />;
       case 'cancelled': return <XCircle className="w-4 h-4 text-muted-foreground" />;
       default: return <Clock className="w-4 h-4 text-muted-foreground" />;
     }
@@ -532,7 +532,7 @@ export default function TaskDetail() {
           </Link>
         </div>
         <div className="cyber-card p-16 text-center">
-          <AlertTriangle className="w-16 h-16 text-rose-400 mx-auto mb-4" />
+          <AlertTriangle className="w-16 h-16 text-destructive mx-auto mb-4" />
           <h3 className="text-xl font-bold text-foreground uppercase mb-2">任务不存在</h3>
           <p className="text-muted-foreground font-mono">请检查任务ID是否正确</p>
         </div>
@@ -561,7 +561,7 @@ export default function TaskDetail() {
           {(task.status === 'running' || task.status === 'pending') && (
             <Button
               size="sm"
-              className="cyber-btn bg-rose-500/90 border-rose-500/50 text-foreground hover:bg-rose-500 h-10"
+              className="cyber-btn bg-destructive/90 border-destructive/40 text-foreground hover:bg-destructive h-10"
               onClick={handleCancelTask}
               disabled={cancelling}
             >
@@ -602,9 +602,9 @@ export default function TaskDetail() {
           <div className="flex items-center justify-between">
             <div>
               <p className="stat-label">发现问题</p>
-              <p className="stat-value text-amber-400">{task.issues_count}</p>
+              <p className="stat-value text-warning">{task.issues_count}</p>
             </div>
-            <div className="stat-icon text-amber-400">
+            <div className="stat-icon text-warning">
               <Bug className="w-6 h-6" />
             </div>
           </div>
@@ -614,9 +614,9 @@ export default function TaskDetail() {
           <div className="flex items-center justify-between">
             <div>
               <p className="stat-label">质量评分</p>
-              <p className="stat-value text-emerald-400">{task.quality_score.toFixed(1)}</p>
+              <p className="stat-value text-primary">{task.quality_score.toFixed(1)}</p>
             </div>
-            <div className="stat-icon text-emerald-400">
+            <div className="stat-icon text-primary">
               <TrendingUp className="w-6 h-6" />
             </div>
           </div>
@@ -626,9 +626,9 @@ export default function TaskDetail() {
           <div className="flex items-center justify-between">
             <div>
               <p className="stat-label">代码行数</p>
-              <p className="stat-value text-violet-400">{task.total_lines.toLocaleString()}</p>
+              <p className="stat-value text-secondary">{task.total_lines.toLocaleString()}</p>
             </div>
-            <div className="stat-icon text-violet-400">
+            <div className="stat-icon text-secondary">
               <FileText className="w-6 h-6" />
             </div>
           </div>
@@ -705,7 +705,7 @@ export default function TaskDetail() {
                   </button>
                   {scanConfigExpanded && (
                     <div className="cyber-bg-elevated border border-border p-3 rounded">
-                      <pre className="text-xs text-emerald-700 dark:text-emerald-400 font-mono overflow-x-auto">
+                      <pre className="text-xs text-emerald-700 dark:text-primary font-mono overflow-x-auto">
                         {JSON.stringify(JSON.parse(task.scan_config), null, 2)}
                       </pre>
                     </div>
@@ -772,7 +772,7 @@ export default function TaskDetail() {
       {issues.length > 0 && (
         <div className="cyber-card p-0 relative z-10">
           <div className="cyber-card-header">
-            <Bug className="w-5 h-5 text-amber-400" />
+            <Bug className="w-5 h-5 text-warning" />
             <h3 className="text-lg font-bold uppercase tracking-wider text-foreground">发现的问题 ({issues.length})</h3>
           </div>
           <div className="p-6">

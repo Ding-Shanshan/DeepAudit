@@ -212,9 +212,9 @@ export default function PromptManager() {
           <div className="flex items-center justify-between">
             <div>
               <p className="stat-label">系统模板</p>
-              <p className="stat-value text-sky-400">{templates.filter(t => t.is_system).length}</p>
+              <p className="stat-value text-secondary">{templates.filter(t => t.is_system).length}</p>
             </div>
-            <div className="stat-icon text-sky-400">
+            <div className="stat-icon text-secondary">
               <Shield className="w-6 h-6" />
             </div>
           </div>
@@ -224,9 +224,9 @@ export default function PromptManager() {
           <div className="flex items-center justify-between">
             <div>
               <p className="stat-label">自定义模板</p>
-              <p className="stat-value text-emerald-400">{templates.filter(t => !t.is_system).length}</p>
+              <p className="stat-value text-primary">{templates.filter(t => !t.is_system).length}</p>
             </div>
-            <div className="stat-icon text-emerald-400">
+            <div className="stat-icon text-primary">
               <Sparkles className="w-6 h-6" />
             </div>
           </div>
@@ -236,9 +236,9 @@ export default function PromptManager() {
           <div className="flex items-center justify-between">
             <div>
               <p className="stat-label">已启用</p>
-              <p className="stat-value text-amber-400">{templates.filter(t => t.is_active).length}</p>
+              <p className="stat-value text-warning">{templates.filter(t => t.is_active).length}</p>
             </div>
-            <div className="stat-icon text-amber-400">
+            <div className="stat-icon text-warning">
               <Activity className="w-6 h-6" />
             </div>
           </div>
@@ -301,7 +301,7 @@ export default function PromptManager() {
                 {/* Template Content Preview */}
                 <div className="p-4">
                   <div
-                    className="text-xs text-emerald-400 line-clamp-3 cyber-bg-elevated p-3 border border-border font-mono mb-4 cursor-pointer hover:border-border transition-colors rounded"
+                    className="text-xs text-primary line-clamp-3 cyber-bg-elevated p-3 border border-border font-mono mb-4 cursor-pointer hover:border-border transition-colors rounded"
                     onClick={() => openViewDialog(template)}
                     title="点击查看完整内容"
                   >
@@ -328,7 +328,7 @@ export default function PromptManager() {
                           <Button variant="ghost" size="icon" onClick={() => openEditDialog(template)} className="cyber-btn-ghost h-8 w-8">
                             <Edit className="w-4 h-4" />
                           </Button>
-                          <Button variant="ghost" size="icon" onClick={() => handleDelete(template.id)} className="h-8 w-8 hover:bg-rose-500/20 hover:text-rose-400">
+                          <Button variant="ghost" size="icon" onClick={() => handleDelete(template.id)} className="h-8 w-8 hover:bg-destructive/12 hover:text-destructive">
                             <Trash2 className="w-4 h-4" />
                           </Button>
                         </>
@@ -390,10 +390,10 @@ export default function PromptManager() {
                 </TabsTrigger>
               </TabsList>
               <TabsContent value="zh" className="mt-4">
-                <Textarea value={form.content_zh} onChange={e => setForm({ ...form, content_zh: e.target.value })} placeholder="输入中文提示词内容..." rows={12} className="cyber-input font-mono text-sm text-emerald-400" />
+                <Textarea value={form.content_zh} onChange={e => setForm({ ...form, content_zh: e.target.value })} placeholder="输入中文提示词内容..." rows={12} className="cyber-input font-mono text-sm text-primary" />
               </TabsContent>
               <TabsContent value="en" className="mt-4">
-                <Textarea value={form.content_en} onChange={e => setForm({ ...form, content_en: e.target.value })} placeholder="Enter English prompt content..." rows={12} className="cyber-input font-mono text-sm text-emerald-400" />
+                <Textarea value={form.content_en} onChange={e => setForm({ ...form, content_en: e.target.value })} placeholder="Enter English prompt content..." rows={12} className="cyber-input font-mono text-sm text-primary" />
               </TabsContent>
             </Tabs>
             <div className="flex items-center gap-2">
@@ -414,7 +414,7 @@ export default function PromptManager() {
           <DialogHeader className="px-6 py-4 border-b border-border flex-shrink-0 bg-muted">
             <DialogTitle className="flex items-center gap-3 font-mono text-foreground">
               <div className="p-2 bg-violet-500/20 rounded border border-violet-500/30">
-                <Sparkles className="w-5 h-5 text-violet-400" />
+                <Sparkles className="w-5 h-5 text-secondary" />
               </div>
               <div>
                 <span className="text-base font-bold uppercase tracking-wider">
@@ -456,7 +456,7 @@ export default function PromptManager() {
               </div>
               <div className="space-y-2">
                 <Label className="text-xs font-bold text-muted-foreground uppercase">测试代码</Label>
-                <Textarea value={testForm.code} onChange={e => setTestForm({ ...testForm, code: e.target.value })} rows={10} className="cyber-input font-mono text-sm text-emerald-400" />
+                <Textarea value={testForm.code} onChange={e => setTestForm({ ...testForm, code: e.target.value })} rows={10} className="cyber-input font-mono text-sm text-primary" />
               </div>
               <Button onClick={handleTest} disabled={testing} className="w-full cyber-btn-primary h-12">
                 {testing ? (<><Loader2 className="w-4 h-4 mr-2 animate-spin" />分析中...</>) : (<><Play className="w-4 h-4 mr-2" />运行测试</>)}
@@ -470,8 +470,8 @@ export default function PromptManager() {
                   testResult.success ? (
                     <div className="flex flex-col h-full">
                       {/* Success Header */}
-                      <div className="flex items-center justify-between p-3 bg-emerald-500/10 border-b border-emerald-500/30">
-                        <div className="flex items-center gap-2 text-emerald-400 font-bold">
+                      <div className="flex items-center justify-between p-3 bg-primary/10 border-b border-primary/25">
+                        <div className="flex items-center gap-2 text-primary font-bold">
                           <Check className="w-5 h-5" />
                           <span className="uppercase text-sm">分析成功</span>
                         </div>
@@ -485,8 +485,8 @@ export default function PromptManager() {
                         <div className="p-3 bg-muted border-b border-border flex items-center justify-between">
                           <span className="text-xs font-bold uppercase text-muted-foreground">质量评分</span>
                           <div className="flex items-center gap-2">
-                            <div className={`text-2xl font-bold ${testResult.result.quality_score >= 80 ? 'text-emerald-400' :
-                              testResult.result.quality_score >= 60 ? 'text-amber-400' : 'text-rose-400'
+                            <div className={`text-2xl font-bold ${testResult.result.quality_score >= 80 ? 'text-primary' :
+                              testResult.result.quality_score >= 60 ? 'text-warning' : 'text-destructive'
                               }`}>
                               {testResult.result.quality_score}
                             </div>
@@ -507,9 +507,9 @@ export default function PromptManager() {
                             </div>
                             {testResult.result.issues.map((issue: any, idx: number) => (
                               <div key={idx} className="cyber-card p-0 overflow-hidden">
-                                <div className={`px-3 py-2 border-b border-border flex items-center justify-between ${issue.severity === 'critical' ? 'bg-rose-500/20 text-rose-400' :
+                                <div className={`px-3 py-2 border-b border-border flex items-center justify-between ${issue.severity === 'critical' ? 'bg-destructive/12 text-destructive' :
                                   issue.severity === 'high' ? 'bg-orange-500/20 text-orange-400' :
-                                    issue.severity === 'medium' ? 'bg-amber-500/20 text-amber-400' : 'bg-sky-500/20 text-sky-400'
+                                    issue.severity === 'medium' ? 'bg-amber-500/20 text-warning' : 'bg-secondary/15 text-secondary'
                                   }`}>
                                   <span className="font-bold text-xs uppercase">{issue.severity}</span>
                                   {issue.line && <span className="text-xs opacity-80">行 {issue.line}</span>}
@@ -520,8 +520,8 @@ export default function PromptManager() {
                                     <p className="text-xs text-muted-foreground leading-relaxed">{issue.description}</p>
                                   )}
                                   {issue.suggestion && (
-                                    <div className="mt-2 p-2 bg-sky-500/10 border-l-2 border-sky-500 rounded-r">
-                                      <p className="text-xs text-sky-300">
+                                    <div className="mt-2 p-2 bg-secondary/8 border-l-2 border-sky-500 rounded-r">
+                                      <p className="text-xs text-secondary">
                                         <span className="font-bold">建议: </span>
                                         {issue.suggestion}
                                       </p>
@@ -533,10 +533,10 @@ export default function PromptManager() {
                           </div>
                         ) : (
                           <div className="text-center py-8">
-                            <div className="w-12 h-12 bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center mx-auto mb-3 rounded">
-                              <Check className="w-6 h-6 text-emerald-400" />
+                            <div className="w-12 h-12 bg-primary/20 border border-primary/25 flex items-center justify-center mx-auto mb-3 rounded">
+                              <Check className="w-6 h-6 text-primary" />
                             </div>
-                            <p className="font-bold text-emerald-400 uppercase text-sm">未发现问题</p>
+                            <p className="font-bold text-primary uppercase text-sm">未发现问题</p>
                             <p className="text-xs text-muted-foreground mt-1">代码质量良好</p>
                           </div>
                         )}
@@ -545,8 +545,8 @@ export default function PromptManager() {
                   ) : (
                     <div className="flex flex-col h-full">
                       {/* Error Header */}
-                      <div className="flex items-center justify-between p-3 bg-rose-500/10 border-b border-rose-500/30">
-                        <div className="flex items-center gap-2 text-rose-400 font-bold">
+                      <div className="flex items-center justify-between p-3 bg-destructive/8 border-b border-destructive/25">
+                        <div className="flex items-center gap-2 text-destructive font-bold">
                           <AlertTriangle className="w-5 h-5" />
                           <span className="uppercase text-sm">测试失败</span>
                         </div>
@@ -558,8 +558,8 @@ export default function PromptManager() {
                       </div>
                       {/* Error Details */}
                       <div className="flex-1 p-4">
-                        <div className="bg-rose-500/10 border border-rose-500/30 p-4 h-full overflow-auto rounded">
-                          <pre className="text-sm text-rose-400 font-mono whitespace-pre-wrap break-words">
+                        <div className="bg-destructive/8 border border-destructive/25 p-4 h-full overflow-auto rounded">
+                          <pre className="text-sm text-destructive font-mono whitespace-pre-wrap break-words">
                             {testResult.error || '未知错误'}
                           </pre>
                         </div>
@@ -622,12 +622,12 @@ export default function PromptManager() {
                 </TabsTrigger>
               </TabsList>
               <TabsContent value="zh" className="mt-4">
-                <div className="cyber-bg-elevated text-emerald-400 p-4 border border-border font-mono text-sm whitespace-pre-wrap max-h-[500px] overflow-y-auto rounded">
+                <div className="cyber-bg-elevated text-primary p-4 border border-border font-mono text-sm whitespace-pre-wrap max-h-[500px] overflow-y-auto rounded">
                   {viewTemplate?.content_zh || '(无中文内容)'}
                 </div>
               </TabsContent>
               <TabsContent value="en" className="mt-4">
-                <div className="cyber-bg-elevated text-emerald-400 p-4 border border-border font-mono text-sm whitespace-pre-wrap max-h-[500px] overflow-y-auto rounded">
+                <div className="cyber-bg-elevated text-primary p-4 border border-border font-mono text-sm whitespace-pre-wrap max-h-[500px] overflow-y-auto rounded">
                   {viewTemplate?.content_en || '(No English content)'}
                 </div>
               </TabsContent>

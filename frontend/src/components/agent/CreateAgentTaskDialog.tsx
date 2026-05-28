@@ -378,7 +378,7 @@ export default function CreateAgentTaskDialog({
               {isZipProject(selectedProject) && (
                 <div className="p-3 border border-border rounded bg-amber-950/20 space-y-3">
                   <div className="flex items-center gap-3">
-                    <Package className="w-5 h-5 text-amber-400" />
+                    <Package className="w-5 h-5 text-warning" />
                     <span className="font-mono text-sm text-muted-foreground uppercase font-bold">ZIP File</span>
                   </div>
 
@@ -391,7 +391,7 @@ export default function CreateAgentTaskDialog({
                       onClick={() => setUseStoredZip(true)}
                     >
                       <div className="flex items-center gap-2">
-                        <div className={`w-3 h-3 rounded-full border-2 ${useStoredZip ? 'border-emerald-500 bg-emerald-500' : 'border-border'
+                        <div className={`w-3 h-3 rounded-full border-2 ${useStoredZip ? 'border-emerald-500 bg-primary' : 'border-border'
                           }`} />
                         <span className="text-sm text-foreground font-mono">
                           {storedZipInfo.original_filename}
@@ -460,7 +460,7 @@ export default function CreateAgentTaskDialog({
                               size="sm"
                               variant="ghost"
                               onClick={() => setSelectedFiles(undefined)}
-                              className="h-8 text-xs text-rose-400 hover:bg-rose-900/30 hover:text-rose-300"
+                              className="h-8 text-xs text-destructive hover:bg-rose-900/30 hover:text-rose-300"
                             >
                               Reset
                             </Button>
@@ -499,7 +499,7 @@ export default function CreateAgentTaskDialog({
                       {excludePatterns.map((p) => (
                         <Badge
                           key={p}
-                          className="bg-muted text-foreground border-0 font-mono text-xs cursor-pointer hover:bg-rose-900/50 hover:text-rose-400"
+                          className="bg-muted text-foreground border-0 font-mono text-xs cursor-pointer hover:bg-rose-900/50 hover:text-destructive"
                           onClick={() => setExcludePatterns((prev) => prev.filter((x) => x !== p))}
                         >
                           {p} ×
@@ -640,7 +640,7 @@ function ProjectItem({
         {isRepo ? (
           <Globe className="w-4 h-4 text-blue-400" />
         ) : (
-          <Package className="w-4 h-4 text-amber-400" />
+          <Package className="w-4 h-4 text-warning" />
         )}
       </div>
 
@@ -652,7 +652,7 @@ function ProjectItem({
           <Badge
             className={`text-xs px-1 py-0 font-mono ${isRepo
                 ? "bg-blue-500/20 text-blue-400 border-blue-500/30"
-                : "bg-amber-500/20 text-amber-400 border-amber-500/30"
+                : "bg-amber-500/20 text-warning border-warning/25"
               }`}
           >
             {isRepo ? "REPO" : "ZIP"}

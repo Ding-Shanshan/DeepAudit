@@ -126,7 +126,7 @@ export default function RecycleBin() {
       {/* Search Bar */}
       <div className="cyber-card p-0 relative z-10">
         <div className="cyber-card-header">
-          <Trash2 className="w-5 h-5 text-rose-400" />
+          <Trash2 className="w-5 h-5 text-destructive" />
           <h3 className="text-lg font-bold uppercase tracking-wider text-foreground">回收站</h3>
           <Badge className="ml-2 cyber-badge-muted">{deletedProjects.length} 个项目</Badge>
         </div>
@@ -226,7 +226,7 @@ export default function RecycleBin() {
                   <Button
                     size="sm"
                     variant="outline"
-                    className="flex-1 h-9 cyber-btn-outline text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/10 hover:border-emerald-500/50"
+                    className="flex-1 h-9 cyber-btn-outline text-primary border-primary/25 hover:bg-primary/10 hover:border-emerald-500/50"
                     onClick={() => handleRestoreClick(project)}
                   >
                     <RotateCcw className="w-4 h-4 mr-2" />
@@ -235,7 +235,7 @@ export default function RecycleBin() {
                   <Button
                     size="sm"
                     variant="outline"
-                    className="flex-1 h-9 cyber-btn-outline text-rose-400 border-rose-500/30 hover:bg-rose-500/10 hover:border-rose-500/50"
+                    className="flex-1 h-9 cyber-btn-outline text-destructive border-destructive/25 hover:bg-destructive/8 hover:border-destructive/40"
                     onClick={() => handlePermanentDeleteClick(project)}
                   >
                     <Trash2 className="w-4 h-4 mr-2" />
@@ -264,7 +264,7 @@ export default function RecycleBin() {
       <AlertDialog open={showRestoreDialog} onOpenChange={setShowRestoreDialog}>
         <AlertDialogContent className="cyber-card p-0 cyber-dialog max-w-md !fixed">
           <AlertDialogHeader className="cyber-card-header">
-            <RotateCcw className="w-5 h-5 text-emerald-400" />
+            <RotateCcw className="w-5 h-5 text-primary" />
             <AlertDialogTitle className="text-lg font-bold uppercase tracking-wider text-foreground">
               确认恢复项目
             </AlertDialogTitle>
@@ -278,7 +278,7 @@ export default function RecycleBin() {
             <AlertDialogCancel className="cyber-btn-outline">取消</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleConfirmRestore}
-              className="cyber-btn-primary bg-emerald-600 hover:bg-emerald-500 border-emerald-500"
+              className="cyber-btn-primary bg-emerald-600 hover:bg-primary border-emerald-500"
             >
               确认恢复
             </AlertDialogAction>
@@ -289,17 +289,17 @@ export default function RecycleBin() {
       {/* Permanent Delete Dialog */}
       <AlertDialog open={showPermanentDeleteDialog} onOpenChange={setShowPermanentDeleteDialog}>
         <AlertDialogContent className="cyber-card p-0 cyber-dialog max-w-md !fixed">
-          <AlertDialogHeader className="p-4 border-b border-rose-500/30 bg-rose-500/10 flex flex-row items-center gap-2">
-            <AlertTriangle className="w-5 h-5 text-rose-400" />
-            <AlertDialogTitle className="text-lg font-bold uppercase tracking-wider text-rose-400">
+          <AlertDialogHeader className="p-4 border-b border-destructive/25 bg-destructive/8 flex flex-row items-center gap-2">
+            <AlertTriangle className="w-5 h-5 text-destructive" />
+            <AlertDialogTitle className="text-lg font-bold uppercase tracking-wider text-destructive">
               警告：永久删除项目
             </AlertDialogTitle>
           </AlertDialogHeader>
           <AlertDialogDescription className="p-6 text-muted-foreground">
-            您确定要<span className="font-bold text-rose-400 uppercase">永久删除</span>项目 <span className="font-bold text-foreground">"{selectedProject?.name}"</span> 吗？
+            您确定要<span className="font-bold text-destructive uppercase">永久删除</span>项目 <span className="font-bold text-foreground">"{selectedProject?.name}"</span> 吗？
             <br /><br />
-            <div className="bg-rose-500/10 border border-rose-500/30 p-4 rounded">
-              <p className="text-rose-400 font-bold mb-2 uppercase flex items-center">
+            <div className="bg-destructive/8 border border-destructive/25 p-4 rounded">
+              <p className="text-destructive font-bold mb-2 uppercase flex items-center">
                 <AlertTriangle className="w-4 h-4 mr-2" />
                 此操作不可撤销！
               </p>
@@ -314,7 +314,7 @@ export default function RecycleBin() {
             <AlertDialogCancel className="cyber-btn-outline">取消</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleConfirmPermanentDelete}
-              className="cyber-btn-primary bg-rose-600 hover:bg-rose-500 border-rose-500"
+              className="cyber-btn-primary bg-rose-600 hover:bg-destructive border-rose-500"
             >
               确认永久删除
             </AlertDialogAction>

@@ -171,7 +171,7 @@ export default function Account() {
                   {getInitials(profile?.full_name, profile?.username, profile?.email)}
                 </AvatarFallback>
               </Avatar>
-              <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-emerald-500 rounded-full border-2 border-background flex items-center justify-center">
+              <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-primary rounded-full border-2 border-background flex items-center justify-center">
                 <div className="w-2 h-2 bg-foreground rounded-full animate-pulse" />
               </div>
             </div>
@@ -183,14 +183,14 @@ export default function Account() {
 
             <div className="mt-6 pt-6 border-t border-border space-y-3 text-left">
               <div className="flex items-center gap-3 text-sm">
-                <Shield className="w-4 h-4 text-violet-400" />
+                <Shield className="w-4 h-4 text-secondary" />
                 <span className="text-muted-foreground">角色:</span>
-                <span className="text-violet-400 font-bold uppercase">
+                <span className="text-secondary font-bold uppercase">
                   {profile?.role === 'admin' ? '管理员' : '成员'}
                 </span>
               </div>
               <div className="flex items-center gap-3 text-sm">
-                <Calendar className="w-4 h-4 text-sky-400" />
+                <Calendar className="w-4 h-4 text-secondary" />
                 <span className="text-muted-foreground">注册时间:</span>
                 <span className="text-foreground font-mono">{formatDate(profile?.created_at)}</span>
               </div>
@@ -208,7 +208,7 @@ export default function Account() {
               <Button
                 variant="destructive"
                 onClick={() => setShowLogoutDialog(true)}
-                className="w-full bg-rose-500/20 hover:bg-rose-500/30 text-rose-400 border border-rose-500/30 h-10"
+                className="w-full bg-destructive/12 hover:bg-destructive/20 text-destructive border border-destructive/25 h-10"
               >
                 <LogOut className="w-4 h-4 mr-2" />
                 退出登录
@@ -329,7 +329,7 @@ export default function Account() {
         {/* Password Change */}
         <div className="lg:col-span-3 cyber-card p-0">
           <div className="cyber-card-header">
-            <KeyRound className="w-5 h-5 text-amber-400" />
+            <KeyRound className="w-5 h-5 text-warning" />
             <h3 className="text-lg font-bold uppercase tracking-wider text-foreground">修改密码</h3>
           </div>
           <div className="p-6">
@@ -382,10 +382,10 @@ export default function Account() {
 
       {/* Logout Confirmation Dialog */}
       <AlertDialog open={showLogoutDialog} onOpenChange={setShowLogoutDialog}>
-        <AlertDialogContent className="cyber-card border-rose-500/30 cyber-dialog">
+        <AlertDialogContent className="cyber-card border-destructive/25 cyber-dialog">
           <AlertDialogHeader>
             <AlertDialogTitle className="text-lg font-bold uppercase text-foreground flex items-center gap-2">
-              <LogOut className="w-5 h-5 text-rose-400" />
+              <LogOut className="w-5 h-5 text-destructive" />
               确认退出登录？
             </AlertDialogTitle>
             <AlertDialogDescription className="text-muted-foreground">
@@ -398,7 +398,7 @@ export default function Account() {
             </AlertDialogCancel>
             <AlertDialogAction
               onClick={handleLogout}
-              className="bg-rose-500/20 hover:bg-rose-500/30 text-rose-400 border border-rose-500/30"
+              className="bg-destructive/12 hover:bg-destructive/20 text-destructive border border-destructive/25"
             >
               确认退出
             </AlertDialogAction>

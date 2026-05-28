@@ -518,7 +518,7 @@ export default function AdminDashboard() {
                               {item.is_active ? "禁用" : "启用"}
                             </Button>
                             {item.username !== user?.username && (
-                              <Button variant="outline" size="sm" className="cyber-btn-ghost h-8 hover:text-rose-400" onClick={() => void handleDeleteUser(item)}>
+                              <Button variant="outline" size="sm" className="cyber-btn-ghost h-8 hover:text-destructive" onClick={() => void handleDeleteUser(item)}>
                                 删除
                               </Button>
                             )}
@@ -671,7 +671,7 @@ export default function AdminDashboard() {
                             <Button variant="outline" size="sm" className="cyber-btn-outline h-8" onClick={() => void handleToggleSchedule(item)}>
                               {item.is_active ? "停用" : "启用"}
                             </Button>
-                            <Button variant="outline" size="sm" className="cyber-btn-ghost h-8 hover:text-rose-400" onClick={() => void handleDeleteSchedule(item)}>
+                            <Button variant="outline" size="sm" className="cyber-btn-ghost h-8 hover:text-destructive" onClick={() => void handleDeleteSchedule(item)}>
                               删除
                             </Button>
                           </div>
@@ -773,7 +773,7 @@ export default function AdminDashboard() {
                             <Button variant="outline" size="sm" className="cyber-btn-outline h-8" onClick={() => void handleToggleKnowledge(item)}>
                               {item.is_active ? "停用" : "启用"}
                             </Button>
-                            <Button variant="outline" size="sm" className="cyber-btn-ghost h-8 hover:text-rose-400" onClick={() => void handleDeleteKnowledge(item)}>
+                            <Button variant="outline" size="sm" className="cyber-btn-ghost h-8 hover:text-destructive" onClick={() => void handleDeleteKnowledge(item)}>
                               删除
                             </Button>
                           </div>

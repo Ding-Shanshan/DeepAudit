@@ -504,9 +504,9 @@ export default function ProjectDetail() {
 
   const getStatusIcon = (status: string) => {
     switch (status) {
-      case 'completed': return <CheckCircle className="w-4 h-4 text-emerald-400" />;
-      case 'running': return <Activity className="w-4 h-4 text-sky-400" />;
-      case 'failed': return <AlertTriangle className="w-4 h-4 text-rose-400" />;
+      case 'completed': return <CheckCircle className="w-4 h-4 text-primary" />;
+      case 'running': return <Activity className="w-4 h-4 text-secondary" />;
+      case 'failed': return <AlertTriangle className="w-4 h-4 text-destructive" />;
       case 'cancelled': return <XCircle className="w-4 h-4 text-muted-foreground" />;
       default: return <Clock className="w-4 h-4 text-muted-foreground" />;
     }
@@ -554,7 +554,7 @@ export default function ProjectDetail() {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
         <div className="cyber-card p-8 text-center">
-          <AlertTriangle className="w-16 h-16 text-rose-400 mx-auto mb-4" />
+          <AlertTriangle className="w-16 h-16 text-destructive mx-auto mb-4" />
           <h2 className="text-2xl font-bold text-foreground mb-2 uppercase">项目未找到</h2>
           <p className="text-muted-foreground mb-4 font-mono">请检查项目ID是否正确</p>
           <Link to="/projects">
@@ -690,7 +690,7 @@ export default function ProjectDetail() {
             {/* 最近活动 */}
             <div className="cyber-card p-4">
               <div className="section-header">
-                <Clock className="w-5 h-5 text-emerald-400" />
+                <Clock className="w-5 h-5 text-primary" />
                 <h3 className="section-title">最近活动</h3>
               </div>
               <div>
@@ -703,9 +703,9 @@ export default function ProjectDetail() {
                         className="flex items-center justify-between p-3 bg-muted/50 rounded-lg hover:bg-muted transition-all group"
                       >
                         <div className="flex items-center space-x-3">
-                          <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${t.task.status === 'completed' ? 'bg-emerald-500/20' :
-                            t.task.status === 'running' ? 'bg-sky-500/20' :
-                              t.task.status === 'failed' ? 'bg-rose-500/20' :
+                          <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${t.task.status === 'completed' ? 'bg-primary/20' :
+                            t.task.status === 'running' ? 'bg-secondary/15' :
+                              t.task.status === 'failed' ? 'bg-destructive/12' :
                                 'bg-muted'
                             }`}>
                             {getStatusIcon(t.task.status)}
@@ -852,12 +852,12 @@ export default function ProjectDetail() {
               {/* 归档项目提示 */}
               {editForm.source_type === 'zip' && (
                 <div className="border-t border-border pt-4">
-                  <div className="bg-amber-500/10 border border-amber-500/30 p-4 rounded">
+                  <div className="bg-warning/8 border border-warning/25 p-4 rounded">
                     <div className="flex items-start space-x-3">
-                      <Upload className="w-5 h-5 text-amber-400 mt-0.5" />
+                      <Upload className="w-5 h-5 text-warning mt-0.5" />
                       <div className="text-sm font-mono">
-                        <p className="font-bold text-amber-300 mb-1 uppercase">归档上传项目</p>
-                        <p className="text-amber-400/80 text-xs">
+                        <p className="font-bold text-warning mb-1 uppercase">归档上传项目</p>
+                        <p className="text-warning/80 text-xs">
                           此项目通过本地归档上传创建。每次进行代码审计时，可以复用已存储归档，也可以重新上传新的源码归档。
                         </p>
                       </div>

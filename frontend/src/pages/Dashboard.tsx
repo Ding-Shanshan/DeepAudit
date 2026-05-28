@@ -120,11 +120,11 @@ export default function Dashboard() {
           });
 
           const typeMap: Record<string, { name: string; color: string }> = {
-            security: { name: '安全问题', color: '#f43f5e' },
-            bug: { name: '潜在Bug', color: '#f97316' },
-            performance: { name: '性能问题', color: '#eab308' },
-            style: { name: '代码风格', color: '#3b82f6' },
-            maintainability: { name: '可维护性', color: '#8b5cf6' }
+            security: { name: '安全问题', color: '#6366F1' },
+            bug: { name: '潜在Bug', color: '#818CF8' },
+            performance: { name: '性能问题', color: '#059669' },
+            style: { name: '代码风格', color: '#8b5cf6' },
+            maintainability: { name: '可维护性', color: '#64748b' }
           };
 
           const issueData = Object.entries(typeCount).map(([type, count]) => ({
@@ -205,11 +205,11 @@ export default function Dashboard() {
 
       {/* Demo Mode Warning */}
       {isDemoMode && (
-        <div className="relative z-10 cyber-card p-4 border-amber-500/30 bg-amber-500/5">
+        <div className="relative z-10 cyber-card p-4 border-warning/25 bg-warning/5">
           <div className="flex items-start gap-3">
-            <AlertTriangle className="w-5 h-5 text-amber-400 mt-0.5" />
+            <AlertTriangle className="w-5 h-5 text-warning mt-0.5" />
             <div className="text-sm text-foreground/80">
-              当前使用<span className="text-amber-400 font-bold">演示模式</span>，显示的是模拟数据。
+              当前使用<span className="text-warning font-bold">演示模式</span>，显示的是模拟数据。
               <Link to="/admin" className="ml-2 text-primary font-bold hover:underline">
                 前往配置 →
               </Link>
@@ -226,8 +226,8 @@ export default function Dashboard() {
             <div>
               <p className="stat-label">总项目数</p>
               <p className="stat-value">{stats?.total_projects || 0}</p>
-              <p className="text-sm text-emerald-400 mt-1 flex items-center gap-1">
-                <span className="w-2 h-2 rounded-full bg-emerald-400" />
+              <p className="text-sm text-primary mt-1 flex items-center gap-1">
+                <span className="w-2 h-2 rounded-full bg-primary" />
                 活跃: {stats?.active_projects || 0}
               </p>
             </div>
@@ -243,12 +243,12 @@ export default function Dashboard() {
             <div>
               <p className="stat-label">审计任务</p>
               <p className="stat-value">{stats?.total_tasks || 0}</p>
-              <p className="text-sm text-emerald-400 mt-1 flex items-center gap-1">
-                <span className="w-2 h-2 rounded-full bg-emerald-400" />
+              <p className="text-sm text-primary mt-1 flex items-center gap-1">
+                <span className="w-2 h-2 rounded-full bg-primary" />
                 已完成: {stats?.completed_tasks || 0}
               </p>
             </div>
-            <div className="stat-icon text-emerald-400">
+            <div className="stat-icon text-primary">
               <Activity className="w-6 h-6" />
             </div>
           </div>
@@ -260,12 +260,12 @@ export default function Dashboard() {
             <div>
               <p className="stat-label">发现问题</p>
               <p className="stat-value">{stats?.total_issues || 0}</p>
-              <p className="text-sm text-amber-400 mt-1 flex items-center gap-1">
-                <span className="w-2 h-2 rounded-full bg-amber-400" />
+              <p className="text-sm text-warning mt-1 flex items-center gap-1">
+                <span className="w-2 h-2 rounded-full bg-warning" />
                 已解决: {stats?.resolved_issues || 0}
               </p>
             </div>
-            <div className="stat-icon text-amber-400">
+            <div className="stat-icon text-warning">
               <AlertTriangle className="w-6 h-6" />
             </div>
           </div>
@@ -280,7 +280,7 @@ export default function Dashboard() {
                 {stats?.avg_quality_score ? stats.avg_quality_score.toFixed(1) : '0.0'}
               </p>
               {stats?.avg_quality_score ? (
-                <p className="text-sm text-emerald-400 mt-1 flex items-center gap-1">
+                <p className="text-sm text-primary mt-1 flex items-center gap-1">
                   <TrendingUp className="w-4 h-4" />
                   持续改进
                 </p>
@@ -288,7 +288,7 @@ export default function Dashboard() {
                 <p className="text-sm text-muted-foreground mt-1">暂无数据</p>
               )}
             </div>
-            <div className="stat-icon text-violet-400">
+            <div className="stat-icon text-secondary">
               <Target className="w-6 h-6" />
             </div>
           </div>
@@ -344,7 +344,7 @@ export default function Dashboard() {
             {/* Issue Distribution */}
             <div className="cyber-card p-4">
               <div className="section-header">
-                <BarChart3 className="w-5 h-5 text-violet-400" />
+                <BarChart3 className="w-5 h-5 text-secondary" />
                 <h3 className="section-title">问题类型分布</h3>
               </div>
               {issueTypeData.length > 0 ? (
@@ -442,7 +442,7 @@ export default function Dashboard() {
           {/* Recent Tasks */}
           <div className="cyber-card p-4">
             <div className="section-header">
-              <Clock className="w-5 h-5 text-emerald-400" />
+              <Clock className="w-5 h-5 text-primary" />
               <h3 className="section-title">最近任务</h3>
               <Link to="/audit-tasks" className="ml-auto">
                 <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground">
@@ -482,9 +482,9 @@ export default function Dashboard() {
                     >
                       <div className="flex items-center gap-3">
                         <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
-                          isCompleted ? 'bg-emerald-500/20 text-emerald-400' :
-                          isRunning ? 'bg-sky-500/20 text-sky-400' :
-                          'bg-rose-500/20 text-rose-400'
+                          isCompleted ? 'bg-primary/15 text-primary' :
+                          isRunning ? 'bg-secondary/15 text-secondary' :
+                          'bg-destructive/15 text-destructive'
                         }`}>
                           {isAgent ? <Bot className="w-4 h-4" /> :
                            isCompleted ? <Activity className="w-4 h-4" /> :
@@ -494,7 +494,7 @@ export default function Dashboard() {
                         <div>
                           <p className="text-base font-medium text-foreground group-hover:text-primary transition-colors">
                             {taskName}
-                            {isAgent && <span className="ml-2 text-xs text-violet-400 font-mono">Agent</span>}
+                            {isAgent && <span className="ml-2 text-xs text-secondary font-mono">Agent</span>}
                           </p>
                           <p className="text-sm text-muted-foreground">
                             质量分: <span className="text-foreground">{score}</span>
@@ -554,7 +554,7 @@ export default function Dashboard() {
           {/* System Status */}
           <div className="cyber-card p-4">
             <div className="section-header">
-              <Cpu className="w-5 h-5 text-emerald-400" />
+              <Cpu className="w-5 h-5 text-primary" />
               <h3 className="section-title">系统状态</h3>
             </div>
             <div className="space-y-3">
@@ -575,7 +575,7 @@ export default function Dashboard() {
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-base text-muted-foreground">运行中任务</span>
-                <span className="text-base font-bold text-sky-400">
+                <span className="text-base font-bold text-secondary">
                   {recentTasks.filter(u => {
                     const s = u.task.status;
                     return s === 'running' || s === 'initializing' || s === 'planning' || s === 'indexing' || s === 'analyzing' || s === 'verifying' || s === 'reporting';
@@ -584,7 +584,7 @@ export default function Dashboard() {
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-base text-muted-foreground">待解决问题</span>
-                <span className="text-base font-bold text-amber-400">
+                <span className="text-base font-bold text-warning">
                   {stats ? stats.total_issues - stats.resolved_issues : 0}
                 </span>
               </div>
@@ -593,7 +593,7 @@ export default function Dashboard() {
                   <Shield className="w-4 h-4" />
                   审计规则
                 </span>
-                <span className="text-base font-bold text-violet-400">
+                <span className="text-base font-bold text-secondary">
                   {ruleStats.enabled}/{ruleStats.total}
                 </span>
               </div>
@@ -602,7 +602,7 @@ export default function Dashboard() {
                   <MessageSquare className="w-4 h-4" />
                   提示词模板
                 </span>
-                <span className="text-base font-bold text-emerald-400">
+                <span className="text-base font-bold text-primary">
                   {templateStats.active}/{templateStats.total}
                 </span>
               </div>
@@ -612,7 +612,7 @@ export default function Dashboard() {
           {/* Recent Activity */}
           <div className="cyber-card p-4">
             <div className="section-header">
-              <Terminal className="w-5 h-5 text-amber-400" />
+              <Terminal className="w-5 h-5 text-warning" />
               <h3 className="section-title">最新活动</h3>
             </div>
             <div className="space-y-2">
@@ -660,9 +660,9 @@ export default function Dashboard() {
                       key={`${unified.kind}-${task.id}`}
                       to={taskLink}
                       className={`block p-3 rounded-lg border transition-all ${
-                        isCompleted ? 'bg-emerald-500/5 border-emerald-500/20 hover:border-emerald-500/40' :
-                        isRunning ? 'bg-sky-500/5 border-sky-500/20 hover:border-sky-500/40' :
-                        isFailed ? 'bg-rose-500/5 border-rose-500/20 hover:border-rose-500/40' :
+                        isCompleted ? 'bg-primary/5 border-emerald-500/20 hover:border-primary/35' :
+                        isRunning ? 'bg-secondary/5 border-secondary/20 hover:border-secondary/40' :
+                        isFailed ? 'bg-destructive/5 border-destructive/20 hover:border-destructive/40' :
                         'bg-muted/30 border-border hover:border-border'
                       }`}
                     >

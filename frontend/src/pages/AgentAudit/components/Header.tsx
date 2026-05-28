@@ -21,7 +21,7 @@ export function Header({
     <header className="relative flex h-20 shrink-0 items-center justify-between border-b border-border bg-white/88 px-6 backdrop-blur-xl">
       <div className="flex items-center gap-5">
         <div className="flex items-center gap-3 border-r border-border pr-5">
-          <div className="relative flex h-11 w-11 items-center justify-center rounded-2xl border border-primary/10 bg-gradient-to-br from-primary/12 to-white shadow-sm">
+          <div className="relative flex h-11 w-11 items-center justify-center rounded-lg border border-primary/10 bg-gradient-to-br from-primary/12 to-white shadow-sm">
             <img src={BRAND_LOGO_PATH} alt={BRAND_NAME} className="h-5 w-5 object-contain" />
             {isRunning && <span className="absolute -right-1 -top-1 h-2.5 w-2.5 rounded-full bg-emerald-500 ring-2 ring-white" />}
           </div>

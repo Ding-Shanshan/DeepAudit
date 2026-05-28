@@ -62,7 +62,7 @@ function getStatusIcon(title: string) {
     return <AlertTriangle className="w-3 h-3 text-red-400" />;
   }
   if (lowerTitle.includes('start') || lowerTitle.includes('begin') || lowerTitle.includes('init')) {
-    return <Play className="w-3 h-3 text-cyan-400" />;
+    return <Play className="w-3 h-3 text-secondary" />;
   }
   return null;
 }
@@ -96,7 +96,7 @@ export const LogEntry = memo(function LogEntry({ item, isExpanded, onToggle }: L
         ${config.borderColor}
         ${isExpanded ? 'bg-slate-100 dark:bg-card/80' : 'bg-slate-50 dark:bg-card/40'}
         ${isCollapsible ? 'hover:bg-slate-100 dark:hover:bg-card/60' : ''}
-        ${isFinding ? 'border border-rose-500/30 dark:border-rose-500/20 !bg-rose-50 dark:!bg-rose-950/20' : 'border border-slate-200 dark:border-transparent'}
+        ${isFinding ? 'border border-destructive/25 dark:border-rose-500/20 !bg-rose-50 dark:!bg-rose-950/20' : 'border border-slate-200 dark:border-transparent'}
         ${isError ? 'border border-red-500/30 dark:border-red-500/20 !bg-red-50 dark:!bg-red-950/20' : ''}
         ${isDispatch ? 'border-sky-500/30 dark:border-sky-500/20 !bg-sky-50 dark:!bg-sky-950/20' : ''}
         ${isThinking ? '!bg-violet-50 dark:!bg-violet-950/20 border-violet-500/30 dark:border-violet-500/20' : ''}
@@ -116,12 +116,12 @@ export const LogEntry = memo(function LogEntry({ item, isExpanded, onToggle }: L
             <span className={`
               text-xs font-mono font-bold uppercase tracking-wider px-2 py-1 rounded-md border
               ${isThinking ? 'bg-violet-500/20 text-violet-600 dark:text-violet-300 border-violet-500/30' : ''}
-              ${isTool ? 'bg-amber-500/20 text-amber-600 dark:text-amber-300 border-amber-500/30' : ''}
-              ${isFinding ? 'bg-rose-500/20 text-rose-600 dark:text-rose-300 border-rose-500/30' : ''}
+              ${isTool ? 'bg-amber-500/20 text-amber-600 dark:text-warning border-amber-500/30' : ''}
+              ${isFinding ? 'bg-destructive/12 text-rose-600 dark:text-rose-300 border-destructive/25' : ''}
               ${isError ? 'bg-red-500/20 text-red-600 dark:text-red-300 border-red-500/30' : ''}
               ${isInfo ? 'bg-muted/80 text-foreground border-border/50' : ''}
-              ${isProgress ? 'bg-cyan-500/20 text-cyan-600 dark:text-cyan-300 border-cyan-500/30' : ''}
-              ${isDispatch ? 'bg-sky-500/20 text-sky-600 dark:text-sky-300 border-sky-500/30' : ''}
+              ${isProgress ? 'bg-cyan-500/20 text-secondary dark:text-cyan-300 border-cyan-500/30' : ''}
+              ${isDispatch ? 'bg-sky-500/20 text-sky-600 dark:text-secondary border-sky-500/30' : ''}
               ${item.type === 'phase' ? 'bg-teal-500/20 text-teal-600 dark:text-teal-300 border-teal-500/30' : ''}
               ${item.type === 'user' ? 'bg-indigo-500/20 text-indigo-600 dark:text-indigo-300 border-indigo-500/30' : ''}
               flex-shrink-0
@@ -155,15 +155,15 @@ export const LogEntry = memo(function LogEntry({ item, isExpanded, onToggle }: L
             {/* Tool status */}
             {item.tool?.status === 'running' && (
               <div className="flex items-center gap-2 flex-shrink-0 bg-amber-500/15 px-2.5 py-1 rounded-md border border-amber-500/30">
-                <Loader2 className="w-3.5 h-3.5 animate-spin text-amber-600 dark:text-amber-400" />
-                <span className="text-xs text-amber-600 dark:text-amber-400 font-mono uppercase font-semibold">Running</span>
+                <Loader2 className="w-3.5 h-3.5 animate-spin text-amber-600 dark:text-warning" />
+                <span className="text-xs text-amber-600 dark:text-warning font-mono uppercase font-semibold">Running</span>
               </div>
             )}
 
             {item.tool?.status === 'completed' && (
-              <div className="flex items-center gap-1.5 flex-shrink-0 px-2 py-1 rounded-md bg-emerald-500/10 border border-emerald-500/30">
-                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-500" />
-                <span className="text-xs text-emerald-600 dark:text-emerald-500 font-mono uppercase">Done</span>
+              <div className="flex items-center gap-1.5 flex-shrink-0 px-2 py-1 rounded-md bg-primary/8 border border-primary/25">
+                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 dark:text-primary" />
+                <span className="text-xs text-emerald-600 dark:text-primary font-mono uppercase">Done</span>
               </div>
             )}
 
@@ -237,9 +237,9 @@ export const LogEntry = memo(function LogEntry({ item, isExpanded, onToggle }: L
                     </span>
                   </div>
                   {item.tool?.status === 'completed' && (
-                    <div className="flex items-center gap-1.5 px-2 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/20">
-                      <CheckCircle2 className="w-3 h-3 text-emerald-600 dark:text-emerald-500" />
-                      <span className="text-xs text-emerald-600 dark:text-emerald-500 font-mono">Complete</span>
+                    <div className="flex items-center gap-1.5 px-2 py-0.5 rounded bg-primary/8 border border-emerald-500/20">
+                      <CheckCircle2 className="w-3 h-3 text-emerald-600 dark:text-primary" />
+                      <span className="text-xs text-emerald-600 dark:text-primary font-mono">Complete</span>
                     </div>
                   )}
                 </div>

@@ -703,7 +703,7 @@ export default function Projects() {
                         size="icon"
                         onClick={() => setSelectedFile(null)}
                         disabled={uploading}
-                        className="hover:bg-rose-500/10 hover:text-rose-400"
+                        className="hover:bg-destructive/8 hover:text-destructive"
                       >
                         <Trash2 className="w-4 h-4" />
                       </Button>
@@ -720,12 +720,12 @@ export default function Projects() {
                     </div>
                   )}
 
-                  <div className="bg-amber-500/10 border border-amber-500/30 p-3 rounded">
+                  <div className="bg-warning/8 border border-warning/25 p-3 rounded">
                     <div className="flex items-start space-x-3">
-                      <AlertCircle className="w-4 h-4 text-amber-400 mt-0.5" />
-                      <div className="text-xs font-mono text-amber-300">
+                      <AlertCircle className="w-4 h-4 text-warning mt-0.5" />
+                      <div className="text-xs font-mono text-warning">
                         <p className="font-bold mb-1 uppercase">上传协议:</p>
-                        <ul className="space-y-0.5 list-disc list-inside text-amber-400/80">
+                        <ul className="space-y-0.5 list-disc list-inside text-warning/80">
                           <li>确保完整的项目代码</li>
                           <li>移除 node_modules 等依赖目录</li>
                           <li>包含必要的配置文件</li>
@@ -775,7 +775,7 @@ export default function Projects() {
                 <p className="stat-label">活跃项目</p>
                 <p className="stat-value">{projects.filter(p => p.is_active).length}</p>
               </div>
-              <div className="stat-icon text-emerald-400">
+              <div className="stat-icon text-primary">
                 <Activity className="w-6 h-6" />
               </div>
             </div>
@@ -787,7 +787,7 @@ export default function Projects() {
                 <p className="stat-label">远程仓库</p>
                 <p className="stat-value">{projects.filter(p => isRepositoryProject(p)).length}</p>
               </div>
-              <div className="stat-icon text-sky-400">
+              <div className="stat-icon text-secondary">
                 <GitBranch className="w-6 h-6" />
               </div>
             </div>
@@ -799,7 +799,7 @@ export default function Projects() {
                 <p className="stat-label">归档上传</p>
                 <p className="stat-value">{projects.filter(p => isZipProject(p)).length}</p>
               </div>
-              <div className="stat-icon text-amber-400">
+              <div className="stat-icon text-warning">
                 <Upload className="w-6 h-6" />
               </div>
             </div>
@@ -915,7 +915,7 @@ export default function Projects() {
                   <Button size="sm" variant="outline" className="cyber-btn-ghost h-8 px-0" onClick={() => handleEditClick(project)}>
                     <Edit className="w-3 h-3" />
                   </Button>
-                  <Button size="sm" variant="outline" className="cyber-btn-ghost h-8 px-0 hover:bg-rose-500/10 hover:text-rose-400 hover:border-rose-500/30" onClick={() => handleDeleteClick(project)}>
+                  <Button size="sm" variant="outline" className="cyber-btn-ghost h-8 px-0 hover:bg-destructive/8 hover:text-destructive hover:border-destructive/25" onClick={() => handleDeleteClick(project)}>
                     <Trash2 className="w-3 h-3" />
                   </Button>
                 </div>
@@ -1093,17 +1093,17 @@ export default function Projects() {
                 </h3>
 
                 {loadingEditZipInfo ? (
-                  <div className="flex items-center space-x-3 p-4 bg-sky-500/10 border border-sky-500/30 rounded">
+                  <div className="flex items-center space-x-3 p-4 bg-secondary/8 border border-secondary/25 rounded">
                     <div className="loading-spinner w-5 h-5"></div>
-                    <p className="text-sm text-sky-400 font-bold font-mono">正在加载归档文件信息...</p>
+                    <p className="text-sm text-secondary font-bold font-mono">正在加载归档文件信息...</p>
                   </div>
                 ) : editZipInfo?.has_file ? (
-                  <div className="bg-emerald-500/10 border border-emerald-500/30 p-4 rounded">
+                  <div className="bg-primary/10 border border-primary/25 p-4 rounded">
                     <div className="flex items-start space-x-3">
-                      <FileText className="w-5 h-5 text-emerald-400 mt-0.5" />
+                      <FileText className="w-5 h-5 text-primary mt-0.5" />
                       <div className="flex-1 text-sm font-mono">
                         <p className="font-bold text-emerald-300 mb-1 uppercase">当前存储的归档文件</p>
-                        <p className="text-emerald-400/80 text-xs">
+                        <p className="text-primary/80 text-xs">
                           文件名: {editZipInfo.original_filename}
                           {editZipInfo.file_size && (
                             <> ({editZipInfo.file_size >= 1024 * 1024
@@ -1113,7 +1113,7 @@ export default function Projects() {
                           )}
                         </p>
                         {editZipInfo.uploaded_at && (
-                          <p className="text-emerald-500/60 text-xs mt-0.5">
+                          <p className="text-primary/60 text-xs mt-0.5">
                             上传时间: {new Date(editZipInfo.uploaded_at).toLocaleString('zh-CN')}
                           </p>
                         )}
@@ -1121,12 +1121,12 @@ export default function Projects() {
                     </div>
                   </div>
                 ) : (
-                  <div className="bg-amber-500/10 border border-amber-500/30 p-4 rounded">
+                  <div className="bg-warning/8 border border-warning/25 p-4 rounded">
                     <div className="flex items-start space-x-3">
-                      <AlertCircle className="w-5 h-5 text-amber-400 mt-0.5" />
+                      <AlertCircle className="w-5 h-5 text-warning mt-0.5" />
                       <div className="text-sm font-mono">
-                        <p className="font-bold text-amber-300 mb-1 uppercase">暂无归档文件</p>
-                        <p className="text-amber-400/80 text-xs">
+                        <p className="font-bold text-warning mb-1 uppercase">暂无归档文件</p>
+                        <p className="text-warning/80 text-xs">
                           此项目还没有上传归档文件，请上传文件以便进行代码审计。
                         </p>
                       </div>
@@ -1160,10 +1160,10 @@ export default function Projects() {
                   />
 
                   {editZipFile ? (
-                    <div className="flex items-center justify-between p-3 bg-sky-500/10 border border-sky-500/30 rounded">
+                    <div className="flex items-center justify-between p-3 bg-secondary/8 border border-secondary/25 rounded">
                       <div className="flex items-center space-x-2">
-                        <FileText className="w-4 h-4 text-sky-400" />
-                        <span className="text-sm font-mono font-bold text-sky-300">{editZipFile.name}</span>
+                        <FileText className="w-4 h-4 text-secondary" />
+                        <span className="text-sm font-mono font-bold text-secondary">{editZipFile.name}</span>
                         <span className="text-xs text-muted-foreground">
                           ({(editZipFile.size / 1024 / 1024).toFixed(2)} MB)
                         </span>
@@ -1236,35 +1236,35 @@ export default function Projects() {
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
         <AlertDialogContent className="cyber-card border-border cyber-dialog p-0 !fixed">
           {/* Terminal Header */}
-          <div className="flex items-center gap-2 px-4 py-3 bg-rose-500/10 border-b border-rose-500/30">
+          <div className="flex items-center gap-2 px-4 py-3 bg-destructive/8 border-b border-destructive/25">
             <div className="flex items-center gap-1.5">
               <div className="w-3 h-3 rounded-full bg-red-500/80" />
               <div className="w-3 h-3 rounded-full bg-yellow-500/80" />
               <div className="w-3 h-3 rounded-full bg-green-500/80" />
             </div>
-            <span className="ml-2 font-mono text-xs text-rose-400 tracking-wider">
+            <span className="ml-2 font-mono text-xs text-destructive tracking-wider">
               confirm_delete@dbapp
             </span>
           </div>
 
           <AlertDialogHeader className="p-6">
             <AlertDialogTitle className="font-mono text-lg uppercase tracking-wider flex items-center gap-2 text-foreground">
-              <Trash2 className="w-5 h-5 text-rose-400" />
+              <Trash2 className="w-5 h-5 text-destructive" />
               确认删除
             </AlertDialogTitle>
             <AlertDialogDescription className="text-muted-foreground font-mono">
-              您确定要移动 <span className="font-bold text-rose-400">"{projectToDelete?.name}"</span> 到回收站吗？
+              您确定要移动 <span className="font-bold text-destructive">"{projectToDelete?.name}"</span> 到回收站吗？
             </AlertDialogDescription>
           </AlertDialogHeader>
 
           <div className="px-6 pb-6">
-            <div className="bg-sky-500/10 border border-sky-500/30 p-4 rounded">
-              <p className="text-sky-300 font-bold mb-2 font-mono uppercase text-sm">系统通知:</p>
-              <ul className="list-none text-sky-400/80 space-y-1 text-xs font-mono">
-                <li className="flex items-center gap-2"><span className="text-sky-400">&gt;</span> 项目移至回收站</li>
-                <li className="flex items-center gap-2"><span className="text-sky-400">&gt;</span> 可恢复</li>
-                <li className="flex items-center gap-2"><span className="text-sky-400">&gt;</span> 审计数据保留</li>
-                <li className="flex items-center gap-2"><span className="text-sky-400">&gt;</span> 在回收站中永久删除</li>
+            <div className="bg-secondary/8 border border-secondary/25 p-4 rounded">
+              <p className="text-secondary font-bold mb-2 font-mono uppercase text-sm">系统通知:</p>
+              <ul className="list-none text-secondary/80 space-y-1 text-xs font-mono">
+                <li className="flex items-center gap-2"><span className="text-secondary">&gt;</span> 项目移至回收站</li>
+                <li className="flex items-center gap-2"><span className="text-secondary">&gt;</span> 可恢复</li>
+                <li className="flex items-center gap-2"><span className="text-secondary">&gt;</span> 审计数据保留</li>
+                <li className="flex items-center gap-2"><span className="text-secondary">&gt;</span> 在回收站中永久删除</li>
               </ul>
             </div>
           </div>
@@ -1273,7 +1273,7 @@ export default function Projects() {
             <AlertDialogCancel className="cyber-btn-outline">取消</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleConfirmDelete}
-              className="cyber-btn bg-rose-500/90 border-rose-500/50 text-foreground hover:bg-rose-500"
+              className="cyber-btn bg-destructive/90 border-destructive/40 text-foreground hover:bg-destructive"
             >
               确认删除
             </AlertDialogAction>

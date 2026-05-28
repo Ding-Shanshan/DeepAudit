@@ -76,12 +76,12 @@ function MetricCard({
   return (
     <div
       className={`
-        group relative flex items-center gap-3 rounded-2xl border border-border bg-white p-3.5
+        group relative flex items-center gap-3 rounded-lg border border-border bg-white p-3.5
         transition-all duration-300 hover:border-primary/15 hover:shadow-sm
         ${bgClass}
       `}
     >
-      <div className={`relative z-10 rounded-xl border border-border bg-slate-50 p-2 ${colorClass}`}>
+      <div className={`relative z-10 rounded-md border border-border bg-slate-50 p-2 ${colorClass}`}>
         {icon}
       </div>
       <div className="relative z-10 min-w-0 flex-1">
@@ -115,11 +115,11 @@ export const StatsPanel = memo(function StatsPanel({ task }: StatsPanelProps) {
 
   return (
     <div className="space-y-3">
-      <div className="relative overflow-hidden rounded-2xl border border-border bg-white p-4 shadow-sm">
+      <div className="relative overflow-hidden rounded-lg border border-border bg-white p-4 shadow-sm">
         <div className="relative z-10">
           <div className="mb-3 flex items-center justify-between">
             <div className="flex items-center gap-2.5">
-              <div className="rounded-xl border border-primary/10 bg-orange-50 p-1.5">
+              <div className="rounded-md border border-primary/10 bg-orange-50 p-1.5">
                 <Activity className="h-4 w-4 text-primary" />
               </div>
               <span className="text-sm font-semibold text-foreground">执行进度</span>
@@ -197,10 +197,10 @@ export const StatsPanel = memo(function StatsPanel({ task }: StatsPanelProps) {
       </div>
 
       {totalFindings > 0 && (
-        <div className="relative overflow-hidden rounded-2xl border border-rose-100 bg-white p-4 shadow-sm">
+        <div className="relative overflow-hidden rounded-lg border border-rose-100 bg-white p-4 shadow-sm">
           <div className="relative z-10">
             <div className="mb-3 flex items-center gap-2.5">
-              <div className="rounded-xl border border-rose-200 bg-rose-50 p-1.5">
+              <div className="rounded-md border border-rose-200 bg-rose-50 p-1.5">
                 <AlertTriangle className="h-4 w-4 text-rose-500" />
               </div>
               <span className="text-sm font-semibold text-foreground">问题等级分布</span>
@@ -233,11 +233,11 @@ export const StatsPanel = memo(function StatsPanel({ task }: StatsPanelProps) {
       )}
 
       {task.security_score !== null && task.security_score !== undefined && (
-        <div className="relative overflow-hidden rounded-2xl border border-border bg-white p-4 shadow-sm">
+        <div className="relative overflow-hidden rounded-lg border border-border bg-white p-4 shadow-sm">
           <div className="relative z-10 flex items-center justify-between">
             <div className="flex items-center gap-2.5">
               <div
-                className={`rounded-xl border p-1.5 ${
+                className={`rounded-md border p-1.5 ${
                   task.security_score >= 80
                     ? "border-emerald-200 bg-emerald-50"
                     : task.security_score >= 60
@@ -248,7 +248,7 @@ export const StatsPanel = memo(function StatsPanel({ task }: StatsPanelProps) {
                 <Shield
                   className={`h-4 w-4 ${
                     task.security_score >= 80
-                      ? "text-emerald-500"
+                      ? "text-primary"
                       : task.security_score >= 60
                         ? "text-amber-500"
                         : "text-rose-500"
@@ -277,7 +277,7 @@ export const StatsPanel = memo(function StatsPanel({ task }: StatsPanelProps) {
                 <span
                   className={`text-base font-semibold ${
                     task.security_score >= 80
-                      ? "text-emerald-500"
+                      ? "text-primary"
                       : task.security_score >= 60
                         ? "text-amber-500"
                         : "text-rose-500"

@@ -798,9 +798,9 @@ function AgentAuditPageContent() {
                 <span className="uppercase font-bold tracking-wider text-foreground text-sm">Activity Log</span>
               </div>
               {isConnected && (
-                <div className="flex items-center gap-2 px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30">
-                  <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
-                  <span className="text-xs font-mono uppercase tracking-wider text-emerald-600 dark:text-emerald-400 font-semibold">Live</span>
+                <div className="flex items-center gap-2 px-2.5 py-1 rounded-full bg-primary/10 border border-primary/25">
+                  <span className="w-2 h-2 rounded-full bg-primary"></span>
+                  <span className="text-xs font-mono uppercase tracking-wider text-primary dark:text-primary font-semibold">Live</span>
                 </div>
               )}
               <Badge variant="outline" className="h-6 px-2 text-xs border-border text-muted-foreground font-mono bg-muted">
@@ -889,13 +889,13 @@ function AgentAuditPageContent() {
 
               <span className="relative z-10">
                 {isRunning ? (
-                  <span className="flex items-center gap-2.5 text-emerald-600 dark:text-emerald-400">
-                    <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
+                  <span className="flex items-center gap-2.5 text-primary dark:text-primary">
+                    <span className="w-2 h-2 rounded-full bg-primary"></span>
                     <span className="font-mono font-semibold">{statusVerb}{'.'.repeat(statusDots)}</span>
                   </span>
                 ) : isComplete ? (
                   <span className="flex items-center gap-2 text-muted-foreground font-mono">
-                    <span className={`w-2 h-2 rounded-full ${task.status === 'completed' ? 'bg-emerald-500' : task.status === 'failed' ? 'bg-rose-500' : 'bg-amber-500'}`} />
+                    <span className={`w-2 h-2 rounded-full ${task.status === 'completed' ? 'bg-primary' : task.status === 'failed' ? 'bg-rose-500' : 'bg-amber-500'}`} />
                     AUDIT {task.status?.toUpperCase()}
                   </span>
                 ) : (
@@ -930,12 +930,12 @@ function AgentAuditPageContent() {
             {/* Tree header */}
             <div className="flex-shrink-0 h-12 border-b border-border flex items-center justify-between px-4 bg-card">
               <div className="flex items-center gap-2.5 text-xs text-muted-foreground">
-                <Bot className="w-4 h-4 text-violet-600 dark:text-violet-500" />
+                <Bot className="w-4 h-4 text-violet-600 dark:text-secondary" />
                 <span className="uppercase font-bold tracking-wider text-foreground text-sm">
                   {selectedAgentId && !showAllLogs ? 'Agent Detail' : 'Agent Tree'}
                 </span>
                 {!selectedAgentId && agentTree && (
-                  <Badge variant="outline" className="h-5 px-2 text-xs border-violet-500/30 text-violet-600 dark:text-violet-500 font-mono bg-violet-500/10">
+                  <Badge variant="outline" className="h-5 px-2 text-xs border-violet-500/30 text-violet-600 dark:text-secondary font-mono bg-violet-500/10">
                     {agentTree.total_agents}
                   </Badge>
                 )}
@@ -950,9 +950,9 @@ function AgentAuditPageContent() {
                   </button>
                 )}
                 {!selectedAgentId && agentTree && agentTree.running_agents > 0 && (
-                  <div className="flex items-center gap-1.5 px-2 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30">
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-                    <span className="text-xs font-mono text-emerald-600 dark:text-emerald-400 font-semibold">{agentTree.running_agents}</span>
+                  <div className="flex items-center gap-1.5 px-2 py-1 rounded-full bg-primary/10 border border-primary/25">
+                    <span className="w-1.5 h-1.5 rounded-full bg-primary"></span>
+                    <span className="text-xs font-mono text-primary dark:text-primary font-semibold">{agentTree.running_agents}</span>
                   </div>
                 )}
               </div>
@@ -982,7 +982,7 @@ function AgentAuditPageContent() {
                 <div className="h-full flex items-center justify-center text-muted-foreground text-xs">
                   {isRunning ? (
                     <div className="flex flex-col items-center gap-3 p-6">
-                      <Loader2 className="w-6 h-6 animate-spin text-violet-600 dark:text-violet-500" />
+                      <Loader2 className="w-6 h-6 animate-spin text-violet-600 dark:text-secondary" />
                       <span className="font-mono text-center">INITIALIZING<br/>AGENTS...</span>
                     </div>
                   ) : (

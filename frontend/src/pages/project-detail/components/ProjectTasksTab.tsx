@@ -46,11 +46,11 @@ export function ProjectTasksTab(props: {
                   <div className="flex items-center space-x-3">
                     <div
                       className={`w-10 h-10 rounded-lg flex items-center justify-center ${task.status === "completed"
-                        ? "bg-emerald-500/20"
+                        ? "bg-primary/15"
                         : task.status === "running"
-                          ? "bg-sky-500/20"
+                          ? "bg-secondary/15"
                           : task.status === "failed"
-                            ? "bg-rose-500/20"
+                            ? "bg-destructive/12"
                             : "bg-muted"
                         }`}
                     >
@@ -83,7 +83,7 @@ export function ProjectTasksTab(props: {
                     <p className="text-xs text-muted-foreground uppercase">代码行数</p>
                   </div>
                   <div className="text-center p-3 bg-muted rounded-lg border border-border">
-                    <p className="text-2xl font-bold text-amber-400">{issueCount}</p>
+                    <p className="text-2xl font-bold text-warning">{issueCount}</p>
                     <p className="text-xs text-muted-foreground uppercase">{isAuditTask ? "发现问题" : "发现漏洞"}</p>
                   </div>
                   <div className="text-center p-3 bg-muted rounded-lg border border-border">

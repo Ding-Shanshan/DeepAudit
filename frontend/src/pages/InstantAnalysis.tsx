@@ -350,10 +350,10 @@ public class Example {
       <div className="flex items-start justify-between mb-3 pb-3 border-b border-border">
         <div className="flex items-start space-x-3">
           <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
-            issue.severity === 'critical' ? 'bg-rose-500/20 text-rose-400' :
+            issue.severity === 'critical' ? 'bg-destructive/12 text-destructive' :
             issue.severity === 'high' ? 'bg-orange-500/20 text-orange-400' :
-            issue.severity === 'medium' ? 'bg-amber-500/20 text-amber-400' :
-            'bg-sky-500/20 text-sky-400'
+            issue.severity === 'medium' ? 'bg-amber-500/20 text-warning' :
+            'bg-secondary/15 text-secondary'
           }`}>
             {getTypeIcon(issue.type)}
           </div>
@@ -390,12 +390,12 @@ public class Example {
               <div className="w-4 h-4 bg-primary rounded flex items-center justify-center">
                 <Code className="w-2 h-2 text-foreground" />
               </div>
-              <span className="text-emerald-600 dark:text-emerald-400 text-xs font-bold font-mono uppercase">CODE_SNIPPET</span>
+              <span className="text-primary dark:text-primary text-xs font-bold font-mono uppercase">CODE_SNIPPET</span>
             </div>
             <span className="text-muted-foreground text-xs font-mono">LINE: {issue.line}</span>
           </div>
           <div className="bg-slate-100 dark:bg-black/40 p-2 border border-border rounded">
-            <pre className="text-xs text-emerald-700 dark:text-emerald-400 font-mono overflow-x-auto">
+            <pre className="text-xs text-emerald-700 dark:text-primary font-mono overflow-x-auto">
               <code>{issue.code_snippet}</code>
             </pre>
           </div>
@@ -404,12 +404,12 @@ public class Example {
 
       <div className="space-y-3">
         {issue.suggestion && (
-          <div className="bg-sky-500/10 border border-sky-500/30 p-3 rounded">
-            <div className="flex items-center mb-2 border-b border-sky-500/20 pb-1">
-              <div className="w-5 h-5 bg-sky-500/20 border border-sky-500/40 rounded flex items-center justify-center mr-2">
-                <Lightbulb className="w-3 h-3 text-sky-600 dark:text-sky-400" />
+          <div className="bg-secondary/8 border border-secondary/25 p-3 rounded">
+            <div className="flex items-center mb-2 border-b border-secondary/20 pb-1">
+              <div className="w-5 h-5 bg-secondary/15 border border-sky-500/40 rounded flex items-center justify-center mr-2">
+                <Lightbulb className="w-3 h-3 text-sky-600 dark:text-secondary" />
               </div>
-              <span className="font-bold text-sky-700 dark:text-sky-300 text-sm uppercase">修复建议</span>
+              <span className="font-bold text-sky-700 dark:text-secondary text-sm uppercase">修复建议</span>
             </div>
             <p className="text-sky-800 dark:text-sky-200/80 text-xs leading-relaxed font-mono">{issue.suggestion}</p>
           </div>
@@ -423,37 +423,37 @@ public class Example {
               <div className="bg-violet-500/10 border border-violet-500/30 p-3 rounded">
                 <div className="flex items-center mb-2 border-b border-violet-500/20 pb-1">
                   <div className="w-5 h-5 bg-violet-500/20 border border-violet-500/40 rounded flex items-center justify-center mr-2">
-                    <Zap className="w-3 h-3 text-violet-600 dark:text-violet-400" />
+                    <Zap className="w-3 h-3 text-violet-600 dark:text-secondary" />
                   </div>
                   <span className="font-bold text-violet-700 dark:text-violet-300 text-sm uppercase">AI 解释</span>
                 </div>
                 <div className="space-y-2 text-xs font-mono">
                   {parsedExplanation.what && (
                     <div className="border-l-2 border-rose-500 pl-2">
-                      <span className="font-bold text-rose-600 dark:text-rose-400 uppercase">问题：</span>
+                      <span className="font-bold text-rose-600 dark:text-destructive uppercase">问题：</span>
                       <span className="text-foreground ml-1">{parsedExplanation.what}</span>
                     </div>
                   )}
                   {parsedExplanation.why && (
                     <div className="border-l-2 border-amber-500 pl-2">
-                      <span className="font-bold text-amber-600 dark:text-amber-400 uppercase">原因：</span>
+                      <span className="font-bold text-amber-600 dark:text-warning uppercase">原因：</span>
                       <span className="text-foreground ml-1">{parsedExplanation.why}</span>
                     </div>
                   )}
                   {parsedExplanation.how && (
                     <div className="border-l-2 border-emerald-500 pl-2">
-                      <span className="font-bold text-emerald-600 dark:text-emerald-400 uppercase">方案：</span>
+                      <span className="font-bold text-primary dark:text-primary uppercase">方案：</span>
                       <span className="text-foreground ml-1">{parsedExplanation.how}</span>
                     </div>
                   )}
                   {parsedExplanation.learn_more && (
                     <div className="border-l-2 border-sky-500 pl-2">
-                      <span className="font-bold text-sky-600 dark:text-sky-400 uppercase">链接：</span>
+                      <span className="font-bold text-sky-600 dark:text-secondary uppercase">链接：</span>
                       <a
                         href={parsedExplanation.learn_more}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-sky-600 dark:text-sky-400 hover:text-sky-500 dark:hover:text-sky-300 hover:underline ml-1 font-bold"
+                        className="text-sky-600 dark:text-secondary hover:text-sky-500 dark:hover:text-secondary hover:underline ml-1 font-bold"
                       >
                         {parsedExplanation.learn_more}
                       </a>
@@ -466,7 +466,7 @@ public class Example {
             return (
               <div className="bg-violet-500/10 border border-violet-500/30 p-3 rounded">
                 <div className="flex items-center mb-2 border-b border-violet-500/20 pb-1">
-                  <Zap className="w-4 h-4 text-violet-600 dark:text-violet-400 mr-2" />
+                  <Zap className="w-4 h-4 text-violet-600 dark:text-secondary mr-2" />
                   <span className="font-bold text-violet-700 dark:text-violet-300 text-sm uppercase">AI 解释</span>
                 </div>
                 <p className="text-foreground text-xs leading-relaxed font-mono">{issue.ai_explanation}</p>
@@ -495,7 +495,7 @@ public class Example {
                   variant="outline"
                   onClick={clearAllHistory}
                   size="sm"
-                  className="cyber-btn bg-rose-500/10 text-rose-400 border-rose-500/30 hover:bg-rose-500/20 h-8"
+                  className="cyber-btn bg-destructive/8 text-destructive border-destructive/25 hover:bg-destructive/12 h-8"
                 >
                   清空全部
                 </Button>
@@ -552,7 +552,7 @@ public class Example {
                             variant="ghost"
                             size="sm"
                             onClick={(e) => deleteHistoryRecord(e, record.id)}
-                            className="h-6 w-6 p-0 hover:bg-rose-500/10 hover:text-rose-400"
+                            className="h-6 w-6 p-0 hover:bg-destructive/8 hover:text-destructive"
                           >
                             <X className="w-3 h-3" />
                           </Button>
@@ -625,7 +625,7 @@ public class Example {
               <Select value={selectedPromptTemplateId} onValueChange={setSelectedPromptTemplateId}>
                 <SelectTrigger className="cyber-input h-10">
                   <div className="flex items-center gap-2">
-                    <MessageSquare className="w-4 h-4 text-violet-400" />
+                    <MessageSquare className="w-4 h-4 text-secondary" />
                     <SelectValue placeholder="选择提示词模板" />
                   </div>
                 </SelectTrigger>
@@ -684,7 +684,7 @@ public class Example {
               placeholder="// 粘贴代码或上传文件..."
               value={code}
               onChange={(e) => setCode(e.target.value)}
-              className="min-h-[300px] font-mono text-sm cyber-bg-elevated text-emerald-400 border border-border p-4 focus:ring-0 focus:border-primary/50 placeholder:text-muted-foreground"
+              className="min-h-[300px] font-mono text-sm cyber-bg-elevated text-primary border border-border p-4 focus:ring-0 focus:border-primary/50 placeholder:text-muted-foreground"
               disabled={analyzing}
             />
             <div className="text-xs text-muted-foreground mt-1 font-mono text-right">
@@ -719,7 +719,7 @@ public class Example {
           {/* Results Overview */}
           <div className="cyber-card p-0">
             <div className="cyber-card-header">
-              <CheckCircle className="w-5 h-5 text-emerald-400" />
+              <CheckCircle className="w-5 h-5 text-primary" />
               <h3 className="text-lg font-bold uppercase tracking-wider text-foreground">分析结果</h3>
               <div className="ml-auto flex items-center gap-2">
                 <Badge className="cyber-badge-muted">
@@ -752,36 +752,36 @@ public class Example {
                 </div>
 
                 <div className="cyber-card p-4 text-center">
-                  <div className="stat-icon mx-auto mb-3 text-rose-400">
+                  <div className="stat-icon mx-auto mb-3 text-destructive">
                     <AlertTriangle className="w-6 h-6" />
                   </div>
-                  <div className="stat-value text-rose-400 mb-1">
+                  <div className="stat-value text-destructive mb-1">
                     {(result.summary?.critical_issues ?? 0) + (result.summary?.high_issues ?? 0)}
                   </div>
                   <p className="stat-label mb-1">严重问题</p>
-                  <div className="text-xs text-rose-400 uppercase">需要立即处理</div>
+                  <div className="text-xs text-destructive uppercase">需要立即处理</div>
                 </div>
 
                 <div className="cyber-card p-4 text-center">
-                  <div className="stat-icon mx-auto mb-3 text-amber-400">
+                  <div className="stat-icon mx-auto mb-3 text-warning">
                     <Info className="w-6 h-6" />
                   </div>
-                  <div className="stat-value text-amber-400 mb-1">
+                  <div className="stat-value text-warning mb-1">
                     {(result.summary?.medium_issues ?? 0) + (result.summary?.low_issues ?? 0)}
                   </div>
                   <p className="stat-label mb-1">一般问题</p>
-                  <div className="text-xs text-amber-400 uppercase">建议优化</div>
+                  <div className="text-xs text-warning uppercase">建议优化</div>
                 </div>
 
                 <div className="cyber-card p-4 text-center">
-                  <div className="stat-icon mx-auto mb-3 text-emerald-400">
+                  <div className="stat-icon mx-auto mb-3 text-primary">
                     <FileText className="w-6 h-6" />
                   </div>
-                  <div className="stat-value text-emerald-400 mb-1">
+                  <div className="stat-value text-primary mb-1">
                     {result.issues.length}
                   </div>
                   <p className="stat-label mb-1">总问题数</p>
-                  <div className="text-xs text-emerald-400 uppercase">已全部识别</div>
+                  <div className="text-xs text-primary uppercase">已全部识别</div>
                 </div>
               </div>
 
@@ -812,7 +812,7 @@ public class Example {
           {/* Issues Detail */}
           <div className="cyber-card p-0">
             <div className="cyber-card-header">
-              <Shield className="w-5 h-5 text-amber-400" />
+              <Shield className="w-5 h-5 text-warning" />
               <h3 className="text-lg font-bold uppercase tracking-wider text-foreground">发现的问题 ({result.issues.length})</h3>
             </div>
             <div className="p-6">
@@ -843,7 +843,7 @@ public class Example {
                         result.issues.filter(issue => issue.severity === severity).map((issue, index) => renderIssue(issue, index))
                       ) : (
                         <div className="cyber-card p-12 text-center border-dashed">
-                          <CheckCircle className="w-16 h-16 text-emerald-400 mx-auto mb-4" />
+                          <CheckCircle className="w-16 h-16 text-primary mx-auto mb-4" />
                           <h3 className="text-lg font-bold text-foreground uppercase mb-2">
                             没有发现{severity === 'critical' ? '严重' : severity === 'high' ? '高优先级' : '中等优先级'}问题
                           </h3>
@@ -855,10 +855,10 @@ public class Example {
                 </Tabs>
               ) : (
                 <div className="cyber-card p-16 text-center border-dashed">
-                  <CheckCircle className="w-16 h-16 text-emerald-600 dark:text-emerald-400 mx-auto mb-4" />
+                  <CheckCircle className="w-16 h-16 text-primary dark:text-primary mx-auto mb-4" />
                   <h3 className="text-xl font-bold text-emerald-700 dark:text-emerald-300 mb-2 uppercase">代码质量优秀！</h3>
-                  <p className="text-emerald-600 dark:text-emerald-400/80 mb-4 font-mono">恭喜！没有发现任何问题</p>
-                  <div className="bg-emerald-500/10 border border-emerald-500/30 p-4 max-w-md mx-auto rounded">
+                  <p className="text-primary dark:text-primary/80 mb-4 font-mono">恭喜！没有发现任何问题</p>
+                  <div className="bg-primary/10 border border-primary/25 p-4 max-w-md mx-auto rounded">
                     <p className="text-emerald-700 dark:text-emerald-300/80 text-sm font-mono">
                       您的代码通过了所有质量检查，包括安全性、性能、可维护性等各个方面的评估。
                     </p>

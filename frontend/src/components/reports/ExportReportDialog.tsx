@@ -82,7 +82,7 @@ export default function ExportReportDialog({
                         <div className="flex items-center space-x-3 p-4 border border-border rounded bg-muted/50 cursor-pointer hover:bg-muted">
                             <RadioGroupItem value="json" id="json" />
                             <Label htmlFor="json" className="flex items-center gap-3 cursor-pointer flex-1">
-                                <FileJson className="w-5 h-5 text-amber-400" />
+                                <FileJson className="w-5 h-5 text-warning" />
                                 <div>
                                     <div className="font-bold text-foreground">JSON 格式</div>
                                     <div className="text-xs text-muted-foreground">结构化数据，适合程序处理和集成</div>
@@ -92,7 +92,7 @@ export default function ExportReportDialog({
                         <div className="flex items-center space-x-3 p-4 border border-border rounded bg-muted/50 cursor-pointer hover:bg-muted">
                             <RadioGroupItem value="pdf" id="pdf" />
                             <Label htmlFor="pdf" className="flex items-center gap-3 cursor-pointer flex-1">
-                                <FileText className="w-5 h-5 text-rose-400" />
+                                <FileText className="w-5 h-5 text-destructive" />
                                 <div>
                                     <div className="font-bold text-foreground">PDF 格式</div>
                                     <div className="text-xs text-muted-foreground">专业报告，适合打印和分享</div>
@@ -114,7 +114,7 @@ export default function ExportReportDialog({
                             </div>
                             <div className="flex items-center justify-between border-b border-border pb-2">
                                 <span className="text-muted-foreground">质量评分:</span>
-                                <span className="font-bold text-emerald-400">{task.quality_score.toFixed(1)}/100</span>
+                                <span className="font-bold text-primary">{task.quality_score.toFixed(1)}/100</span>
                             </div>
                             <div className="flex items-center justify-between border-b border-border pb-2">
                                 <span className="text-muted-foreground">扫描文件:</span>
@@ -122,7 +122,7 @@ export default function ExportReportDialog({
                             </div>
                             <div className="flex items-center justify-between border-b border-border pb-2">
                                 <span className="text-muted-foreground">发现问题:</span>
-                                <span className="font-bold text-amber-400">{issues.length}</span>
+                                <span className="font-bold text-warning">{issues.length}</span>
                             </div>
                             <div className="flex items-center justify-between border-b border-border pb-2">
                                 <span className="text-muted-foreground">代码行数:</span>
@@ -130,7 +130,7 @@ export default function ExportReportDialog({
                             </div>
                             <div className="flex items-center justify-between border-b border-border pb-2">
                                 <span className="text-muted-foreground">严重问题:</span>
-                                <span className="font-bold text-rose-400">
+                                <span className="font-bold text-destructive">
                                     {issues.filter(i => i.severity === "critical").length}
                                 </span>
                             </div>

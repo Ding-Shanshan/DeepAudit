@@ -34,16 +34,16 @@ function getStatusBadgeClass(status?: string): string {
   switch (status) {
     case "resolved":
     case "fixed":
-      return "bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border-emerald-500/30";
+      return "bg-primary/15 text-primary dark:text-primary border-primary/25";
     case "pending_review":
     case "needs_review":
-      return "bg-sky-500/20 text-sky-600 dark:text-sky-400 border-sky-500/30";
+      return "bg-secondary/15 text-secondary dark:text-secondary border-secondary/25";
     case "false_positive":
     case "wont_fix":
     case "duplicate":
       return "bg-gray-500/20 text-gray-600 dark:text-gray-400 border-gray-500/30";
     default:
-      return "bg-amber-500/20 text-amber-600 dark:text-amber-400 border-amber-500/30";
+      return "bg-warning/15 text-warning dark:text-warning border-warning/25";
   }
 }
 
@@ -61,7 +61,7 @@ export function ProjectIssuesTab(props: {
     <>
       <div className="flex items-center justify-between">
         <div className="section-header mb-0 pb-0 border-0">
-          <AlertTriangle className="w-5 h-5 text-amber-400" />
+          <AlertTriangle className="w-5 h-5 text-warning" />
           <h3 className="section-title">最新发现的问题</h3>
         </div>
         {hasAnyTasks && (
@@ -86,12 +86,12 @@ export function ProjectIssuesTab(props: {
                 <div className="flex items-start space-x-3">
                   <div
                     className={`w-8 h-8 rounded-lg flex items-center justify-center ${issue.severity === "critical"
-                      ? "bg-rose-500/20 text-rose-600 dark:text-rose-400"
+                      ? "bg-destructive/12 text-destructive dark:text-destructive"
                       : issue.severity === "high"
                         ? "bg-orange-500/20 text-orange-600 dark:text-orange-400"
                         : issue.severity === "medium"
-                          ? "bg-amber-500/20 text-amber-600 dark:text-amber-400"
-                          : "bg-sky-500/20 text-sky-600 dark:text-sky-400"
+                          ? "bg-warning/15 text-warning dark:text-warning"
+                          : "bg-secondary/15 text-secondary dark:text-secondary"
                       }`}
                   >
                     <AlertTriangle className="w-4 h-4" />
@@ -173,7 +173,7 @@ export function ProjectIssuesTab(props: {
         </div>
       ) : (
         <div className="cyber-card p-12 text-center">
-          <CheckCircle className="w-16 h-16 text-emerald-600 dark:text-emerald-500 mx-auto mb-4" />
+          <CheckCircle className="w-16 h-16 text-primary dark:text-emerald-500 mx-auto mb-4" />
           <h3 className="text-lg font-bold text-foreground mb-2 uppercase">未发现问题</h3>
           <p className="text-sm text-muted-foreground font-mono">最近一次审计/Agent审计未发现明显问题，或尚未进行审计。</p>
         </div>

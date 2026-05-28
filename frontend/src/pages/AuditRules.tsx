@@ -50,11 +50,11 @@ import {
 } from '@/shared/api/rules';
 
 const CATEGORIES = [
-  { value: 'security', label: '安全', icon: Shield, color: 'text-rose-400', bg: 'bg-rose-500/20' },
+  { value: 'security', label: '安全', icon: Shield, color: 'text-destructive', bg: 'bg-destructive/12' },
   { value: 'bug', label: 'Bug', icon: Bug, color: 'text-orange-400', bg: 'bg-orange-500/20' },
-  { value: 'performance', label: '性能', icon: Zap, color: 'text-amber-400', bg: 'bg-amber-500/20' },
-  { value: 'style', label: '代码风格', icon: Code, color: 'text-sky-400', bg: 'bg-sky-500/20' },
-  { value: 'maintainability', label: '可维护性', icon: Settings, color: 'text-violet-400', bg: 'bg-violet-500/20' },
+  { value: 'performance', label: '性能', icon: Zap, color: 'text-warning', bg: 'bg-amber-500/20' },
+  { value: 'style', label: '代码风格', icon: Code, color: 'text-secondary', bg: 'bg-secondary/15' },
+  { value: 'maintainability', label: '可维护性', icon: Settings, color: 'text-secondary', bg: 'bg-violet-500/20' },
 ];
 
 const SEVERITIES = [
@@ -267,9 +267,9 @@ export default function AuditRules() {
           <div className="flex items-center justify-between">
             <div>
               <p className="stat-label">系统规则集</p>
-              <p className="stat-value text-sky-400">{ruleSets.filter(r => r.is_system).length}</p>
+              <p className="stat-value text-secondary">{ruleSets.filter(r => r.is_system).length}</p>
             </div>
-            <div className="stat-icon text-sky-400">
+            <div className="stat-icon text-secondary">
               <Settings className="w-6 h-6" />
             </div>
           </div>
@@ -279,9 +279,9 @@ export default function AuditRules() {
           <div className="flex items-center justify-between">
             <div>
               <p className="stat-label">总规则数</p>
-              <p className="stat-value text-emerald-400">{ruleSets.reduce((acc, r) => acc + r.rules_count, 0)}</p>
+              <p className="stat-value text-primary">{ruleSets.reduce((acc, r) => acc + r.rules_count, 0)}</p>
             </div>
-            <div className="stat-icon text-emerald-400">
+            <div className="stat-icon text-primary">
               <CheckCircle className="w-6 h-6" />
             </div>
           </div>
@@ -291,9 +291,9 @@ export default function AuditRules() {
           <div className="flex items-center justify-between">
             <div>
               <p className="stat-label">已启用规则</p>
-              <p className="stat-value text-amber-400">{ruleSets.reduce((acc, r) => acc + r.enabled_rules_count, 0)}</p>
+              <p className="stat-value text-warning">{ruleSets.reduce((acc, r) => acc + r.enabled_rules_count, 0)}</p>
             </div>
-            <div className="stat-icon text-amber-400">
+            <div className="stat-icon text-warning">
               <Activity className="w-6 h-6" />
             </div>
           </div>
@@ -366,7 +366,7 @@ export default function AuditRules() {
                         <Button variant="ghost" size="icon" onClick={() => openEditRuleSetDialog(ruleSet)} className="cyber-btn-ghost h-9 w-9">
                           <Edit className="w-4 h-4" />
                         </Button>
-                        <Button variant="ghost" size="icon" onClick={() => handleDeleteRuleSet(ruleSet.id)} className="h-9 w-9 hover:bg-rose-500/20 hover:text-rose-400">
+                        <Button variant="ghost" size="icon" onClick={() => handleDeleteRuleSet(ruleSet.id)} className="h-9 w-9 hover:bg-destructive/12 hover:text-destructive">
                           <Trash2 className="w-4 h-4" />
                         </Button>
                       </>
@@ -416,7 +416,7 @@ export default function AuditRules() {
                                 {!ruleSet.is_system && (
                                   <>
                                     <Button variant="ghost" size="icon" onClick={() => openEditRuleDialog(ruleSet, rule)} className="cyber-btn-ghost h-8 w-8"><Edit className="w-4 h-4" /></Button>
-                                    <Button variant="ghost" size="icon" onClick={() => handleDeleteRule(ruleSet.id, rule.id)} className="h-8 w-8 hover:bg-rose-500/20 hover:text-rose-400"><Trash2 className="w-4 h-4" /></Button>
+                                    <Button variant="ghost" size="icon" onClick={() => handleDeleteRule(ruleSet.id, rule.id)} className="h-8 w-8 hover:bg-destructive/12 hover:text-destructive"><Trash2 className="w-4 h-4" /></Button>
                                   </>
                                 )}
                               </div>
@@ -602,7 +602,7 @@ export default function AuditRules() {
             </DialogTitle>
           </DialogHeader>
           <div className="flex-1 overflow-y-auto p-6">
-            <Textarea value={importJson} onChange={e => setImportJson(e.target.value)} placeholder='{"name": "...", "rules": [...]}' rows={15} className="cyber-input font-mono text-sm text-emerald-400" />
+            <Textarea value={importJson} onChange={e => setImportJson(e.target.value)} placeholder='{"name": "...", "rules": [...]}' rows={15} className="cyber-input font-mono text-sm text-primary" />
           </div>
           <DialogFooter className="flex-shrink-0 flex justify-end gap-3 px-6 py-4 bg-muted border-t border-border">
             <Button variant="outline" onClick={() => setShowImportDialog(false)} className="cyber-btn-outline">取消</Button>

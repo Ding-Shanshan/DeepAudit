@@ -92,7 +92,7 @@ const FORMAT_CONFIG: Record<ReportFormat, {
     icon: <FileText className="w-5 h-5" />,
     extension: ".md",
     mime: "text/markdown",
-    color: "text-sky-600 dark:text-sky-400",
+    color: "text-sky-600 dark:text-secondary",
     bgColor: "bg-sky-100 dark:bg-sky-500/10 border-sky-300 dark:border-sky-500/30",
   },
   json: {
@@ -101,7 +101,7 @@ const FORMAT_CONFIG: Record<ReportFormat, {
     icon: <FileJson className="w-5 h-5" />,
     extension: ".json",
     mime: "application/json",
-    color: "text-amber-600 dark:text-amber-400",
+    color: "text-amber-600 dark:text-warning",
     bgColor: "bg-amber-100 dark:bg-amber-500/10 border-amber-300 dark:border-amber-500/30",
   },
   html: {
@@ -110,8 +110,8 @@ const FORMAT_CONFIG: Record<ReportFormat, {
     icon: <FileCode className="w-5 h-5" />,
     extension: ".html",
     mime: "text/html",
-    color: "text-emerald-600 dark:text-emerald-400",
-    bgColor: "bg-emerald-100 dark:bg-emerald-500/10 border-emerald-300 dark:border-emerald-500/30",
+    color: "text-emerald-600 dark:text-primary",
+    bgColor: "bg-emerald-100 dark:bg-primary/8 border-emerald-300 dark:border-primary/25",
   },
 };
 
@@ -127,10 +127,10 @@ const DEFAULT_EXPORT_OPTIONS: ExportOptions = {
 
 function getSeverityColor(severity: string): string {
   const colors: Record<string, string> = {
-    critical: "text-rose-600 dark:text-rose-400",
+    critical: "text-rose-600 dark:text-destructive",
     high: "text-orange-600 dark:text-orange-400",
-    medium: "text-amber-600 dark:text-amber-400",
-    low: "text-sky-600 dark:text-sky-400",
+    medium: "text-amber-600 dark:text-warning",
+    low: "text-sky-600 dark:text-secondary",
     info: "text-muted-foreground",
   };
   return colors[severity.toLowerCase()] || colors.info;
@@ -146,10 +146,10 @@ function formatBytes(bytes: number): string {
 
 // 获取安全评分颜色
 function getScoreColor(score: number): { text: string; bg: string; glow: string } {
-  if (score >= 80) return { text: "text-emerald-600 dark:text-emerald-400", bg: "stroke-emerald-500", glow: "" };
-  if (score >= 60) return { text: "text-amber-600 dark:text-amber-400", bg: "stroke-amber-500", glow: "" };
+  if (score >= 80) return { text: "text-emerald-600 dark:text-primary", bg: "stroke-emerald-500", glow: "" };
+  if (score >= 60) return { text: "text-amber-600 dark:text-warning", bg: "stroke-amber-500", glow: "" };
   if (score >= 40) return { text: "text-orange-600 dark:text-orange-400", bg: "stroke-orange-500", glow: "" };
-  return { text: "text-rose-600 dark:text-rose-400", bg: "stroke-rose-500", glow: "" };
+  return { text: "text-rose-600 dark:text-destructive", bg: "stroke-rose-500", glow: "" };
 }
 
 // ============ Sub Components ============
@@ -225,14 +225,14 @@ const EnhancedStatsPanel = memo(function EnhancedStatsPanel({
       label: "漏洞总数",
       value: totalFindings,
       color: "text-foreground",
-      iconColor: "text-rose-600 dark:text-rose-400",
+      iconColor: "text-rose-600 dark:text-destructive",
       trend: totalFindings > 0 ? "up" : null,
     },
     {
       icon: <AlertTriangle className="w-4 h-4" />,
       label: "高危问题",
       value: criticalAndHigh,
-      color: criticalAndHigh > 0 ? "text-rose-600 dark:text-rose-400" : "text-muted-foreground",
+      color: criticalAndHigh > 0 ? "text-rose-600 dark:text-destructive" : "text-muted-foreground",
       iconColor: "text-orange-600 dark:text-orange-400",
       trend: criticalAndHigh > 0 ? "critical" : null,
     },
@@ -240,8 +240,8 @@ const EnhancedStatsPanel = memo(function EnhancedStatsPanel({
       icon: <CheckCircle2 className="w-4 h-4" />,
       label: "已验证",
       value: verified,
-      color: "text-emerald-600 dark:text-emerald-400",
-      iconColor: "text-emerald-600 dark:text-emerald-400",
+      color: "text-emerald-600 dark:text-primary",
+      iconColor: "text-emerald-600 dark:text-primary",
       trend: null,
     },
   ];
@@ -249,7 +249,7 @@ const EnhancedStatsPanel = memo(function EnhancedStatsPanel({
   return (
     <div className="flex items-stretch gap-4">
       {/* 环形安全评分 */}
-      <div className="flex items-center justify-center p-3 rounded-xl bg-gradient-to-br from-muted to-background border border-border backdrop-blur-sm">
+      <div className="flex items-center justify-center p-3 rounded-md bg-gradient-to-br from-muted to-background border border-border backdrop-blur-sm">
         <CircularProgress value={score} size={72} strokeWidth={5} />
       </div>
 
@@ -258,7 +258,7 @@ const EnhancedStatsPanel = memo(function EnhancedStatsPanel({
         {stats.map((stat, index) => (
           <div
             key={index}
-            className="relative p-3 rounded-xl bg-gradient-to-br from-muted/40 to-background/40 border border-border backdrop-blur-sm group hover:border-border transition-all duration-300"
+            className="relative p-3 rounded-md bg-gradient-to-br from-muted/40 to-background/40 border border-border backdrop-blur-sm group hover:border-border transition-all duration-300"
           >
             <div className="flex items-center gap-2 mb-1.5">
               <div className={`${stat.iconColor} opacity-80`}>
@@ -273,12 +273,12 @@ const EnhancedStatsPanel = memo(function EnhancedStatsPanel({
                 {stat.value}
               </span>
               {stat.trend === "critical" && stat.value > 0 && (
-                <Zap className="w-3 h-3 text-rose-600 dark:text-rose-400" />
+                <Zap className="w-3 h-3 text-rose-600 dark:text-destructive" />
               )}
             </div>
 
             {/* 悬浮光效 */}
-            <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-primary/0 via-primary/5 to-primary/0 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+            <div className="absolute inset-0 rounded-md bg-gradient-to-r from-primary/0 via-primary/5 to-primary/0 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
           </div>
         ))}
       </div>
@@ -305,7 +305,7 @@ const FormatSelector = memo(function FormatSelector({
             key={format}
             onClick={() => onFormatChange(format)}
             className={`
-              relative p-4 rounded-xl border transition-all duration-300 text-left group
+              relative p-4 rounded-md border transition-all duration-300 text-left group
               ${isActive
                 ? `${config.bgColor} border-opacity-100 shadow-lg`
                 : "bg-muted border-border hover:border-border hover:bg-muted"
@@ -364,7 +364,7 @@ const ExportOptionsPanel = memo(function ExportOptionsPanel({
   ];
 
   return (
-    <div className="rounded-xl border border-border bg-muted/50 overflow-hidden">
+    <div className="rounded-md border border-border bg-muted/50 overflow-hidden">
       <button
         onClick={onToggle}
         className="w-full flex items-center justify-between p-3 hover:bg-muted/20 transition-colors"
@@ -507,7 +507,7 @@ const MarkdownPreview = memo(function MarkdownPreview({
       if (line.startsWith("```")) {
         if (inCodeBlock) {
           elements.push(
-            <div key={`code-${index}`} className="my-4 rounded-xl bg-card border border-border/50 overflow-hidden shadow-lg">
+            <div key={`code-${index}`} className="my-4 rounded-md bg-card border border-border/50 overflow-hidden shadow-lg">
               <div className="flex items-center justify-between px-4 py-2 bg-gradient-to-r from-muted to-muted/40 border-b border-border/50">
                 <div className="flex items-center gap-2">
                   <div className="flex gap-1.5">
@@ -660,10 +660,10 @@ const JsonPreview = memo(function JsonPreview({
 
       // 处理搜索高亮
       let result = formatted
-        .replace(/"([^"]+)":/g, '<span class="text-violet-400">"$1"</span>:')
-        .replace(/: "([^"]+)"/g, ': <span class="text-emerald-400">"$1"</span>')
-        .replace(/: (\d+\.?\d*)/g, ': <span class="text-amber-400">$1</span>')
-        .replace(/: (true|false)/g, ': <span class="text-sky-400">$1</span>')
+        .replace(/"([^"]+)":/g, '<span class="text-secondary">"$1"</span>:')
+        .replace(/: "([^"]+)"/g, ': <span class="text-primary">"$1"</span>')
+        .replace(/: (\d+\.?\d*)/g, ': <span class="text-warning">$1</span>')
+        .replace(/: (true|false)/g, ': <span class="text-secondary">$1</span>')
         .replace(/: (null)/g, ': <span class="text-muted-foreground">$1</span>');
 
       if (searchQuery) {
@@ -714,9 +714,9 @@ const HtmlPreview = memo(function HtmlPreview({
       .replace(/&/g, '&amp;')
       .replace(/</g, '&lt;')
       .replace(/>/g, '&gt;')
-      .replace(/(&lt;\/?[a-zA-Z][a-zA-Z0-9]*)/g, '<span class="text-rose-400">$1</span>')
-      .replace(/(\s[a-zA-Z-]+)=/g, '<span class="text-amber-400">$1</span>=')
-      .replace(/"([^"]*)"/g, '"<span class="text-emerald-400">$1</span>"')
+      .replace(/(&lt;\/?[a-zA-Z][a-zA-Z0-9]*)/g, '<span class="text-destructive">$1</span>')
+      .replace(/(\s[a-zA-Z-]+)=/g, '<span class="text-warning">$1</span>=')
+      .replace(/"([^"]*)"/g, '"<span class="text-primary">$1</span>"')
       .replace(/(&lt;!DOCTYPE[^&]*&gt;)/gi, '<span class="text-muted-foreground">$1</span>');
 
     if (searchQuery) {
@@ -1629,7 +1629,7 @@ export const ReportExportDialog = memo(function ReportExportDialog({
           <DialogHeader className="relative">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4">
-                <div className="relative p-3 rounded-xl bg-primary/10 border border-primary/30">
+                <div className="relative p-3 rounded-md bg-primary/10 border border-primary/30">
                   <FileDown className="w-6 h-6 text-primary" />
                 </div>
                 <div>
@@ -1690,7 +1690,7 @@ export const ReportExportDialog = memo(function ReportExportDialog({
               />
 
               {/* 格式信息 */}
-              <div className="p-3 rounded-xl bg-muted border border-border">
+              <div className="p-3 rounded-md bg-muted border border-border">
                 <div className="flex items-center gap-2 mb-2">
                   <div className={FORMAT_CONFIG[activeFormat].color}>
                     {FORMAT_CONFIG[activeFormat].icon}
@@ -1748,7 +1748,7 @@ export const ReportExportDialog = memo(function ReportExportDialog({
                     className="h-8 px-2.5 text-xs text-muted-foreground hover:text-foreground hover:bg-muted/50"
                   >
                     {copied ? (
-                      <Check className="w-3.5 h-3.5 mr-1.5 text-emerald-400" />
+                      <Check className="w-3.5 h-3.5 mr-1.5 text-primary" />
                     ) : (
                       <Copy className="w-3.5 h-3.5 mr-1.5" />
                     )}
@@ -1778,7 +1778,7 @@ export const ReportExportDialog = memo(function ReportExportDialog({
                     <div className="flex items-center justify-center py-16">
                       <div className="flex flex-col items-center gap-4 text-center">
                         <div className="p-4 rounded-full bg-amber-500/10 border border-amber-500/30">
-                          <AlertTriangle className="w-8 h-8 text-amber-400" />
+                          <AlertTriangle className="w-8 h-8 text-warning" />
                         </div>
                         <div>
                           <p className="text-sm text-foreground font-medium mb-1">加载失败</p>
@@ -1796,7 +1796,7 @@ export const ReportExportDialog = memo(function ReportExportDialog({
                       </div>
                     </div>
                   ) : (
-                    <div className="rounded-xl border border-border overflow-hidden bg-card">
+                    <div className="rounded-md border border-border overflow-hidden bg-card">
                       <div className="p-5 min-h-[300px]">
                         {activeFormat === "markdown" && (
                           <MarkdownPreview content={preview.content} searchQuery={searchQuery} />
