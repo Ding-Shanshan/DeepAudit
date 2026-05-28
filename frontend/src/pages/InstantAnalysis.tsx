@@ -479,7 +479,7 @@ public class Example {
   );
 
   return (
-    <div className="space-y-6 p-6 cyber-bg-elevated min-h-screen font-mono relative">
+    <div className="space-y-4 px-6 pt-1 pb-6 cyber-bg-elevated min-h-screen font-mono relative">
       {/* Grid background */}
       <div className="absolute inset-0 cyber-grid-subtle pointer-events-none" />
 
@@ -738,53 +738,6 @@ public class Example {
               </div>
             </div>
             <div className="p-6">
-              {/* Core Metrics */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-                <div className="cyber-card p-4 text-center">
-                  <div className="stat-icon mx-auto mb-3 text-primary">
-                    <Target className="w-6 h-6" />
-                  </div>
-                  <div className="stat-value text-primary mb-1">
-                    {(result.quality_score ?? 0).toFixed(1)}
-                  </div>
-                  <p className="stat-label mb-2">质量评分</p>
-                  <Progress value={result.quality_score ?? 0} className="h-2 bg-muted [&>div]:bg-primary" />
-                </div>
-
-                <div className="cyber-card p-4 text-center">
-                  <div className="stat-icon mx-auto mb-3 text-destructive">
-                    <AlertTriangle className="w-6 h-6" />
-                  </div>
-                  <div className="stat-value text-destructive mb-1">
-                    {(result.summary?.critical_issues ?? 0) + (result.summary?.high_issues ?? 0)}
-                  </div>
-                  <p className="stat-label mb-1">严重问题</p>
-                  <div className="text-xs text-destructive uppercase">需要立即处理</div>
-                </div>
-
-                <div className="cyber-card p-4 text-center">
-                  <div className="stat-icon mx-auto mb-3 text-warning">
-                    <Info className="w-6 h-6" />
-                  </div>
-                  <div className="stat-value text-warning mb-1">
-                    {(result.summary?.medium_issues ?? 0) + (result.summary?.low_issues ?? 0)}
-                  </div>
-                  <p className="stat-label mb-1">一般问题</p>
-                  <div className="text-xs text-warning uppercase">建议优化</div>
-                </div>
-
-                <div className="cyber-card p-4 text-center">
-                  <div className="stat-icon mx-auto mb-3 text-primary">
-                    <FileText className="w-6 h-6" />
-                  </div>
-                  <div className="stat-value text-primary mb-1">
-                    {result.issues.length}
-                  </div>
-                  <p className="stat-label mb-1">总问题数</p>
-                  <div className="text-xs text-primary uppercase">已全部识别</div>
-                </div>
-              </div>
-
               {/* Detailed Metrics */}
               <div className="bg-muted border border-border p-4 rounded-lg">
                 <h3 className="section-title text-sm mb-4 flex items-center gap-2">

@@ -3,22 +3,27 @@
  * Horizontal navigation bar at the top of the page
  */
 
-import { useState, type ReactNode } from "react";
+import { useState, useRef, useEffect, type ReactNode } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import {
   Menu,
   X,
-  LayoutDashboard,
-  FolderGit2,
+  BarChart3,
+  Layers,
   Zap,
-  ListTodo,
+  ClipboardList,
+  Scale,
+  Sparkles,
   Settings,
   Trash2,
-  UserCircle,
-  Shield,
-  MessageSquare,
+  User,
   BriefcaseBusiness,
+  ChevronDown,
+  Bot,
+  FileSearch,
+  Wrench,
+  Shield,
 } from "lucide-react";
 import routes from "@/app/routes";
 import { useAuth } from "@/shared/context/AuthContext";
@@ -30,30 +35,68 @@ import {
 } from "@/shared/constants/branding";
 
 const routeIcons: Record<string, ReactNode> = {
-  "/dashboard": <LayoutDashboard className="h-[18px] w-[18px]" />,
-  "/projects": <FolderGit2 className="h-[18px] w-[18px]" />,
+  "/dashboard": <BarChart3 className="h-[18px] w-[18px]" />,
+  "/projects": <Layers className="h-[18px] w-[18px]" />,
   "/instant-analysis": <Zap className="h-[18px] w-[18px]" />,
-  "/audit-tasks": <ListTodo className="h-[18px] w-[18px]" />,
-  "/audit-rules": <Shield className="h-[18px] w-[18px]" />,
-  "/prompts": <MessageSquare className="h-[18px] w-[18px]" />,
+  "/audit-tasks": <ClipboardList className="h-[18px] w-[18px]" />,
+  "/audit-rules": <Scale className="h-[18px] w-[18px]" />,
+  "/prompts": <Sparkles className="h-[18px] w-[18px]" />,
   "/admin": <Settings className="h-[18px] w-[18px]" />,
   "/recycle-bin": <Trash2 className="h-[18px] w-[18px]" />,
 };
 
+const auditSubItems = [
+  { path: "/audit-tasks?tab=regular", name: "规则审计", icon: <FileSearch className="h-[18px] w-[18px]" /> },
+  { path: "/audit-tasks?tab=agent", name: "AI审计", icon: <Bot className="h-[18px] w-[18px]" /> },
+  { path: "/instant-analysis", name: "审计工具", icon: <Wrench className="h-[18px] w-[18px]" /> },
+];
+
+const rulesSubItems = [
+  { path: "/audit-rules?tab=static", name: "静态规则", icon: <Shield className="h-[18px] w-[18px]" /> },
+  { path: "/audit-rules?tab=ai", name: "AI规则", icon: <Sparkles className="h-[18px] w-[18px]" /> },
+];
+
 export default function Sidebar() {
   const location = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [dropdownPos, setDropdownPos] = useState({ top: 0, left: 0, width: 0 });
+  const dropdownRef = useRef<HTMLDivElement>(null);
+  const dropdownPanelRef = useRef<HTMLDivElement>(null);
+  const [rulesDropdownOpen, setRulesDropdownOpen] = useState(false);
+  const [rulesDropdownPos, setRulesDropdownPos] = useState({ top: 0, left: 0, width: 0 });
+  const rulesDropdownRef = useRef<HTMLDivElement>(null);
+  const rulesDropdownPanelRef = useRef<HTMLDivElement>(null);
   const { user } = useAuth();
 
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      const target = e.target as Node;
+      if (
+        dropdownRef.current && !dropdownRef.current.contains(target) &&
+        dropdownPanelRef.current && !dropdownPanelRef.current.contains(target)
+      ) {
+        setDropdownOpen(false);
+      }
+      if (
+        rulesDropdownRef.current && !rulesDropdownRef.current.contains(target) &&
+        rulesDropdownPanelRef.current && !rulesDropdownPanelRef.current.contains(target)
+      ) {
+        setRulesDropdownOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
   const visibleRoutes = routes.filter((route) => {
-    if (route.visible === false) {
-      return false;
-    }
-    if (route.path === "/admin" && user?.role !== "admin") {
-      return false;
-    }
+    if (route.visible === false) return false;
+    if (route.path === "/admin" && user?.role !== "admin") return false;
     return true;
   });
+
+  const isAuditGroupActive = location.pathname === "/audit-tasks" || location.pathname === "/instant-analysis";
+  const isRulesGroupActive = location.pathname === "/audit-rules";
 
   return (
     <>
@@ -71,6 +114,74 @@ export default function Sidebar() {
 
           <nav className="flex items-center gap-1 ml-6 flex-1 overflow-x-auto">
             {visibleRoutes.map((route) => {
+              if (route.path === "/audit-tasks") {
+                const currentSubName = location.search === "?tab=agent" ? "AI审计" : "规则审计";
+                return (
+                  <div key={route.path} ref={dropdownRef} className="relative">
+                    <button
+                      className={`group flex items-center gap-2 rounded-md px-3 py-2 transition-all duration-200 whitespace-nowrap ${
+                        isAuditGroupActive
+                          ? "bg-[#E0E7FF] text-[#6366F1] shadow-[0_2px_8px_rgba(99,102,241,0.10)] ring-1 ring-[#C7D2FE]/60"
+                          : "text-[#374151] hover:bg-white hover:text-[#1E1B4B]"
+                      }`}
+                      onClick={(e) => {
+                        const rect = e.currentTarget.getBoundingClientRect();
+                        setDropdownPos({ top: rect.bottom + 4, left: rect.left, width: rect.width });
+                        setDropdownOpen(!dropdownOpen);
+                      }}
+                    >
+                      <span
+                        className={`flex h-7 w-7 shrink-0 items-center justify-center rounded transition-colors ${
+                          isAuditGroupActive
+                            ? "text-[#6366F1]"
+                            : "text-[#6B7280] group-hover:text-[#6366F1]"
+                        }`}
+                      >
+                        {routeIcons[route.path] || <BriefcaseBusiness className="h-[18px] w-[18px]" />}
+                      </span>
+                      <span className={`text-sm ${isAuditGroupActive ? "font-semibold tracking-[0.01em]" : "font-medium"}`}>
+                        任务管理
+                      </span>
+                      <ChevronDown className={`h-4 w-4 transition-transform duration-200 ${dropdownOpen ? "rotate-180" : ""}`} />
+                    </button>
+
+                    </div>
+                );
+              }
+
+              if (route.path === "/audit-rules") {
+                return (
+                  <div key={route.path} ref={rulesDropdownRef} className="relative">
+                    <button
+                      className={`group flex items-center gap-2 rounded-md px-3 py-2 transition-all duration-200 whitespace-nowrap ${
+                        isRulesGroupActive
+                          ? "bg-[#E0E7FF] text-[#6366F1] shadow-[0_2px_8px_rgba(99,102,241,0.10)] ring-1 ring-[#C7D2FE]/60"
+                          : "text-[#374151] hover:bg-white hover:text-[#1E1B4B]"
+                      }`}
+                      onClick={(e) => {
+                        const rect = e.currentTarget.getBoundingClientRect();
+                        setRulesDropdownPos({ top: rect.bottom + 4, left: rect.left, width: rect.width });
+                        setRulesDropdownOpen(!rulesDropdownOpen);
+                      }}
+                    >
+                      <span
+                        className={`flex h-7 w-7 shrink-0 items-center justify-center rounded transition-colors ${
+                          isRulesGroupActive
+                            ? "text-[#6366F1]"
+                            : "text-[#6B7280] group-hover:text-[#6366F1]"
+                        }`}
+                      >
+                        {routeIcons[route.path] || <BriefcaseBusiness className="h-[18px] w-[18px]" />}
+                      </span>
+                      <span className={`text-sm ${isRulesGroupActive ? "font-semibold tracking-[0.01em]" : "font-medium"}`}>
+                        规则管理
+                      </span>
+                      <ChevronDown className={`h-4 w-4 transition-transform duration-200 ${rulesDropdownOpen ? "rotate-180" : ""}`} />
+                    </button>
+                  </div>
+                );
+              }
+
               const isActive =
                 location.pathname === route.path ||
                 (route.path !== "/" && location.pathname.startsWith(route.path));
@@ -88,8 +199,8 @@ export default function Sidebar() {
                   <span
                     className={`flex h-7 w-7 shrink-0 items-center justify-center rounded transition-colors ${
                       isActive
-                        ? "bg-[#EEF2FF] text-[#6366F1]"
-                        : "bg-[#EEF2FF] text-[#6B7280] group-hover:bg-[#EEF2FF] group-hover:text-[#6366F1]"
+                        ? "text-[#6366F1]"
+                        : "text-[#6B7280] group-hover:text-[#6366F1]"
                     }`}
                   >
                     {routeIcons[route.path] || <BriefcaseBusiness className="h-[18px] w-[18px]" />}
@@ -113,13 +224,13 @@ export default function Sidebar() {
             <span
               className={`flex h-7 w-7 items-center justify-center rounded ${
                 location.pathname === "/account"
-                  ? "bg-[#EEF2FF] text-[#6366F1]"
-                  : "bg-white text-[#6B7280]"
+                  ? "text-[#6366F1]"
+                  : "text-[#6B7280]"
               }`}
             >
-              <UserCircle className="h-[18px] w-[18px]" />
+              <User className="h-[18px] w-[18px]" />
             </span>
-            <span className="text-sm font-medium">账号管理</span>
+            <span className="text-sm font-medium">{user?.username || "账号"}</span>
           </Link>
         </div>
 
@@ -148,9 +259,85 @@ export default function Sidebar() {
           <div className="border-t border-[#E0E7FF] bg-[#F5F3FF] px-4 py-3 md:hidden">
             <nav className="flex flex-col gap-1">
               {visibleRoutes.map((route) => {
-                const isActive =
-                  location.pathname === route.path ||
-                  (route.path !== "/" && location.pathname.startsWith(route.path));
+                if (route.path === "/audit-tasks") {
+                  return (
+                    <div key={route.path}>
+                      <div className="flex items-center gap-3 rounded-md px-3 py-2.5 text-[#374151]">
+                        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded text-[#6B7280]">
+                          {routeIcons[route.path] || <BriefcaseBusiness className="h-[18px] w-[18px]" />}
+                        </span>
+                        <span className="text-sm font-medium">{route.name}</span>
+                      </div>
+                      {auditSubItems.map((item) => {
+                        const isActive =
+                          location.pathname === "/audit-tasks" &&
+                          (location.search === item.path.replace("/audit-tasks", "") ||
+                            (item.path.includes("tab=regular") && !location.search));
+                        return (
+                          <Link
+                            key={item.path}
+                            to={item.path}
+                            className={`flex items-center gap-3 rounded-md px-3 py-2 pl-12 transition-all duration-200 ${
+                              isActive
+                                ? "bg-[#E0E7FF] text-[#6366F1] ring-1 ring-[#C7D2FE]/60"
+                                : "text-[#374151] hover:bg-white hover:text-[#1E1B4B]"
+                            }`}
+                            onClick={() => setMobileOpen(false)}
+                          >
+                            <span className={`flex h-7 w-7 items-center justify-center rounded ${
+                              isActive ? "text-[#6366F1]" : "text-[#6B7280]"
+                            }`}>
+                              {item.icon}
+                            </span>
+                            <span className={`text-sm ${isActive ? "font-semibold" : "font-medium"}`}>
+                              {item.name}
+                            </span>
+                          </Link>
+                        );
+                      })}
+                    </div>
+                  );
+                }
+
+                if (route.path === "/audit-rules") {
+                  return (
+                    <div key={route.path}>
+                      <div className="flex items-center gap-3 rounded-md px-3 py-2.5 text-[#374151]">
+                        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded text-[#6B7280]">
+                          {routeIcons[route.path] || <BriefcaseBusiness className="h-[18px] w-[18px]" />}
+                        </span>
+                        <span className="text-sm font-medium">规则管理</span>
+                      </div>
+                      {rulesSubItems.map((item) => {
+                        const isActive =
+                          (location.pathname === "/audit-rules" &&
+                          location.search === item.path.replace("/audit-rules", "")) ||
+                          (item.path.includes("tab=static") && location.pathname === "/audit-rules" && !location.search);
+                        return (
+                          <Link
+                            key={item.path}
+                            to={item.path}
+                            className={`flex items-center gap-3 rounded-md px-3 py-2 pl-12 transition-all duration-200 ${
+                              isActive
+                                ? "bg-[#E0E7FF] text-[#6366F1] ring-1 ring-[#C7D2FE]/60"
+                                : "text-[#374151] hover:bg-white hover:text-[#1E1B4B]"
+                            }`}
+                            onClick={() => setMobileOpen(false)}
+                          >
+                            <span className={`flex h-7 w-7 items-center justify-center rounded ${
+                              isActive ? "text-[#6366F1]" : "text-[#6B7280]"
+                            }`}>
+                              {item.icon}
+                            </span>
+                            <span className={`text-sm ${isActive ? "font-semibold" : "font-medium"}`}>
+                              {item.name}
+                            </span>
+                          </Link>
+                        );
+                      })}
+                    </div>
+                  );
+                }
 
                 return (
                   <Link
@@ -166,8 +353,8 @@ export default function Sidebar() {
                     <span
                       className={`flex h-8 w-8 shrink-0 items-center justify-center rounded transition-colors ${
                         isActive
-                          ? "bg-[#EEF2FF] text-[#6366F1]"
-                          : "bg-[#EEF2FF] text-[#6B7280] group-hover:bg-[#EEF2FF] group-hover:text-[#6366F1]"
+                          ? "text-[#6366F1]"
+                          : "text-[#6B7280] group-hover:text-[#6366F1]"
                       }`}
                     >
                       {routeIcons[route.path] || <BriefcaseBusiness className="h-[18px] w-[18px]" />}
@@ -190,18 +377,90 @@ export default function Sidebar() {
                 <span
                   className={`flex h-8 w-8 items-center justify-center rounded ${
                     location.pathname === "/account"
-                      ? "bg-[#EEF2FF] text-[#6366F1]"
-                      : "bg-white text-[#6B7280]"
+                      ? "text-[#6366F1]"
+                      : "text-[#6B7280]"
                   }`}
                 >
-                  <UserCircle className="h-[18px] w-[18px]" />
+                  <User className="h-[18px] w-[18px]" />
                 </span>
-                <span className="text-sm font-medium">账号管理</span>
+                <span className="text-sm font-medium">{user?.username || "账号"}</span>
               </Link>
             </nav>
           </div>
         )}
       </header>
+
+      {/* Fixed dropdown panel - rendered outside header to avoid overflow clipping */}
+      {dropdownOpen && (
+        <div
+          className="fixed z-50 rounded-lg border border-[#E0E7FF] bg-white shadow-[0_8px_24px_rgba(99,102,241,0.12)] py-1"
+          ref={dropdownPanelRef}
+          style={{ top: dropdownPos.top, left: dropdownPos.left, width: dropdownPos.width }}
+        >
+          {auditSubItems.map((item) => {
+            const isActive =
+              (location.pathname === "/audit-tasks" &&
+              location.search === item.path.replace("/audit-tasks", "")) ||
+              (item.path.includes("tab=regular") && location.pathname === "/audit-tasks" && !location.search) ||
+              (item.path === "/instant-analysis" && location.pathname === "/instant-analysis");
+            return (
+              <Link
+                key={item.path}
+                to={item.path}
+                className={`flex items-center gap-3 px-4 py-2.5 transition-colors ${
+                  isActive
+                    ? "bg-[#E0E7FF] text-[#6366F1] font-semibold"
+                    : "text-[#374151] hover:bg-[#F5F3FF] hover:text-[#1E1B4B]"
+                }`}
+                onClick={() => setDropdownOpen(false)}
+              >
+                <span className={`flex h-6 w-6 items-center justify-center rounded ${
+                  isActive ? "text-[#6366F1]" : "text-[#6B7280]"
+                }`}>
+                  {item.icon}
+                </span>
+                <span className="text-sm">{item.name}</span>
+              </Link>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Rules dropdown panel */}
+      {rulesDropdownOpen && (
+        <div
+          className="fixed z-50 rounded-lg border border-[#E0E7FF] bg-white shadow-[0_8px_24px_rgba(99,102,241,0.12)] py-1"
+          ref={rulesDropdownPanelRef}
+          style={{ top: rulesDropdownPos.top, left: rulesDropdownPos.left, width: rulesDropdownPos.width }}
+        >
+          {rulesSubItems.map((item) => {
+            const isActive =
+              (location.pathname === "/audit-rules" &&
+              location.search === item.path.replace("/audit-rules", "")) ||
+              (item.path.includes("tab=static") && location.pathname === "/audit-rules" && !location.search) ||
+              (item.path === "/audit-rules?tab=ai" && location.search === "?tab=ai");
+            return (
+              <Link
+                key={item.path}
+                to={item.path}
+                className={`flex items-center gap-3 px-4 py-2.5 transition-colors ${
+                  isActive
+                    ? "bg-[#E0E7FF] text-[#6366F1] font-semibold"
+                    : "text-[#374151] hover:bg-[#F5F3FF] hover:text-[#1E1B4B]"
+                }`}
+                onClick={() => setRulesDropdownOpen(false)}
+              >
+                <span className={`flex h-6 w-6 items-center justify-center rounded ${
+                  isActive ? "text-[#6366F1]" : "text-[#6B7280]"
+                }`}>
+                  {item.icon}
+                </span>
+                <span className="text-sm">{item.name}</span>
+              </Link>
+            );
+          })}
+        </div>
+      )}
     </>
   );
 }

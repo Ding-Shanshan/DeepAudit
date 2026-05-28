@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Outlet } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Outlet, useLocation } from "react-router-dom";
 import Sidebar from "@/components/layout/Sidebar";
 import routes from "./routes";
 import { AuthProvider } from "@/shared/context/AuthContext";
@@ -6,12 +6,76 @@ import { ProtectedRoute } from "./ProtectedRoute";
 import Login from "@/pages/Login";
 import NotFound from "@/pages/NotFound";
 import { Toaster } from "@/components/ui/sonner";
+import { ChevronRight, Home } from "lucide-react";
+import { CONSOLE_HOME_ROUTE } from "@/shared/constants/branding";
+
+const auditSubMap: Record<string, string> = {
+  "regular": "规则审计",
+  "agent": "AI审计",
+};
+
+function Breadcrumb() {
+  const location = useLocation();
+
+  let primaryName = "";
+  let secondaryName = "";
+
+  const match = routes.find((r) => {
+    if (r.path.includes(":")) {
+      const base = r.path.split("/:")[0];
+      return location.pathname.startsWith(base);
+    }
+    return location.pathname === r.path;
+  });
+
+  // Special case: /audit-tasks with sub-tabs
+  if (location.pathname === "/audit-tasks") {
+    primaryName = "任务管理";
+    const tab = new URLSearchParams(location.search).get("tab");
+    if (tab && auditSubMap[tab]) {
+      secondaryName = auditSubMap[tab];
+    }
+  } else if (location.pathname === "/instant-analysis") {
+    primaryName = "任务管理";
+    secondaryName = "审计工具";
+  } else if (location.pathname === "/audit-rules") {
+    primaryName = "规则管理";
+    const tab = new URLSearchParams(location.search).get("tab");
+    secondaryName = tab === "ai" ? "AI规则" : "静态规则";
+  } else if (match) {
+    primaryName = match.name;
+  }
+
+  if (!primaryName) return null;
+
+  return (
+    <div className="flex items-center gap-2 px-6 pt-4 pb-1 text-sm text-[#6B7280]">
+      <Home className="h-4 w-4" />
+      <span className="text-[#374151] hover:text-[#6366F1] cursor-pointer" onClick={() => window.location.href = CONSOLE_HOME_ROUTE}>首页</span>
+      {primaryName && (
+        <>
+          <ChevronRight className="h-4 w-4 text-[#C7D2FE]" />
+          {secondaryName ? (
+            <>
+              <span className="text-[#374151]">任务管理</span>
+              <ChevronRight className="h-4 w-4 text-[#C7D2FE]" />
+              <span className="text-[#6366F1] font-medium">{secondaryName}</span>
+            </>
+          ) : (
+            <span className="text-[#6366F1] font-medium">{primaryName}</span>
+          )}
+        </>
+      )}
+    </div>
+  );
+}
 
 function AppLayout() {
   return (
     <div className="min-h-screen gradient-bg">
       <Sidebar />
       <main className="min-h-[calc(100vh-3.5rem)]">
+        <Breadcrumb />
         <Outlet />
       </main>
     </div>

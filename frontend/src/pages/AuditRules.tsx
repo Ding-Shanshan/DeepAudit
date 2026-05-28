@@ -4,6 +4,8 @@
  */
 
 import { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
+import PromptManager from './PromptManager';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
@@ -81,6 +83,8 @@ const RULE_TYPES = [
 ];
 
 export default function AuditRules() {
+  const [searchParams] = useSearchParams();
+  const activeTab = searchParams.get("tab") === "ai" ? "ai" : "static";
   const [ruleSets, setRuleSets] = useState<AuditRuleSet[]>([]);
   const [loading, setLoading] = useState(true);
   const [expandedSets, setExpandedSets] = useState<Set<string>>(new Set());
@@ -245,61 +249,14 @@ export default function AuditRules() {
   }
 
   return (
-    <div className="space-y-6 p-6 cyber-bg-elevated min-h-screen font-mono relative">
+    <div className="space-y-4 px-6 pt-1 pb-6 cyber-bg-elevated min-h-screen font-mono relative">
       {/* Grid background */}
       <div className="absolute inset-0 cyber-grid-subtle pointer-events-none" />
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 relative z-10">
-        <div className="cyber-card p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="stat-label">规则集总数</p>
-              <p className="stat-value text-primary">{ruleSets.length}</p>
-            </div>
-            <div className="stat-icon text-primary">
-              <Shield className="w-6 h-6" />
-            </div>
-          </div>
-        </div>
-
-        <div className="cyber-card p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="stat-label">系统规则集</p>
-              <p className="stat-value text-secondary">{ruleSets.filter(r => r.is_system).length}</p>
-            </div>
-            <div className="stat-icon text-secondary">
-              <Settings className="w-6 h-6" />
-            </div>
-          </div>
-        </div>
-
-        <div className="cyber-card p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="stat-label">总规则数</p>
-              <p className="stat-value text-primary">{ruleSets.reduce((acc, r) => acc + r.rules_count, 0)}</p>
-            </div>
-            <div className="stat-icon text-primary">
-              <CheckCircle className="w-6 h-6" />
-            </div>
-          </div>
-        </div>
-
-        <div className="cyber-card p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="stat-label">已启用规则</p>
-              <p className="stat-value text-warning">{ruleSets.reduce((acc, r) => acc + r.enabled_rules_count, 0)}</p>
-            </div>
-            <div className="stat-icon text-warning">
-              <Activity className="w-6 h-6" />
-            </div>
-          </div>
-        </div>
-      </div>
-
+      {activeTab === "ai" ? (
+        <PromptManager />
+      ) : (
+      <>
       {/* Action Bar */}
       <div className="cyber-card p-0 relative z-10">
         <div className="cyber-card-header">
@@ -610,6 +567,8 @@ export default function AuditRules() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      </>
+      )}
     </div>
   );
 }

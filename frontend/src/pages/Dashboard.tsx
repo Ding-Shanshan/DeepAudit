@@ -199,13 +199,13 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="space-y-6 p-6 bg-background min-h-screen font-mono relative">
+    <div className="space-y-4 px-6 pt-0 pb-6 bg-background min-h-screen font-mono relative">
       {/* Grid background */}
       <div className="absolute inset-0 cyber-grid-subtle pointer-events-none" />
 
       {/* Demo Mode Warning */}
       {isDemoMode && (
-        <div className="relative z-10 cyber-card p-4 border-warning/25 bg-warning/5">
+        <div className="relative z-10 cyber-card p-3 border-warning/25 bg-warning/5">
           <div className="flex items-start gap-3">
             <AlertTriangle className="w-5 h-5 text-warning mt-0.5" />
             <div className="text-sm text-foreground/80">
@@ -219,9 +219,9 @@ export default function Dashboard() {
       )}
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 relative z-10">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 relative z-10">
         {/* Total Projects */}
-        <div className="cyber-card p-4">
+        <div className="cyber-card p-3">
           <div className="flex items-center justify-between">
             <div>
               <p className="stat-label">总项目数</p>
@@ -238,7 +238,7 @@ export default function Dashboard() {
         </div>
 
         {/* Audit Tasks */}
-        <div className="cyber-card p-4">
+        <div className="cyber-card p-3">
           <div className="flex items-center justify-between">
             <div>
               <p className="stat-label">审计任务</p>
@@ -255,7 +255,7 @@ export default function Dashboard() {
         </div>
 
         {/* Issues Found */}
-        <div className="cyber-card p-4">
+        <div className="cyber-card p-3">
           <div className="flex items-center justify-between">
             <div>
               <p className="stat-label">发现问题</p>
@@ -272,7 +272,7 @@ export default function Dashboard() {
         </div>
 
         {/* Quality Score */}
-        <div className="cyber-card p-4">
+        <div className="cyber-card p-3">
           <div className="flex items-center justify-between">
             <div>
               <p className="stat-label">平均质量分</p>
@@ -296,13 +296,13 @@ export default function Dashboard() {
       </div>
 
       {/* Main Content */}
-      <div className="grid grid-cols-1 xl:grid-cols-4 gap-4 relative z-10">
+      <div className="grid grid-cols-1 xl:grid-cols-4 gap-3 relative z-10">
         {/* Left Content */}
-        <div className="xl:col-span-3 space-y-4">
+        <div className="xl:col-span-3 space-y-3">
           {/* Charts */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
             {/* Quality Trend */}
-            <div className="cyber-card p-4">
+            <div className="cyber-card p-3">
               <div className="section-header">
                 <TrendingUp className="w-5 h-5 text-primary" />
                 <h3 className="section-title">代码质量趋势</h3>
@@ -342,7 +342,7 @@ export default function Dashboard() {
             </div>
 
             {/* Issue Distribution */}
-            <div className="cyber-card p-4">
+            <div className="cyber-card p-3">
               <div className="section-header">
                 <BarChart3 className="w-5 h-5 text-secondary" />
                 <h3 className="section-title">问题类型分布</h3>
@@ -387,7 +387,7 @@ export default function Dashboard() {
           </div>
 
           {/* Projects Overview */}
-          <div className="cyber-card p-4">
+          <div className="cyber-card p-3">
             <div className="section-header">
               <FileText className="w-5 h-5 text-primary" />
               <h3 className="section-title">项目概览</h3>
@@ -440,7 +440,7 @@ export default function Dashboard() {
           </div>
 
           {/* Recent Tasks */}
-          <div className="cyber-card p-4">
+          <div className="cyber-card p-3">
             <div className="section-header">
               <Clock className="w-5 h-5 text-primary" />
               <h3 className="section-title">最近任务</h3>
@@ -516,9 +516,9 @@ export default function Dashboard() {
         </div>
 
         {/* Right Sidebar */}
-        <div className="xl:col-span-1 space-y-4">
+        <div className="xl:col-span-1 space-y-3">
           {/* Quick Actions */}
-          <div className="cyber-card p-4">
+          <div className="cyber-card p-3">
             <div className="section-header">
               <Zap className="w-5 h-5 text-primary" />
               <h3 className="section-title">快速操作</h3>
@@ -552,7 +552,7 @@ export default function Dashboard() {
           </div>
 
           {/* System Status */}
-          <div className="cyber-card p-4">
+          <div className="cyber-card p-3">
             <div className="section-header">
               <Cpu className="w-5 h-5 text-primary" />
               <h3 className="section-title">系统状态</h3>
@@ -610,7 +610,7 @@ export default function Dashboard() {
           </div>
 
           {/* Recent Activity */}
-          <div className="cyber-card p-4">
+          <div className="cyber-card p-3">
             <div className="section-header">
               <Terminal className="w-5 h-5 text-warning" />
               <h3 className="section-title">最新活动</h3>

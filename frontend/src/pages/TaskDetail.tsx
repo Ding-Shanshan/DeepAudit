@@ -523,7 +523,7 @@ export default function TaskDetail() {
 
   if (!task) {
     return (
-      <div className="space-y-6 p-6 cyber-bg-elevated min-h-screen font-mono">
+      <div className="space-y-4 px-6 pt-1 pb-6 cyber-bg-elevated min-h-screen font-mono">
         <div className="flex items-center space-x-4">
           <Link to="/audit-tasks">
             <Button variant="outline" size="sm" className="cyber-btn-ghost h-10 w-10 p-0">
@@ -543,7 +543,7 @@ export default function TaskDetail() {
   const progressPercentage = calculateTaskProgress(task.scanned_files, task.total_files);
 
   return (
-    <div className="space-y-6 p-6 cyber-bg-elevated min-h-screen font-mono relative">
+    <div className="space-y-4 px-6 pt-1 pb-6 cyber-bg-elevated min-h-screen font-mono relative">
       {/* Grid background */}
       <div className="absolute inset-0 cyber-grid-subtle pointer-events-none" />
 

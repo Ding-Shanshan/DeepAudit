@@ -355,7 +355,7 @@ export default function AdminDashboard() {
 
   if (!isAdmin) {
     return (
-      <div className="space-y-6 p-6 cyber-bg-elevated min-h-screen font-mono relative">
+      <div className="space-y-4 px-6 pt-1 pb-6 cyber-bg-elevated min-h-screen font-mono relative">
         <div className="absolute inset-0 cyber-grid-subtle pointer-events-none" />
         <div className="relative z-10 cyber-card p-8">
           <div className="cyber-card-header">
@@ -371,7 +371,7 @@ export default function AdminDashboard() {
   }
 
   return (
-    <div className="space-y-6 p-6 cyber-bg-elevated min-h-screen font-mono relative">
+    <div className="space-y-4 px-6 pt-1 pb-6 cyber-bg-elevated min-h-screen font-mono relative">
       <div className="absolute inset-0 cyber-grid-subtle pointer-events-none" />
 
       <div className="relative z-10">

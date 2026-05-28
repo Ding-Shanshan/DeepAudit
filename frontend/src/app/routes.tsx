@@ -41,7 +41,7 @@ const routes: RouteConfig[] = [
     visible: false,
   },
   {
-    name: "仪表盘",
+    name: "数据可视",
     path: CONSOLE_HOME_ROUTE,
     element: <Dashboard />,
     visible: true,
@@ -62,10 +62,10 @@ const routes: RouteConfig[] = [
     name: "即时分析",
     path: "/instant-analysis",
     element: <InstantAnalysis />,
-    visible: true,
+    visible: false,
   },
   {
-    name: "审计任务",
+    name: "任务管理",
     path: "/audit-tasks",
     element: <AuditTasks />,
     visible: true,
@@ -77,7 +77,7 @@ const routes: RouteConfig[] = [
     visible: false,
   },
   {
-    name: "审计规则",
+    name: "规则管理",
     path: "/audit-rules",
     element: <AuditRules />,
     visible: true,
@@ -86,7 +86,7 @@ const routes: RouteConfig[] = [
     name: "提示词管理",
     path: "/prompts",
     element: <PromptManager />,
-    visible: true,
+    visible: false,
   },
   {
     name: "系统管理",

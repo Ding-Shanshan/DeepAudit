@@ -190,60 +190,9 @@ export default function PromptManager() {
   }
 
   return (
-    <div className="space-y-6 p-6 cyber-bg-elevated min-h-screen font-mono relative">
+    <div className="space-y-4 px-6 pt-1 pb-6 cyber-bg-elevated min-h-screen font-mono relative">
       {/* Grid background */}
       <div className="absolute inset-0 cyber-grid-subtle pointer-events-none" />
-
-      {/* Stats Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 relative z-10">
-        <div className="cyber-card p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="stat-label">模板总数</p>
-              <p className="stat-value text-primary">{templates.length}</p>
-            </div>
-            <div className="stat-icon text-primary">
-              <FileText className="w-6 h-6" />
-            </div>
-          </div>
-        </div>
-
-        <div className="cyber-card p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="stat-label">系统模板</p>
-              <p className="stat-value text-secondary">{templates.filter(t => t.is_system).length}</p>
-            </div>
-            <div className="stat-icon text-secondary">
-              <Shield className="w-6 h-6" />
-            </div>
-          </div>
-        </div>
-
-        <div className="cyber-card p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="stat-label">自定义模板</p>
-              <p className="stat-value text-primary">{templates.filter(t => !t.is_system).length}</p>
-            </div>
-            <div className="stat-icon text-primary">
-              <Sparkles className="w-6 h-6" />
-            </div>
-          </div>
-        </div>
-
-        <div className="cyber-card p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="stat-label">已启用</p>
-              <p className="stat-value text-warning">{templates.filter(t => t.is_active).length}</p>
-            </div>
-            <div className="stat-icon text-warning">
-              <Activity className="w-6 h-6" />
-            </div>
-          </div>
-        </div>
-      </div>
 
       {/* Action Bar */}
       <div className="cyber-card p-0 relative z-10">

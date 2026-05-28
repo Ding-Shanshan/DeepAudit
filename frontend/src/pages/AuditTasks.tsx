@@ -30,7 +30,7 @@ import {
 import { api } from "@/shared/config/database";
 import { apiClient } from "@/shared/api/serverClient";
 import type { AuditTask } from "@/shared/types";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 import CreateTaskDialog from "@/components/audit/CreateTaskDialog";
 import TerminalProgressDialog from "@/components/audit/TerminalProgressDialog";
@@ -48,7 +48,8 @@ type TaskTab = "regular" | "agent";
 
 export default function AuditTasks() {
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState<TaskTab>("agent"); // 默认显示Agent任务
+  const [searchParams] = useSearchParams();
+  const activeTab: TaskTab = searchParams.get("tab") === "agent" ? "agent" : "regular";
 
   // 普通任务状态
   const [tasks, setTasks] = useState<AuditTask[]>([]);
@@ -344,217 +345,9 @@ export default function AuditTasks() {
   }
 
   return (
-    <div className="space-y-6 p-6 cyber-bg-elevated min-h-screen font-mono relative">
+    <div className="space-y-4 px-6 pt-1 pb-6 cyber-bg-elevated min-h-screen font-mono relative">
       {/* Grid background */}
       <div className="absolute inset-0 cyber-grid-subtle pointer-events-none" />
-
-      {/* Tab 切换 - 卡片式设计 */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 relative z-10">
-        {/* Agent任务卡片 */}
-        <button
-          onClick={() => setActiveTab("agent")}
-          className={`
-            relative group text-left p-5 rounded-md font-mono
-            transition-all duration-300 border-2 overflow-hidden
-            ${activeTab === "agent"
-              ? "bg-gradient-to-br from-primary/20 via-primary/10 to-transparent border-primary shadow-lg shadow-primary/20"
-              : "bg-muted border-border hover:border-primary/50 hover:bg-card/80"
-            }
-          `}
-        >
-          {/* 背景装饰 */}
-          <div className={`absolute top-0 right-0 w-32 h-32 rounded-full blur-3xl transition-opacity duration-300 ${activeTab === "agent" ? "bg-primary/20 opacity-100" : "bg-primary/5 opacity-0 group-hover:opacity-50"
-            }`} />
-
-          <div className="relative flex items-start gap-4">
-            {/* 图标区域 */}
-            <div className={`
-              flex-shrink-0 w-14 h-14 rounded-md flex items-center justify-center
-              transition-all duration-300
-              ${activeTab === "agent"
-                ? "bg-primary/30 shadow-lg shadow-primary/30"
-                : "bg-muted/80 group-hover:bg-primary/20"
-              }
-            `}>
-              <Bot className={`w-7 h-7 transition-colors duration-300 ${activeTab === "agent" ? "text-primary" : "text-muted-foreground group-hover:text-primary"
-                }`} />
-            </div>
-
-            {/* 内容区域 */}
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2 mb-1">
-                <h3 className={`text-lg font-mono font-bold uppercase tracking-[0.15em] transition-colors duration-300 ${activeTab === "agent" ? "text-primary text-glow-primary" : "text-foreground group-hover:text-primary"}`}>
-                  Agent 智能审计
-                </h3>
-                {agentStats.running > 0 && (
-                  <span className="px-2 py-0.5 text-xs font-bold rounded-full bg-primary/30 text-primary border border-primary/50 animate-pulse">
-                    {agentStats.running} 运行中
-                  </span>
-                )}
-                {activeTab === "agent" && (
-                  <span className="px-2 py-0.5 text-xs font-bold rounded-full bg-primary text-background">
-                    当前
-                  </span>
-                )}
-              </div>
-              <p className={`text-sm transition-colors duration-300 ${activeTab === "agent" ? "text-foreground" : "text-muted-foreground group-hover:text-muted-foreground"
-                }`}>
-                LLM 驱动的多 Agent 协同深度审计，支持智能漏洞挖掘与验证
-              </p>
-
-              {/* 统计数据 */}
-              <div className="flex items-center gap-4 mt-3 text-xs">
-                <span className={`transition-colors duration-300 ${activeTab === "agent" ? "text-muted-foreground" : "text-muted-foreground"}`}>
-                  共 <span className="font-bold text-foreground">{agentStats.total}</span> 个任务
-                </span>
-                <span className="text-primary">
-                  <CheckCircle className="w-3 h-3 inline mr-1" />
-                  {agentStats.completed}
-                </span>
-                {agentStats.failed > 0 && (
-                  <span className="text-destructive">
-                    <AlertTriangle className="w-3 h-3 inline mr-1" />
-                    {agentStats.failed}
-                  </span>
-                )}
-              </div>
-            </div>
-          </div>
-
-          {/* 选中指示条 */}
-          {activeTab === "agent" && (
-            <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-primary via-primary to-transparent" />
-          )}
-        </button>
-
-        {/* 快速扫描任务卡片 */}
-        <button
-          onClick={() => setActiveTab("regular")}
-          className={`
-            relative group text-left p-5 rounded-md font-mono
-            transition-all duration-300 border-2 overflow-hidden
-            ${activeTab === "regular"
-              ? "bg-gradient-to-br from-cyan-500/20 via-cyan-500/10 to-transparent border-cyan-500 shadow-lg shadow-cyan-500/20"
-              : "bg-muted border-border hover:border-cyan-500/50 hover:bg-card/80"
-            }
-          `}
-        >
-          {/* 背景装饰 */}
-          <div className={`absolute top-0 right-0 w-32 h-32 rounded-full blur-3xl transition-opacity duration-300 ${activeTab === "regular" ? "bg-secondary/20 opacity-100" : "bg-secondary/5 opacity-0 group-hover:opacity-50"
-            }`} />
-
-          <div className="relative flex items-start gap-4">
-            {/* 图标区域 */}
-            <div className={`
-              flex-shrink-0 w-14 h-14 rounded-md flex items-center justify-center
-              transition-all duration-300
-              ${activeTab === "regular"
-                ? "bg-secondary/30 shadow-lg shadow-cyan-500/30"
-                : "bg-muted/80 group-hover:bg-secondary/20"
-              }
-            `}>
-              <Zap className={`w-7 h-7 transition-colors duration-300 ${activeTab === "regular" ? "text-secondary" : "text-muted-foreground group-hover:text-secondary"
-                }`} />
-            </div>
-
-            {/* 内容区域 */}
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2 mb-1">
-                <h3 className={`text-lg font-mono font-bold uppercase tracking-[0.15em] transition-colors duration-300 ${activeTab === "regular" ? "text-secondary text-glow-cyan" : "text-foreground group-hover:text-secondary"}`}>
-                  快速扫描任务
-                </h3>
-                {regularStats.running > 0 && (
-                  <span className="px-2 py-0.5 text-xs font-bold rounded-full bg-secondary/30 text-secondary border border-cyan-500/50 animate-pulse">
-                    {regularStats.running} 运行中
-                  </span>
-                )}
-                {activeTab === "regular" && (
-                  <span className="px-2 py-0.5 text-xs font-bold rounded-full bg-secondary text-background">
-                    当前
-                  </span>
-                )}
-              </div>
-              <p className={`text-sm transition-colors duration-300 ${activeTab === "regular" ? "text-foreground" : "text-muted-foreground group-hover:text-muted-foreground"
-                }`}>
-                传统规则引擎驱动的快速代码扫描，适合大规模批量检测
-              </p>
-
-              {/* 统计数据 */}
-              <div className="flex items-center gap-4 mt-3 text-xs">
-                <span className={`transition-colors duration-300 ${activeTab === "regular" ? "text-muted-foreground" : "text-muted-foreground"}`}>
-                  共 <span className="font-bold text-foreground">{regularStats.total}</span> 个任务
-                </span>
-                <span className="text-primary">
-                  <CheckCircle className="w-3 h-3 inline mr-1" />
-                  {regularStats.completed}
-                </span>
-                {regularStats.failed > 0 && (
-                  <span className="text-destructive">
-                    <AlertTriangle className="w-3 h-3 inline mr-1" />
-                    {regularStats.failed}
-                  </span>
-                )}
-              </div>
-            </div>
-          </div>
-
-          {/* 选中指示条 */}
-          {activeTab === "regular" && (
-            <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-cyan-500 via-cyan-500 to-transparent" />
-          )}
-        </button>
-      </div>
-
-      {/* Stats Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 relative z-10">
-        <div className="cyber-card p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="stat-label">总任务数</p>
-              <p className="stat-value">{currentStats.total}</p>
-            </div>
-            <div className="stat-icon text-primary">
-              <Activity className="w-6 h-6" />
-            </div>
-          </div>
-        </div>
-
-        <div className="cyber-card p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="stat-label">已完成</p>
-              <p className="stat-value">{currentStats.completed}</p>
-            </div>
-            <div className="stat-icon text-primary">
-              <CheckCircle className="w-6 h-6" />
-            </div>
-          </div>
-        </div>
-
-        <div className="cyber-card p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="stat-label">运行中</p>
-              <p className="stat-value">{currentStats.running}</p>
-            </div>
-            <div className="stat-icon text-secondary">
-              <Clock className="w-6 h-6" />
-            </div>
-          </div>
-        </div>
-
-        <div className="cyber-card p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="stat-label">失败</p>
-              <p className="stat-value">{currentStats.failed}</p>
-            </div>
-            <div className="stat-icon text-destructive">
-              <AlertTriangle className="w-6 h-6" />
-            </div>
-          </div>
-        </div>
-      </div>
 
       {/* Search and Filter */}
       <div className="cyber-card p-4 relative z-10">
