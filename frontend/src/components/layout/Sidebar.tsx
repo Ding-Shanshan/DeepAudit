@@ -103,9 +103,9 @@ export default function Sidebar() {
       <header className="sticky top-0 z-40 border-b border-[#E0E7FF] bg-[#F5F3FF] shadow-[0_2px_12px_rgba(99,102,241,0.06)]">
         {/* Desktop nav */}
         <div className="hidden md:flex md:h-14 md:items-center md:px-5">
-          <Link to={CONSOLE_HOME_ROUTE} className="flex items-center gap-3 shrink-0">
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-[#C7D2FE] bg-[linear-gradient(180deg,#F5F3FF,#E0E7FF)] shadow-[0_4px_12px_rgba(99,102,241,0.08)]">
-              <img src={BRAND_LOGO_PATH} alt={BRAND_COMPANY_NAME} className="h-5 w-5 object-contain" />
+          <Link to={CONSOLE_HOME_ROUTE} className="flex items-center gap-3 shrink-0 mr-4">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center">
+              <img src={BRAND_LOGO_PATH} alt={BRAND_COMPANY_NAME} className="h-9 w-9 object-contain" />
             </div>
             <div className="truncate text-sm font-semibold tracking-[0.02em] text-[#1E1B4B]">
               {BRAND_NAME}
@@ -237,8 +237,8 @@ export default function Sidebar() {
         {/* Mobile nav */}
         <div className="flex h-14 items-center justify-between px-4 md:hidden">
           <Link to={CONSOLE_HOME_ROUTE} className="flex items-center gap-3">
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-[#C7D2FE] bg-[linear-gradient(180deg,#F5F3FF,#E0E7FF)] shadow-[0_4px_12px_rgba(99,102,241,0.08)]">
-              <img src={BRAND_LOGO_PATH} alt={BRAND_COMPANY_NAME} className="h-5 w-5 object-contain" />
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center">
+              <img src={BRAND_LOGO_PATH} alt={BRAND_COMPANY_NAME} className="h-9 w-9 object-contain" />
             </div>
             <div className="truncate text-sm font-semibold tracking-[0.02em] text-[#1E1B4B]">
               {BRAND_NAME}

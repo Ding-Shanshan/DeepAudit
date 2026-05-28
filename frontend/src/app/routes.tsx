@@ -98,7 +98,7 @@ const routes: RouteConfig[] = [
     name: "回收站",
     path: "/recycle-bin",
     element: <RecycleBin />,
-    visible: true,
+    visible: false,
   },
   {
     name: "账号管理",
