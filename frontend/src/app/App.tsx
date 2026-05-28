@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { BrowserRouter, Routes, Route, Outlet } from "react-router-dom";
 import Sidebar from "@/components/layout/Sidebar";
 import routes from "./routes";
@@ -9,15 +8,10 @@ import NotFound from "@/pages/NotFound";
 import { Toaster } from "@/components/ui/sonner";
 
 function AppLayout() {
-  const [collapsed, setCollapsed] = useState(false);
-
   return (
     <div className="min-h-screen gradient-bg">
-      <Sidebar collapsed={collapsed} setCollapsed={setCollapsed} />
-      <main
-        className={`transition-all duration-300 min-h-screen ${collapsed ? "md:ml-20" : "md:ml-72"
-          }`}
-      >
+      <Sidebar />
+      <main className="min-h-[calc(100vh-3.5rem)]">
         <Outlet />
       </main>
     </div>

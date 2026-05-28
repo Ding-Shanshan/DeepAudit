@@ -1,6 +1,6 @@
 /**
- * Sidebar Component
- * Indigo Modern navigation — vibrant block-based style
+ * TopNav Component
+ * Horizontal navigation bar at the top of the page
  */
 
 import { useState, type ReactNode } from "react";
@@ -15,8 +15,6 @@ import {
   ListTodo,
   Settings,
   Trash2,
-  ChevronLeft,
-  ChevronRight,
   UserCircle,
   Shield,
   MessageSquare,
@@ -31,7 +29,6 @@ import {
   CONSOLE_HOME_ROUTE,
 } from "@/shared/constants/branding";
 
-// Icon mapping for routes with consistent sizing
 const routeIcons: Record<string, ReactNode> = {
   "/dashboard": <LayoutDashboard className="h-[18px] w-[18px]" />,
   "/projects": <FolderGit2 className="h-[18px] w-[18px]" />,
@@ -43,12 +40,7 @@ const routeIcons: Record<string, ReactNode> = {
   "/recycle-bin": <Trash2 className="h-[18px] w-[18px]" />,
 };
 
-interface SidebarProps {
-  collapsed: boolean;
-  setCollapsed: (collapsed: boolean) => void;
-}
-
-export default function Sidebar({ collapsed, setCollapsed }: SidebarProps) {
+export default function Sidebar() {
   const location = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
   const { user } = useAuth();
@@ -65,66 +57,96 @@ export default function Sidebar({ collapsed, setCollapsed }: SidebarProps) {
 
   return (
     <>
-      <Button
-        variant="outline"
-        size="icon"
-        className="fixed left-4 top-4 z-50 border-primary/30 bg-white text-primary shadow-lg md:hidden"
-        onClick={() => setMobileOpen(!mobileOpen)}
-      >
-        {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-      </Button>
+      <header className="sticky top-0 z-40 border-b border-[#E0E7FF] bg-[#F5F3FF] shadow-[0_2px_12px_rgba(99,102,241,0.06)]">
+        {/* Desktop nav */}
+        <div className="hidden md:flex md:h-14 md:items-center md:px-5">
+          <Link to={CONSOLE_HOME_ROUTE} className="flex items-center gap-3 shrink-0">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-[#C7D2FE] bg-[linear-gradient(180deg,#F5F3FF,#E0E7FF)] shadow-[0_4px_12px_rgba(99,102,241,0.08)]">
+              <img src={BRAND_LOGO_PATH} alt={BRAND_COMPANY_NAME} className="h-5 w-5 object-contain" />
+            </div>
+            <div className="truncate text-sm font-semibold tracking-[0.02em] text-[#1E1B4B]">
+              {BRAND_NAME}
+            </div>
+          </Link>
 
-      {mobileOpen && (
-        <div
-          className="fixed inset-0 z-40 bg-slate-900/20 md:hidden"
-          onClick={() => setMobileOpen(false)}
-        />
-      )}
+          <nav className="flex items-center gap-1 ml-6 flex-1 overflow-x-auto">
+            {visibleRoutes.map((route) => {
+              const isActive =
+                location.pathname === route.path ||
+                (route.path !== "/" && location.pathname.startsWith(route.path));
 
-      <aside
-        className={`fixed left-0 top-0 z-40 h-screen border-r border-[#E0E7FF] bg-[#F5F3FF] text-[#1E1B4B] shadow-[0_2px_12px_rgba(99,102,241,0.06)] transition-all duration-300 ease-in-out ${
-          collapsed ? "w-20" : "w-72"
-        } ${mobileOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"}`}
-      >
-        <div className="flex h-full flex-col">
-          {/* Header: logo + collapse toggle */}
-          <div
-            className={`flex min-h-20 items-center border-b border-[#E0E7FF] ${
-              collapsed ? "justify-center px-4" : "gap-3 px-5"
+              return (
+                <Link
+                  key={route.path}
+                  to={route.path}
+                  className={`group flex items-center gap-2 rounded-md px-3 py-2 transition-all duration-200 whitespace-nowrap ${
+                    isActive
+                      ? "bg-[#E0E7FF] text-[#6366F1] shadow-[0_2px_8px_rgba(99,102,241,0.10)] ring-1 ring-[#C7D2FE]/60"
+                      : "text-[#374151] hover:bg-white hover:text-[#1E1B4B]"
+                  }`}
+                >
+                  <span
+                    className={`flex h-7 w-7 shrink-0 items-center justify-center rounded transition-colors ${
+                      isActive
+                        ? "bg-[#EEF2FF] text-[#6366F1]"
+                        : "bg-[#EEF2FF] text-[#6B7280] group-hover:bg-[#EEF2FF] group-hover:text-[#6366F1]"
+                    }`}
+                  >
+                    {routeIcons[route.path] || <BriefcaseBusiness className="h-[18px] w-[18px]" />}
+                  </span>
+                  <span className={`text-sm ${isActive ? "font-semibold tracking-[0.01em]" : "font-medium"}`}>
+                    {route.name}
+                  </span>
+                </Link>
+              );
+            })}
+          </nav>
+
+          <Link
+            to="/account"
+            className={`group flex items-center gap-2 rounded-md px-3 py-2 transition-all shrink-0 ${
+              location.pathname === "/account"
+                ? "bg-[#E0E7FF] text-[#6366F1] ring-1 ring-[#C7D2FE]/60"
+                : "text-[#374151] hover:bg-white hover:text-[#1E1B4B]"
             }`}
           >
-            <Link
-              to={CONSOLE_HOME_ROUTE}
-              className={`flex min-w-0 flex-1 items-center text-[#1E1B4B] hover:text-[#1E1B4B] ${
-                collapsed ? "justify-center" : "gap-4"
+            <span
+              className={`flex h-7 w-7 items-center justify-center rounded ${
+                location.pathname === "/account"
+                  ? "bg-[#EEF2FF] text-[#6366F1]"
+                  : "bg-white text-[#6B7280]"
               }`}
-              onClick={() => setMobileOpen(false)}
             >
-              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-[#C7D2FE] bg-[linear-gradient(180deg,#F5F3FF,#E0E7FF)] shadow-[0_4px_12px_rgba(99,102,241,0.08)]">
-                <img src={BRAND_LOGO_PATH} alt={BRAND_COMPANY_NAME} className="h-6 w-6 object-contain" />
-              </div>
-              {!collapsed && (
-                <div className="min-w-0">
-                  <div className="truncate text-sm font-semibold tracking-[0.02em] text-[#1E1B4B]">
-                    {BRAND_NAME}
-                  </div>
-                  <div className="truncate text-xs text-[#6B7280]">{BRAND_COMPANY_NAME}</div>
-                </div>
-              )}
-            </Link>
+              <UserCircle className="h-[18px] w-[18px]" />
+            </span>
+            <span className="text-sm font-medium">账号管理</span>
+          </Link>
+        </div>
 
-            <button
-              className="hidden h-8 w-8 items-center justify-center rounded border border-[#E0E7FF] bg-white text-[#6B7280] transition-colors hover:border-[#C7D2FE] hover:bg-[#F5F3FF] hover:text-primary md:flex"
-              onClick={() => setCollapsed(!collapsed)}
-              aria-label={collapsed ? "展开导航" : "收起导航"}
-            >
-              {collapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
-            </button>
-          </div>
+        {/* Mobile nav */}
+        <div className="flex h-14 items-center justify-between px-4 md:hidden">
+          <Link to={CONSOLE_HOME_ROUTE} className="flex items-center gap-3">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-[#C7D2FE] bg-[linear-gradient(180deg,#F5F3FF,#E0E7FF)] shadow-[0_4px_12px_rgba(99,102,241,0.08)]">
+              <img src={BRAND_LOGO_PATH} alt={BRAND_COMPANY_NAME} className="h-5 w-5 object-contain" />
+            </div>
+            <div className="truncate text-sm font-semibold tracking-[0.02em] text-[#1E1B4B]">
+              {BRAND_NAME}
+            </div>
+          </Link>
+          <Button
+            variant="outline"
+            size="icon"
+            className="border-primary/30 bg-white text-primary shadow-lg"
+            onClick={() => setMobileOpen(!mobileOpen)}
+          >
+            {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+          </Button>
+        </div>
 
-          {/* Navigation */}
-          <nav className="flex-1 overflow-y-auto px-3 py-4">
-            <div className="space-y-1">
+        {/* Mobile dropdown */}
+        {mobileOpen && (
+          <div className="border-t border-[#E0E7FF] bg-[#F5F3FF] px-4 py-3 md:hidden">
+            <nav className="flex flex-col gap-1">
               {visibleRoutes.map((route) => {
                 const isActive =
                   location.pathname === route.path ||
@@ -134,16 +156,15 @@ export default function Sidebar({ collapsed, setCollapsed }: SidebarProps) {
                   <Link
                     key={route.path}
                     to={route.path}
-                    className={`group flex items-center rounded-md px-3 py-2.5 transition-all duration-200 ${
+                    className={`group flex items-center gap-3 rounded-md px-3 py-2.5 transition-all duration-200 ${
                       isActive
                         ? "bg-[#E0E7FF] text-[#6366F1] shadow-[0_2px_8px_rgba(99,102,241,0.10)] ring-1 ring-[#C7D2FE]/60"
                         : "text-[#374151] hover:bg-white hover:text-[#1E1B4B]"
-                    } ${collapsed ? "justify-center" : "gap-3"}`}
+                    }`}
                     onClick={() => setMobileOpen(false)}
-                    title={collapsed ? route.name : undefined}
                   >
                     <span
-                      className={`flex h-9 w-9 shrink-0 items-center justify-center rounded transition-colors ${
+                      className={`flex h-8 w-8 shrink-0 items-center justify-center rounded transition-colors ${
                         isActive
                           ? "bg-[#EEF2FF] text-[#6366F1]"
                           : "bg-[#EEF2FF] text-[#6B7280] group-hover:bg-[#EEF2FF] group-hover:text-[#6366F1]"
@@ -151,53 +172,36 @@ export default function Sidebar({ collapsed, setCollapsed }: SidebarProps) {
                     >
                       {routeIcons[route.path] || <BriefcaseBusiness className="h-[18px] w-[18px]" />}
                     </span>
-                    {!collapsed && (
-                      <div className="min-w-0 flex-1">
-                        <div className={`truncate text-sm ${isActive ? "font-semibold tracking-[0.01em]" : "font-medium"}`}>{route.name}</div>
-                      </div>
-                    )}
-                    {!collapsed && isActive && (
-                      <ChevronRight
-                        className="h-4 w-4 text-[#6366F1]"
-                      />
-                    )}
+                    <span className={`text-sm ${isActive ? "font-semibold tracking-[0.01em]" : "font-medium"}`}>
+                      {route.name}
+                    </span>
                   </Link>
                 );
               })}
-            </div>
-          </nav>
-
-          {/* Account section */}
-          <div className="border-t border-[#E0E7FF] bg-[#F5F3FF] p-3">
-            <Link
-              to="/account"
-              className={`group flex items-center rounded-md px-3 py-2.5 transition-all ${
-                location.pathname === "/account"
-                  ? "bg-[#E0E7FF] text-[#6366F1] ring-1 ring-[#C7D2FE]/60"
-                  : "text-[#374151] hover:bg-white hover:text-[#1E1B4B]"
-              } ${collapsed ? "justify-center" : "gap-3"}`}
-              onClick={() => setMobileOpen(false)}
-              title={collapsed ? "账号管理" : undefined}
-            >
-              <span
-                className={`flex h-9 w-9 items-center justify-center rounded ${
+              <Link
+                to="/account"
+                className={`group flex items-center gap-3 rounded-md px-3 py-2.5 transition-all ${
                   location.pathname === "/account"
-                    ? "bg-[#EEF2FF] text-[#6366F1]"
-                    : "bg-white text-[#6B7280]"
+                    ? "bg-[#E0E7FF] text-[#6366F1] ring-1 ring-[#C7D2FE]/60"
+                    : "text-[#374151] hover:bg-white hover:text-[#1E1B4B]"
                 }`}
+                onClick={() => setMobileOpen(false)}
               >
-                <UserCircle className="h-[18px] w-[18px]" />
-              </span>
-              {!collapsed && (
-                <div className="min-w-0 flex-1">
-                  <div className="text-sm font-medium">账号管理</div>
-                  <div className="text-xs text-[#6B7280]">个人信息与认证状态</div>
-                </div>
-              )}
-            </Link>
+                <span
+                  className={`flex h-8 w-8 items-center justify-center rounded ${
+                    location.pathname === "/account"
+                      ? "bg-[#EEF2FF] text-[#6366F1]"
+                      : "bg-white text-[#6B7280]"
+                  }`}
+                >
+                  <UserCircle className="h-[18px] w-[18px]" />
+                </span>
+                <span className="text-sm font-medium">账号管理</span>
+              </Link>
+            </nav>
           </div>
-        </div>
-      </aside>
+        )}
+      </header>
     </>
   );
 }
