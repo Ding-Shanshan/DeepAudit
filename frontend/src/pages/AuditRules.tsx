@@ -27,12 +27,12 @@ import {
   Zap,
   Code,
   Settings,
-  ChevronDown,
-  ChevronRight,
   ExternalLink,
   Activity,
   CheckCircle,
   Terminal,
+  Search,
+  Share2,
 } from 'lucide-react';
 import {
   getRuleSets,
@@ -87,13 +87,15 @@ export default function AuditRules() {
   const activeTab = searchParams.get("tab") === "ai" ? "ai" : "static";
   const [ruleSets, setRuleSets] = useState<AuditRuleSet[]>([]);
   const [loading, setLoading] = useState(true);
-  const [expandedSets, setExpandedSets] = useState<Set<string>>(new Set());
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [showRuleDialog, setShowRuleDialog] = useState(false);
   const [showImportDialog, setShowImportDialog] = useState(false);
   const [selectedRuleSet, setSelectedRuleSet] = useState<AuditRuleSet | null>(null);
   const [selectedRule, setSelectedRule] = useState<AuditRule | null>(null);
+  const [filterName, setFilterName] = useState('');
+  const [filterRuleSet, setFilterRuleSet] = useState('all');
+  const [filterEnabled, setFilterEnabled] = useState('all');
 
   const [ruleSetForm, setRuleSetForm] = useState<AuditRuleSetCreate>({
     name: '', description: '', language: 'all', rule_type: 'custom',
@@ -116,13 +118,6 @@ export default function AuditRules() {
     } finally {
       setLoading(false);
     }
-  };
-
-  const toggleExpand = (id: string) => {
-    const newExpanded = new Set(expandedSets);
-    if (newExpanded.has(id)) newExpanded.delete(id);
-    else newExpanded.add(id);
-    setExpandedSets(newExpanded);
   };
 
   const handleCreateRuleSet = async () => {
@@ -237,6 +232,17 @@ export default function AuditRules() {
   const getCategoryInfo = (category: string) => CATEGORIES.find(c => c.value === category) || CATEGORIES[0];
   const getSeverityInfo = (severity: string) => SEVERITIES.find(s => s.value === severity) || SEVERITIES[2];
 
+  const filteredRules = ruleSets.flatMap(ruleSet =>
+    ruleSet.rules.map(rule => ({ ruleSet, rule }))
+      .filter(({ rule, ruleSet: rs }) => {
+        if (filterName && !rule.name.toLowerCase().includes(filterName.toLowerCase())) return false;
+        if (filterRuleSet !== 'all' && rs.id !== filterRuleSet) return false;
+        if (filterEnabled === 'enabled' && !rule.enabled) return false;
+        if (filterEnabled === 'disabled' && rule.enabled) return false;
+        return true;
+      })
+  );
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen cyber-bg-elevated">
@@ -257,26 +263,9 @@ export default function AuditRules() {
         <PromptManager />
       ) : (
       <>
-      {/* Action Bar */}
-      <div className="cyber-card p-0 relative z-10">
-        <div className="cyber-card-header">
-          <Terminal className="w-5 h-5 text-primary" />
-          <h3 className="text-lg font-bold uppercase tracking-wider text-foreground">审计规则管理</h3>
-          <div className="ml-auto flex gap-2">
-            <Button variant="outline" onClick={() => setShowImportDialog(true)} className="cyber-btn-outline h-9">
-              <Upload className="w-4 h-4 mr-2" />
-              导入规则集
-            </Button>
-            <Button onClick={() => setShowCreateDialog(true)} className="cyber-btn-primary h-9">
-              <Plus className="w-4 h-4 mr-2" />
-              新建规则集
-            </Button>
-          </div>
-        </div>
-      </div>
 
-      {/* Rule Sets List */}
-      <div className="space-y-4 relative z-10">
+      {/* Merged Rules Table */}
+      <div className="relative z-10">
         {ruleSets.length === 0 ? (
           <div className="cyber-card p-16">
             <div className="empty-state">
@@ -290,106 +279,105 @@ export default function AuditRules() {
             </div>
           </div>
         ) : (
-          ruleSets.map(ruleSet => (
-            <div key={ruleSet.id} className={`cyber-card p-0 ${!ruleSet.is_active ? 'opacity-60' : ''}`}>
-              {/* Rule Set Header */}
-              <div className="p-6 border-b border-border">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-4 cursor-pointer" onClick={() => toggleExpand(ruleSet.id)}>
-                    <div className="w-10 h-10 bg-muted border border-border flex items-center justify-center rounded">
-                      {expandedSets.has(ruleSet.id) ? <ChevronDown className="w-5 h-5 text-muted-foreground" /> : <ChevronRight className="w-5 h-5 text-muted-foreground" />}
-                    </div>
-                    <div>
-                      <h3 className="font-bold text-lg text-foreground uppercase flex items-center gap-2">
-                        {ruleSet.name}
-                        {ruleSet.is_system && <Badge className="cyber-badge-info">系统</Badge>}
-                        {ruleSet.is_default && <Badge className="cyber-badge-success">默认</Badge>}
-                      </h3>
-                      <p className="text-sm text-muted-foreground">{ruleSet.description}</p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-3">
-                    <Badge className="cyber-badge-muted">{LANGUAGES.find(l => l.value === ruleSet.language)?.label}</Badge>
-                    <Badge className="cyber-badge-muted">{RULE_TYPES.find(t => t.value === ruleSet.rule_type)?.label}</Badge>
-                    <span className="text-sm font-mono text-muted-foreground px-3 py-1 bg-muted border border-border rounded">
-                      {ruleSet.enabled_rules_count}/{ruleSet.rules_count} 启用
-                    </span>
-                    <Button variant="ghost" size="icon" onClick={() => handleExport(ruleSet)} className="cyber-btn-ghost h-9 w-9">
-                      <Download className="w-4 h-4" />
-                    </Button>
-                    {!ruleSet.is_system && (
-                      <>
-                        <Button variant="ghost" size="icon" onClick={() => openEditRuleSetDialog(ruleSet)} className="cyber-btn-ghost h-9 w-9">
-                          <Edit className="w-4 h-4" />
-                        </Button>
-                        <Button variant="ghost" size="icon" onClick={() => handleDeleteRuleSet(ruleSet.id)} className="h-9 w-9 hover:bg-destructive/12 hover:text-destructive">
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
-                      </>
-                    )}
-                  </div>
-                </div>
+          <div className="cyber-card p-0">
+            {/* Toolbar: filters + actions */}
+            <div className="p-4 flex items-center gap-3 border-b border-border flex-wrap">
+              <div className="relative flex-1 min-w-[180px] max-w-[240px]">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+                <Input
+                  value={filterName}
+                  onChange={e => setFilterName(e.target.value)}
+                  placeholder="搜索规则名称"
+                  className="h-8 text-sm !pl-9"
+                />
               </div>
-
-              {/* Rules List */}
-              {expandedSets.has(ruleSet.id) && (
-                <div className="p-6">
-                  {!ruleSet.is_system && (
-                    <Button variant="outline" size="sm" onClick={() => openAddRuleDialog(ruleSet)} className="mb-4 cyber-btn-outline h-8">
-                      <Plus className="w-4 h-4 mr-2" />
-                      添加规则
-                    </Button>
-                  )}
-                  <ScrollArea className="h-[400px]">
-                    <div className="space-y-3">
-                      {ruleSet.rules.map(rule => {
-                        const categoryInfo = getCategoryInfo(rule.category);
-                        const severityInfo = getSeverityInfo(rule.severity);
-                        const CategoryIcon = categoryInfo.icon;
-                        return (
-                          <div key={rule.id} className={`cyber-card p-4 hover:border-border transition-all ${!rule.enabled ? 'opacity-50' : ''}`}>
-                            <div className="flex items-start justify-between">
-                              <div className="flex items-start gap-4">
-                                <div className={`w-10 h-10 ${categoryInfo.bg} border border-border flex items-center justify-center rounded`}>
-                                  <CategoryIcon className={`w-5 h-5 ${categoryInfo.color}`} />
-                                </div>
-                                <div>
-                                  <div className="flex items-center gap-2 mb-1">
-                                    <span className="font-mono text-xs bg-muted text-primary px-2 py-0.5 rounded">{rule.rule_code}</span>
-                                    <span className="font-bold uppercase text-foreground">{rule.name}</span>
-                                    <Badge className={severityInfo.color}>{severityInfo.label}</Badge>
-                                  </div>
-                                  {rule.description && <p className="text-sm text-muted-foreground mb-2">{rule.description}</p>}
-                                  {rule.reference_url && (
-                                    <a href={rule.reference_url} target="_blank" rel="noopener noreferrer" className="text-sm text-primary hover:underline flex items-center gap-1">
-                                      参考链接 <ExternalLink className="w-3 h-3" />
-                                    </a>
-                                  )}
-                                </div>
-                              </div>
-                              <div className="flex items-center gap-2">
-                                <Switch checked={rule.enabled} onCheckedChange={() => handleToggleRule(ruleSet.id, rule.id)} />
-                                {!ruleSet.is_system && (
-                                  <>
-                                    <Button variant="ghost" size="icon" onClick={() => openEditRuleDialog(ruleSet, rule)} className="cyber-btn-ghost h-8 w-8"><Edit className="w-4 h-4" /></Button>
-                                    <Button variant="ghost" size="icon" onClick={() => handleDeleteRule(ruleSet.id, rule.id)} className="h-8 w-8 hover:bg-destructive/12 hover:text-destructive"><Trash2 className="w-4 h-4" /></Button>
-                                  </>
-                                )}
-                              </div>
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </ScrollArea>
-                </div>
-              )}
+              <Select value={filterRuleSet} onValueChange={setFilterRuleSet}>
+                <SelectTrigger className="cyber-input h-8 w-[160px] text-sm">
+                  <SelectValue placeholder="所属集合" />
+                </SelectTrigger>
+                <SelectContent className="cyber-dialog border-border">
+                  <SelectItem value="all">全部集合</SelectItem>
+                  {ruleSets.map(rs => <SelectItem key={rs.id} value={rs.id}>{rs.name}</SelectItem>)}
+                </SelectContent>
+              </Select>
+              <Select value={filterEnabled} onValueChange={setFilterEnabled}>
+                <SelectTrigger className="cyber-input h-8 w-[120px] text-sm">
+                  <SelectValue placeholder="启用状态" />
+                </SelectTrigger>
+                <SelectContent className="cyber-dialog border-border">
+                  <SelectItem value="all">全部状态</SelectItem>
+                  <SelectItem value="enabled">已启用</SelectItem>
+                  <SelectItem value="disabled">已禁用</SelectItem>
+                </SelectContent>
+              </Select>
+              <div className="ml-auto flex gap-2">
+                <Button variant="outline" onClick={() => setShowImportDialog(true)} className="cyber-btn-outline h-8">
+                  <Upload className="w-4 h-4 mr-2" />
+                  导入规则集
+                </Button>
+                <Button onClick={() => setShowCreateDialog(true)} className="cyber-btn-primary h-8">
+                  <Plus className="w-4 h-4 mr-2" />
+                  新建规则集
+                </Button>
+              </div>
             </div>
-          ))
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-border text-muted-foreground">
+                    <th className="text-left py-2 px-6 font-medium">规则名称</th>
+                    <th className="text-left py-2 px-3 font-medium">简介</th>
+                    <th className="text-left py-2 px-3 font-medium">所属集合</th>
+                    <th className="text-left py-2 px-3 font-medium">查看详情</th>
+                    <th className="text-left py-2 px-3 font-medium">是否启用</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredRules.length === 0 ? (
+                    <tr>
+                      <td colSpan={5} className="py-12 text-center text-muted-foreground">
+                        无匹配规则
+                      </td>
+                    </tr>
+                  ) : (
+                    filteredRules.map(({ ruleSet, rule }) => (
+                      <tr key={`${ruleSet.id}-${rule.id}`} className="border-b border-border/50 hover:bg-muted/50 transition-colors">
+                        <td className="py-2.5 px-6">
+                          <span className="font-medium text-foreground">{rule.name}</span>
+                        </td>
+                        <td className="py-2.5 px-3 text-muted-foreground max-w-xs truncate">{rule.description || '-'}</td>
+                        <td className="py-2.5 px-3">
+                          <span className="text-muted-foreground">{ruleSet.name}</span>
+                        </td>
+                        <td className="py-2.5 px-3">
+                          {rule.reference_url ? (
+                            <a href={rule.reference_url} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+                              查看详情
+                            </a>
+                          ) : (
+                            <span className="text-muted-foreground">-</span>
+                          )}
+                        </td>
+                        <td className="py-2.5 px-3">
+                          <div className="flex items-center gap-2">
+                            <Switch checked={rule.enabled} onCheckedChange={() => handleToggleRule(ruleSet.id, rule.id)} className="h-5 w-9 data-[state=checked]:bg-violet-300 data-[state=unchecked]:bg-muted [&>[data-slot=switch-thumb]]:w-4 [&>[data-slot=switch-thumb]]:h-4 [&>[data-slot=switch-thumb]]:data-[state=checked]:translate-x-4 [&>[data-slot=switch-thumb]]:data-[state=unchecked]:translate-x-0.5" />
+                            {!ruleSet.is_system && (
+                              <>
+                                <Button variant="ghost" size="icon" onClick={() => openEditRuleDialog(ruleSet, rule)} className="cyber-btn-ghost h-7 w-7"><Edit className="w-3.5 h-3.5" /></Button>
+                                <Button variant="ghost" size="icon" onClick={() => handleDeleteRule(ruleSet.id, rule.id)} className="h-7 w-7 hover:bg-destructive/12 hover:text-destructive"><Trash2 className="w-3.5 h-3.5" /></Button>
+                              </>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
         )}
       </div>
-
       {/* Create Rule Set Dialog */}
       <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
         <DialogContent className="!w-[min(90vw,500px)] !max-w-none max-h-[85vh] flex flex-col p-0 gap-0 cyber-dialog border border-border rounded-lg">
@@ -494,6 +482,20 @@ export default function AuditRules() {
             </DialogTitle>
           </DialogHeader>
           <div className="flex-1 overflow-y-auto p-6 space-y-4">
+            {!selectedRule && (
+              <div className="space-y-2">
+                <Label className="text-xs font-bold text-muted-foreground uppercase">所属规则集 *</Label>
+                <Select value={selectedRuleSet?.id || ''} onValueChange={v => {
+                  const rs = ruleSets.find(r => r.id === v);
+                  if (rs) setSelectedRuleSet(rs);
+                }}>
+                  <SelectTrigger className="cyber-input"><SelectValue placeholder="选择规则集" /></SelectTrigger>
+                  <SelectContent className="cyber-dialog border-border">
+                    {ruleSets.filter(rs => !rs.is_system).map(rs => <SelectItem key={rs.id} value={rs.id}>{rs.name}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label className="text-xs font-bold text-muted-foreground uppercase">规则代码 *</Label>
