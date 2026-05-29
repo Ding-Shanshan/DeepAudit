@@ -10,6 +10,7 @@ import AdminDashboard from "@/pages/AdminDashboard";
 import Account from "@/pages/Account";
 import AuditRules from "@/pages/AuditRules";
 import PromptManager from "@/pages/PromptManager";
+import ScheduleManager from "@/pages/ScheduleManager";
 import { AGENT_AUDIT_ROUTE, CONSOLE_HOME_ROUTE } from "@/shared/constants/branding";
 import type { ReactNode } from "react";
 import { Navigate } from "react-router-dom";
@@ -81,6 +82,12 @@ const routes: RouteConfig[] = [
     path: "/audit-rules",
     element: <AuditRules />,
     visible: true,
+  },
+  {
+    name: "计划任务",
+    path: "/schedules",
+    element: <ScheduleManager />,
+    visible: false,
   },
   {
     name: "提示词管理",

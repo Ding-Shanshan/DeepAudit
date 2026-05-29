@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Database, BookOpen, CalendarClock, RefreshCw, Settings, Shield, Terminal, Users } from "lucide-react";
+import { Database, BookOpen, RefreshCw, Settings, Shield, Terminal, Users } from "lucide-react";
 import { toast } from "sonner";
 
 import { DatabaseManager } from "@/components/database/DatabaseManager";
@@ -22,7 +22,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { apiClient } from "@/shared/api/serverClient";
 import { useAuth } from "@/shared/context/AuthContext";
-import type { Project } from "@/shared/types";
 
 type AdminUser = {
   id: string;
@@ -42,23 +41,6 @@ type UserListResponse = {
   limit: number;
 };
 
-type ScheduledScan = {
-  id: string;
-  project_id: string;
-  name: string;
-  scan_mode?: "fast" | "agent";
-  branch_name?: string;
-  interval_minutes: number;
-  time_window_start?: string;
-  time_window_end?: string;
-  timezone?: string;
-  exclude_patterns: string[];
-  file_paths: string[];
-  is_active: boolean;
-  next_run_at?: string;
-  last_run_at?: string;
-};
-
 type KnowledgeEntry = {
   id: string;
   title: string;
@@ -76,24 +58,14 @@ function formatDate(value?: string) {
   return new Date(value).toLocaleString("zh-CN");
 }
 
-function parseCommaList(value: string): string[] {
-  return value
-    .split(",")
-    .map((item) => item.trim())
-    .filter(Boolean);
-}
-
 export default function AdminDashboard() {
   const { user } = useAuth();
   const isAdmin = user?.role === "admin";
 
   const [loadingUsers, setLoadingUsers] = useState(false);
-  const [loadingSchedules, setLoadingSchedules] = useState(false);
   const [loadingKnowledge, setLoadingKnowledge] = useState(false);
 
   const [users, setUsers] = useState<AdminUser[]>([]);
-  const [projects, setProjects] = useState<Project[]>([]);
-  const [schedules, setSchedules] = useState<ScheduledScan[]>([]);
   const [knowledgeEntries, setKnowledgeEntries] = useState<KnowledgeEntry[]>([]);
 
   const [userForm, setUserForm] = useState({
@@ -103,19 +75,6 @@ export default function AdminDashboard() {
     email: "",
     role: "member",
     is_superuser: false,
-  });
-  const [scheduleForm, setScheduleForm] = useState({
-    project_id: "",
-    name: "",
-    scan_mode: "fast",
-    branch_name: "main",
-    interval_minutes: "60",
-    time_window_start: "00:00",
-    time_window_end: "23:59",
-    timezone: "Asia/Shanghai",
-    file_paths: "",
-    exclude_patterns: "",
-    is_active: true,
   });
   const [knowledgeForm, setKnowledgeForm] = useState({
     title: "",
@@ -139,33 +98,6 @@ export default function AdminDashboard() {
     }
   };
 
-  const loadProjects = async () => {
-    if (!isAdmin) return;
-    try {
-      const response = await apiClient.get<Project[]>("/projects/");
-      setProjects(response.data);
-    } catch (error) {
-      console.error("加载项目列表失败", error);
-    }
-  };
-
-  const loadSchedules = async () => {
-    if (!isAdmin) return;
-    setLoadingSchedules(true);
-    try {
-      const response = await apiClient.get<ScheduledScan[]>("/schedules");
-      setSchedules(response.data);
-      if (!scheduleForm.project_id && response.data.length === 0 && projects.length > 0) {
-        setScheduleForm((prev) => ({ ...prev, project_id: projects[0].id }));
-      }
-    } catch (error) {
-      console.error("加载计划扫描失败", error);
-      toast.error("加载计划扫描失败");
-    } finally {
-      setLoadingSchedules(false);
-    }
-  };
-
   const loadKnowledgeEntries = async () => {
     if (!isAdmin) return;
     setLoadingKnowledge(true);
@@ -183,16 +115,8 @@ export default function AdminDashboard() {
   useEffect(() => {
     if (!isAdmin) return;
     void loadUsers();
-    void loadProjects();
-    void loadSchedules();
     void loadKnowledgeEntries();
   }, [isAdmin]);
-
-  useEffect(() => {
-    if (!scheduleForm.project_id && projects.length > 0) {
-      setScheduleForm((prev) => ({ ...prev, project_id: projects[0].id }));
-    }
-  }, [projects, scheduleForm.project_id]);
 
   const handleCreateUser = async () => {
     if (!userForm.username || !userForm.password) {
@@ -250,65 +174,6 @@ export default function AdminDashboard() {
       await loadUsers();
     } catch (error: any) {
       toast.error(error.response?.data?.detail || "删除用户失败");
-    }
-  };
-
-  const handleCreateSchedule = async () => {
-    if (!scheduleForm.project_id || !scheduleForm.name) {
-      toast.error("请填写计划名称并选择项目");
-      return;
-    }
-    try {
-      await apiClient.post("/schedules", {
-        project_id: scheduleForm.project_id,
-        name: scheduleForm.name,
-        scan_mode: scheduleForm.scan_mode,
-        branch_name: scheduleForm.branch_name || null,
-        interval_minutes: Number(scheduleForm.interval_minutes || 60),
-        time_window_start: scheduleForm.time_window_start || null,
-        time_window_end: scheduleForm.time_window_end || null,
-        timezone: scheduleForm.timezone || "Asia/Shanghai",
-        file_paths: parseCommaList(scheduleForm.file_paths),
-        exclude_patterns: parseCommaList(scheduleForm.exclude_patterns),
-        is_active: scheduleForm.is_active,
-      });
-      toast.success("计划扫描已创建");
-      setScheduleForm((prev) => ({
-        ...prev,
-        name: "",
-        scan_mode: "fast",
-        branch_name: "main",
-        interval_minutes: "60",
-        time_window_start: "00:00",
-        time_window_end: "23:59",
-        timezone: "Asia/Shanghai",
-        file_paths: "",
-        exclude_patterns: "",
-        is_active: true,
-      }));
-      await loadSchedules();
-    } catch (error: any) {
-      toast.error(error.response?.data?.detail || "创建计划扫描失败");
-    }
-  };
-
-  const handleToggleSchedule = async (target: ScheduledScan) => {
-    try {
-      await apiClient.put(`/schedules/${target.id}`, { is_active: !target.is_active });
-      toast.success(`计划已${target.is_active ? "停用" : "启用"}`);
-      await loadSchedules();
-    } catch (error: any) {
-      toast.error(error.response?.data?.detail || "更新计划失败");
-    }
-  };
-
-  const handleDeleteSchedule = async (target: ScheduledScan) => {
-    try {
-      await apiClient.delete(`/schedules/${target.id}`);
-      toast.success("计划已删除");
-      await loadSchedules();
-    } catch (error: any) {
-      toast.error(error.response?.data?.detail || "删除计划失败");
     }
   };
 
@@ -382,7 +247,6 @@ export default function AdminDashboard() {
           </div>
           <div className="px-6 py-4 flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
             <Badge className="cyber-badge-info">本地用户管理</Badge>
-            <Badge className="cyber-badge-warning">计划扫描</Badge>
             <Badge className="cyber-badge-success">知识库维护</Badge>
             <span>当前管理员：{user?.username}</span>
           </div>
@@ -390,14 +254,10 @@ export default function AdminDashboard() {
       </div>
 
       <Tabs defaultValue="users" className="w-full relative z-10">
-        <TabsList className="grid w-full grid-cols-5 bg-muted border border-border p-1 h-auto gap-1 rounded-lg mb-6">
+        <TabsList className="grid w-full grid-cols-4 bg-muted border border-border p-1 h-auto gap-1 rounded-lg mb-6">
           <TabsTrigger value="users" className="data-[state=active]:bg-primary data-[state=active]:text-foreground font-mono font-bold uppercase py-3 text-xs flex items-center gap-2">
             <Users className="w-4 h-4" />
             用户
-          </TabsTrigger>
-          <TabsTrigger value="schedules" className="data-[state=active]:bg-primary data-[state=active]:text-foreground font-mono font-bold uppercase py-3 text-xs flex items-center gap-2">
-            <CalendarClock className="w-4 h-4" />
-            计划
           </TabsTrigger>
           <TabsTrigger value="knowledge" className="data-[state=active]:bg-primary data-[state=active]:text-foreground font-mono font-bold uppercase py-3 text-xs flex items-center gap-2">
             <BookOpen className="w-4 h-4" />
@@ -522,158 +382,6 @@ export default function AdminDashboard() {
                                 删除
                               </Button>
                             )}
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))
-                  )}
-                </TableBody>
-              </Table>
-            </div>
-          </div>
-        </TabsContent>
-
-        <TabsContent value="schedules" className="space-y-6">
-          <div className="cyber-card p-5 space-y-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="text-base font-bold text-foreground uppercase">创建计划扫描</h3>
-                <p className="text-xs text-muted-foreground mt-1">按分钟周期自动生成审计任务，支持项目、分支和排除规则配置。</p>
-              </div>
-              <Button variant="outline" className="cyber-btn-outline h-9" onClick={() => void loadSchedules()}>
-                <RefreshCw className="w-4 h-4 mr-2" />
-                刷新
-              </Button>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>项目</Label>
-                <Select value={scheduleForm.project_id} onValueChange={(value) => setScheduleForm((prev) => ({ ...prev, project_id: value }))}>
-                  <SelectTrigger className="cyber-input">
-                    <SelectValue placeholder="选择项目" />
-                  </SelectTrigger>
-                  <SelectContent className="cyber-dialog border-border">
-                    {projects.map((project) => (
-                      <SelectItem key={project.id} value={project.id}>
-                        {project.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label>计划名称</Label>
-                <Input value={scheduleForm.name} onChange={(e) => setScheduleForm((prev) => ({ ...prev, name: e.target.value }))} className="cyber-input" />
-              </div>
-              <div className="space-y-2">
-                <Label>审计模式</Label>
-                <Select value={scheduleForm.scan_mode} onValueChange={(value) => setScheduleForm((prev) => ({ ...prev, scan_mode: value }))}>
-                  <SelectTrigger className="cyber-input">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent className="cyber-dialog border-border">
-                    <SelectItem value="fast">快速审计</SelectItem>
-                    <SelectItem value="agent">AI审计</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label>分支</Label>
-                <Input value={scheduleForm.branch_name} onChange={(e) => setScheduleForm((prev) => ({ ...prev, branch_name: e.target.value }))} className="cyber-input" />
-              </div>
-              <div className="space-y-2">
-                <Label>扫描周期（分钟）</Label>
-                <Input type="number" min="1" value={scheduleForm.interval_minutes} onChange={(e) => setScheduleForm((prev) => ({ ...prev, interval_minutes: e.target.value }))} className="cyber-input" />
-              </div>
-              <div className="space-y-2">
-                <Label>允许开始时间</Label>
-                <Input type="time" value={scheduleForm.time_window_start} onChange={(e) => setScheduleForm((prev) => ({ ...prev, time_window_start: e.target.value }))} className="cyber-input" />
-              </div>
-              <div className="space-y-2">
-                <Label>允许结束时间</Label>
-                <Input type="time" value={scheduleForm.time_window_end} onChange={(e) => setScheduleForm((prev) => ({ ...prev, time_window_end: e.target.value }))} className="cyber-input" />
-              </div>
-              <div className="space-y-2">
-                <Label>时区</Label>
-                <Input value={scheduleForm.timezone} onChange={(e) => setScheduleForm((prev) => ({ ...prev, timezone: e.target.value }))} className="cyber-input" />
-              </div>
-              <div className="space-y-2">
-                <Label>限定文件（逗号分隔）</Label>
-                <Input value={scheduleForm.file_paths} onChange={(e) => setScheduleForm((prev) => ({ ...prev, file_paths: e.target.value }))} className="cyber-input" placeholder="cmd/main.go,src/App.tsx" />
-              </div>
-              <div className="space-y-2">
-                <Label>排除模式（逗号分隔）</Label>
-                <Input value={scheduleForm.exclude_patterns} onChange={(e) => setScheduleForm((prev) => ({ ...prev, exclude_patterns: e.target.value }))} className="cyber-input" placeholder="node_modules/**,dist/**" />
-              </div>
-            </div>
-
-            <div className="h-10 px-3 border border-border rounded-md flex items-center justify-between bg-background">
-              <span className="text-sm text-muted-foreground">创建后立即启用</span>
-              <Switch checked={scheduleForm.is_active} onCheckedChange={(checked) => setScheduleForm((prev) => ({ ...prev, is_active: checked }))} />
-            </div>
-
-            <div className="flex justify-end">
-              <Button className="cyber-btn-primary" onClick={() => void handleCreateSchedule()}>
-                创建计划
-              </Button>
-            </div>
-          </div>
-
-          <div className="cyber-card p-5">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-base font-bold text-foreground uppercase">计划列表</h3>
-              <Badge className="cyber-badge-muted">{schedules.length} 个计划</Badge>
-            </div>
-            <div className="border border-border rounded-lg overflow-hidden">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>名称</TableHead>
-                    <TableHead>模式</TableHead>
-                    <TableHead>项目</TableHead>
-                    <TableHead>周期</TableHead>
-                    <TableHead>时间段</TableHead>
-                    <TableHead>状态</TableHead>
-                    <TableHead>下次执行</TableHead>
-                    <TableHead className="text-right">操作</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {loadingSchedules ? (
-                    <TableRow>
-                      <TableCell colSpan={8} className="text-center text-muted-foreground">加载中...</TableCell>
-                    </TableRow>
-                  ) : schedules.length === 0 ? (
-                    <TableRow>
-                      <TableCell colSpan={8} className="text-center text-muted-foreground">暂无计划</TableCell>
-                    </TableRow>
-                  ) : (
-                    schedules.map((item) => (
-                      <TableRow key={item.id}>
-                        <TableCell className="font-semibold">{item.name}</TableCell>
-                        <TableCell>
-                          <Badge className={item.scan_mode === "agent" ? "cyber-badge-muted" : "cyber-badge-success"}>
-                            {item.scan_mode === "agent" ? "AI审计" : "快速审计"}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>{projects.find((project) => project.id === item.project_id)?.name || item.project_id}</TableCell>
-                        <TableCell>{item.interval_minutes} 分钟</TableCell>
-                        <TableCell>{item.time_window_start && item.time_window_end ? `${item.time_window_start}-${item.time_window_end}` : "全天"}</TableCell>
-                        <TableCell>
-                          <Badge className={item.is_active ? "cyber-badge-success" : "cyber-badge-danger"}>
-                            {item.is_active ? "启用" : "停用"}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>{formatDate(item.next_run_at)}</TableCell>
-                        <TableCell className="text-right">
-                          <div className="flex justify-end gap-2">
-                            <Button variant="outline" size="sm" className="cyber-btn-outline h-8" onClick={() => void handleToggleSchedule(item)}>
-                              {item.is_active ? "停用" : "启用"}
-                            </Button>
-                            <Button variant="outline" size="sm" className="cyber-btn-ghost h-8 hover:text-destructive" onClick={() => void handleDeleteSchedule(item)}>
-                              删除
-                            </Button>
                           </div>
                         </TableCell>
                       </TableRow>

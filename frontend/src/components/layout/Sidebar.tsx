@@ -24,6 +24,7 @@ import {
   FileSearch,
   Wrench,
   Shield,
+  CalendarClock,
 } from "lucide-react";
 import routes from "@/app/routes";
 import { useAuth } from "@/shared/context/AuthContext";
@@ -40,6 +41,7 @@ const routeIcons: Record<string, ReactNode> = {
   "/instant-analysis": <Zap className="h-[18px] w-[18px]" />,
   "/audit-tasks": <ClipboardList className="h-[18px] w-[18px]" />,
   "/audit-rules": <Scale className="h-[18px] w-[18px]" />,
+  "/schedules": <CalendarClock className="h-[18px] w-[18px]" />,
   "/prompts": <Sparkles className="h-[18px] w-[18px]" />,
   "/admin": <Settings className="h-[18px] w-[18px]" />,
   "/recycle-bin": <Trash2 className="h-[18px] w-[18px]" />,
@@ -48,6 +50,7 @@ const routeIcons: Record<string, ReactNode> = {
 const auditSubItems = [
   { path: "/audit-tasks?tab=regular", name: "规则审计", icon: <FileSearch className="h-[18px] w-[18px]" /> },
   { path: "/audit-tasks?tab=agent", name: "AI审计", icon: <Bot className="h-[18px] w-[18px]" /> },
+  { path: "/schedules", name: "计划任务", icon: <CalendarClock className="h-[18px] w-[18px]" /> },
 ];
 
 const rulesSubItems = [
@@ -94,7 +97,7 @@ export default function Sidebar() {
     return true;
   });
 
-  const isAuditGroupActive = location.pathname === "/audit-tasks" || location.pathname === "/instant-analysis";
+  const isAuditGroupActive = location.pathname === "/audit-tasks" || location.pathname === "/instant-analysis" || location.pathname === "/schedules";
   const isRulesGroupActive = location.pathname === "/audit-rules";
 
   return (
@@ -269,9 +272,10 @@ export default function Sidebar() {
                       </div>
                       {auditSubItems.map((item) => {
                         const isActive =
-                          location.pathname === "/audit-tasks" &&
+                          (location.pathname === "/audit-tasks" &&
                           (location.search === item.path.replace("/audit-tasks", "") ||
-                            (item.path.includes("tab=regular") && !location.search));
+                            (item.path.includes("tab=regular") && !location.search))) ||
+                          (item.path === "/schedules" && location.pathname === "/schedules");
                         return (
                           <Link
                             key={item.path}
@@ -401,7 +405,8 @@ export default function Sidebar() {
               (location.pathname === "/audit-tasks" &&
               location.search === item.path.replace("/audit-tasks", "")) ||
               (item.path.includes("tab=regular") && location.pathname === "/audit-tasks" && !location.search) ||
-              (item.path === "/instant-analysis" && location.pathname === "/instant-analysis");
+              (item.path === "/instant-analysis" && location.pathname === "/instant-analysis") ||
+              (item.path === "/schedules" && location.pathname === "/schedules");
             return (
               <Link
                 key={item.path}
