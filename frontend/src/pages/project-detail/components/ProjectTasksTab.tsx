@@ -60,7 +60,7 @@ export function ProjectTasksTab(props: {
                       <h4 className="font-bold text-foreground uppercase">
                         {isAuditTask
                           ? ((task as AuditTask).task_type === "repository" ? "审计任务" : "即时分析任务")
-                          : "Agent 审计任务"}
+                          : "AI审计任务"}
                       </h4>
                       <p className="text-sm text-muted-foreground font-mono">创建于 {formatDate(task.created_at)}</p>
                     </div>

@@ -305,6 +305,28 @@ async def delete_project(
     
     project.is_active = False
     project.updated_at = datetime.now(timezone.utc)
+
+    # 取消该项目的运行中任务
+    running_tasks = await db.execute(
+        select(AuditTask).where(
+            AuditTask.project_id == id,
+            AuditTask.status.in_(["pending", "running"])
+        )
+    )
+    for task in running_tasks.scalars().all():
+        task.status = "cancelled"
+        task.updated_at = datetime.now(timezone.utc)
+
+    running_agent_tasks = await db.execute(
+        select(AgentTask).where(
+            AgentTask.project_id == id,
+            AgentTask.status.in_(["pending", "running"])
+        )
+    )
+    for atask in running_agent_tasks.scalars().all():
+        atask.status = AgentTaskStatus.CANCELLED
+        atask.updated_at = datetime.now(timezone.utc)
+
     await db.commit()
     return {"message": "项目已删除"}
 
@@ -338,17 +360,52 @@ async def permanently_delete_project(
     current_user: User = Depends(deps.get_current_user),
 ) -> Any:
     """
-    Permanently delete project.
+    Permanently delete project and all associated records.
     """
     result = await db.execute(select(Project).where(Project.id == id))
     project = result.scalars().first()
     if not project:
         raise HTTPException(status_code=404, detail="项目不存在")
-    
+
     # 检查权限：只有项目所有者可以永久删除
     if project.owner_id != current_user.id:
         raise HTTPException(status_code=403, detail="无权永久删除此项目")
-    
+
+    # 删除关联的审计任务及其问题
+    task_result = await db.execute(select(AuditTask).where(AuditTask.project_id == id))
+    tasks = task_result.scalars().all()
+    for task in tasks:
+        # 删除关联的审计问题
+        issue_result = await db.execute(select(AuditIssue).where(AuditIssue.task_id == task.id))
+        issues = issue_result.scalars().all()
+        for issue in issues:
+            await db.delete(issue)
+        await db.delete(task)
+
+    # 删除关联的Agent任务及其发现
+    agent_task_result = await db.execute(select(AgentTask).where(AgentTask.project_id == id))
+    agent_tasks = agent_task_result.scalars().all()
+    for agent_task in agent_tasks:
+        finding_result = await db.execute(select(AgentFinding).where(AgentFinding.task_id == agent_task.id))
+        findings = finding_result.scalars().all()
+        for finding in findings:
+            await db.delete(finding)
+        await db.delete(agent_task)
+
+    # 删除关联的项目成员
+    from app.models.project import ProjectMember
+    member_result = await db.execute(select(ProjectMember).where(ProjectMember.project_id == id))
+    members = member_result.scalars().all()
+    for member in members:
+        await db.delete(member)
+
+    # 删除关联的定时扫描
+    from app.models.scheduled_scan import ScheduledScan
+    scan_result = await db.execute(select(ScheduledScan).where(ScheduledScan.project_id == id))
+    scans = scan_result.scalars().all()
+    for scan in scans:
+        await db.delete(scan)
+
     # 如果是归档类型项目，删除关联文件和元数据
     if project.source_type == "zip":
         try:
@@ -356,7 +413,7 @@ async def permanently_delete_project(
             print(f"[Project] 已删除项目 {id} 的归档文件")
         except Exception as e:
             print(f"[Warning] 删除归档文件失败: {e}")
-    
+
     await db.delete(project)
     await db.commit()
     return {"message": "项目已永久删除"}

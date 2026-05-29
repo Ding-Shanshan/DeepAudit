@@ -66,7 +66,7 @@ export function ProjectIssuesTab(props: {
         </div>
         {hasAnyTasks && (
           <p className="text-sm text-muted-foreground font-mono">
-            已完成审计任务：{issuesSummary.completedAuditTasksCount} 次 / Agent审计：{issuesSummary.completedAgentTasksCount} 次
+            已完成审计任务：{issuesSummary.completedAuditTasksCount} 次 / AI审计：{issuesSummary.completedAgentTasksCount} 次
             {issuesSummary.isLimited ? `（各仅展示最近 ${issuesSummary.maxTasks} 次）` : ""}
             ，共 {latestProblems.length} 条问题/漏洞
           </p>
@@ -175,7 +175,7 @@ export function ProjectIssuesTab(props: {
         <div className="cyber-card p-12 text-center">
           <CheckCircle className="w-16 h-16 text-primary dark:text-emerald-500 mx-auto mb-4" />
           <h3 className="text-lg font-bold text-foreground mb-2 uppercase">未发现问题</h3>
-          <p className="text-sm text-muted-foreground font-mono">最近一次审计/Agent审计未发现明显问题，或尚未进行审计。</p>
+          <p className="text-sm text-muted-foreground font-mono">最近一次审计/AI审计未发现明显问题，或尚未进行审计。</p>
         </div>
       )}
     </>

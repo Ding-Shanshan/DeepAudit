@@ -231,7 +231,7 @@ export default function CreateTaskDialog({
 
     const response = await apiClient.post("/schedules", {
       project_id: project.id,
-      name: auditMode === "agent" ? `定时Agent审计-${project.name}` : `定时扫描-${project.name}`,
+      name: auditMode === "agent" ? `定时AI审计-${project.name}` : `定时扫描-${project.name}`,
       scan_mode: auditMode,
       branch_name: isRepositoryProject(project) ? branch : null,
       interval_minutes: intervalMinutes,
@@ -272,7 +272,7 @@ export default function CreateTaskDialog({
       if (auditMode === "agent") {
         const agentTask = await createAgentTask({
           project_id: selectedProject.id,
-          name: `Agent审计-${selectedProject.name}`,
+          name: `AI审计-${selectedProject.name}`,
           branch_name: isRepositoryProject(selectedProject) ? branch : undefined,
           exclude_patterns: excludePatterns,
           target_files: selectedFiles,
@@ -289,11 +289,11 @@ export default function CreateTaskDialog({
         onOpenChange(false);
         onTaskCreated();
         if (scheduleError) {
-          toast.warning(`Agent 审计任务已创建，但定时计划创建失败: ${scheduleError}`);
+          toast.warning(`AI审计任务已创建，但定时计划创建失败: ${scheduleError}`);
         } else if (scheduleEnabled) {
-          toast.success("Agent 审计任务已创建，定时计划已创建");
+          toast.success("AI审计任务已创建，定时计划已创建");
         } else {
-          toast.success("Agent 审计任务已创建");
+          toast.success("AI审计任务已创建");
         }
         navigate(`/agent-audit/${agentTask.id}`);
 
@@ -758,7 +758,7 @@ export default function CreateTaskDialog({
               ) : auditMode === "agent" ? (
                 <>
                   <Bot className="w-4 h-4 mr-2" />
-                  启动 Agent 审计
+                  启动 AI审计
                 </>
               ) : (
                 <>

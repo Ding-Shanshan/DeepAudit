@@ -574,7 +574,7 @@ export default function AdminDashboard() {
                   </SelectTrigger>
                   <SelectContent className="cyber-dialog border-border">
                     <SelectItem value="fast">快速审计</SelectItem>
-                    <SelectItem value="agent">Agent 审计</SelectItem>
+                    <SelectItem value="agent">AI审计</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -654,7 +654,7 @@ export default function AdminDashboard() {
                         <TableCell className="font-semibold">{item.name}</TableCell>
                         <TableCell>
                           <Badge className={item.scan_mode === "agent" ? "cyber-badge-muted" : "cyber-badge-success"}>
-                            {item.scan_mode === "agent" ? "Agent 审计" : "快速审计"}
+                            {item.scan_mode === "agent" ? "AI审计" : "快速审计"}
                           </Badge>
                         </TableCell>
                         <TableCell>{projects.find((project) => project.id === item.project_id)?.name || item.project_id}</TableCell>

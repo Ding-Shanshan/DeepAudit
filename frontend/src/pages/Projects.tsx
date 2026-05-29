@@ -12,7 +12,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
@@ -20,28 +20,20 @@ import {
   Plus,
   Search,
   GitBranch,
-  Calendar,
-  Users,
-  Code,
-  Shield,
-  Activity,
+  Play,
+  Eye,
   Upload,
   FileText,
   AlertCircle,
   Trash2,
   Edit,
   CheckCircle,
-  Terminal,
-  Github,
-  Folder,
-  ArrowUpRight,
-  Key
+  Terminal
 } from "lucide-react";
 import { api } from "@/shared/config/database";
 import { validateZipFile } from "@/features/projects/services";
 import type { Project, CreateProjectForm } from "@/shared/types";
 import { uploadZipFile, getZipFileInfo, type ZipFileMeta } from "@/shared/utils/zipStorage";
-import { isRepositoryProject, isZipProject, getSourceTypeBadge } from "@/shared/utils/projectUtils";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
 import CreateTaskDialog from "@/components/audit/CreateTaskDialog";
@@ -52,6 +44,7 @@ export default function Projects() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
+  const [filterLang, setFilterLang] = useState("all");
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [showCreateTaskDialog, setShowCreateTaskDialog] = useState(false);
   const [selectedProjectForTask, setSelectedProjectForTask] = useState<string>("");
@@ -270,25 +263,16 @@ export default function Projects() {
     }
   };
 
-  const filteredProjects = projects.filter(project =>
-    project.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    project.description?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
-
-  const getRepositoryIcon = (type?: string) => {
-    switch (type) {
-      case 'github': return <Github className="w-5 h-5" />;
-      case 'gitlab': return <GitBranch className="w-5 h-5 text-orange-500" />;
-      case 'gitea': return <GitBranch className="w-5 h-5 text-green-600" />;
-      case 'svn': return <GitBranch className="w-5 h-5 text-cyan-500" />;
-      case 'other': return <Key className="w-5 h-5 text-cyan-500" />;
-      default: return <Folder className="w-5 h-5 text-muted-foreground" />;
+  const filteredProjects = projects.filter(project => {
+    if (searchTerm && !project.name.toLowerCase().includes(searchTerm.toLowerCase()) && !project.description?.toLowerCase().includes(searchTerm.toLowerCase())) return false;
+    if (filterLang !== 'all' && project.programming_languages) {
+      const langs = JSON.parse(project.programming_languages).map((l: string) => l.toLowerCase());
+      if (!langs.includes(filterLang.toLowerCase())) return false;
+    } else if (filterLang !== 'all' && !project.programming_languages) {
+      return false;
     }
-  };
-
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('zh-CN');
-  };
+    return true;
+  });
 
   const handleCreateTask = (projectId: string) => {
     setSelectedProjectForTask(projectId);
@@ -389,13 +373,11 @@ export default function Projects() {
       setShowDeleteDialog(false);
       setProjectToDelete(null);
       loadProjects();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to delete project:', error);
-      import('@/shared/utils/errorHandler').then(({ handleError }) => {
-        handleError(error, '删除项目失败');
-      });
-      const errorMessage = error instanceof Error ? error.message : '未知错误';
-      toast.error(`删除项目失败: ${errorMessage}`);
+      const detail = error?.response?.data?.detail || error?.message || '未知错误';
+      toast.error(`删除项目失败: ${detail}`);
+      setShowDeleteDialog(false);
     }
   };
 
@@ -744,188 +726,110 @@ export default function Projects() {
         </SheetContent>
       </Sheet>
 
-      {/* Stats Section */}
-      {projects.length > 0 && (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 relative z-10">
-          <div className="cyber-card p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="stat-label">项目总数</p>
-                <p className="stat-value">{projects.length}</p>
-              </div>
-              <div className="stat-icon text-primary">
-                <Code className="w-6 h-6" />
-              </div>
+      {/* Project Table */}
+      <div className="relative z-10">
+        <div className="cyber-card p-0">
+          {/* Toolbar */}
+          <div className="p-4 flex items-center gap-3 border-b border-border flex-wrap">
+            <div className="relative flex-1 min-w-[180px] max-w-[240px]">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+              <Input
+                value={searchTerm}
+                onChange={e => setSearchTerm(e.target.value)}
+                placeholder="搜索项目名称"
+                className="h-8 text-sm !pl-9"
+              />
             </div>
-          </div>
-
-          <div className="cyber-card p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="stat-label">活跃项目</p>
-                <p className="stat-value">{projects.filter(p => p.is_active).length}</p>
-              </div>
-              <div className="stat-icon text-primary">
-                <Activity className="w-6 h-6" />
-              </div>
-            </div>
-          </div>
-
-          <div className="cyber-card p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="stat-label">远程仓库</p>
-                <p className="stat-value">{projects.filter(p => isRepositoryProject(p)).length}</p>
-              </div>
-              <div className="stat-icon text-secondary">
-                <GitBranch className="w-6 h-6" />
-              </div>
-            </div>
-          </div>
-
-          <div className="cyber-card p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="stat-label">归档上传</p>
-                <p className="stat-value">{projects.filter(p => isZipProject(p)).length}</p>
-              </div>
-              <div className="stat-icon text-warning">
-                <Upload className="w-6 h-6" />
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Search and Filter */}
-      <div className="cyber-card p-4 flex items-center gap-4 relative z-10">
-        <div className="flex-1 relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4 z-10" />
-          <Input
-            placeholder="搜索项目..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="cyber-input !pl-10"
-          />
-        </div>
-        <Button className="cyber-btn-primary h-10" onClick={() => setShowCreateDialog(true)}>
-          <Plus className="w-4 h-4 mr-2" />
-          新建项目
-        </Button>
-      </div>
-
-      {/* Project List */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 relative z-10">
-        {filteredProjects.length > 0 ? (
-          filteredProjects.map((project) => (
-            <div key={project.id} className="cyber-card flex flex-col h-full group">
-              {/* Card Header */}
-              <div className="p-4 border-b border-border bg-muted/50 flex justify-between items-start">
-                <div className="flex items-center space-x-3">
-                  <div className="w-10 h-10 border border-border bg-muted rounded flex items-center justify-center text-muted-foreground">
-                    {getRepositoryIcon(project.repository_type)}
-                  </div>
-                  <div>
-                    <h3 className="font-bold text-base text-foreground group-hover:text-primary transition-colors">
-                      <Link to={`/projects/${project.id}`}>
-                        {project.name}
-                      </Link>
-                    </h3>
-                    <div className="flex items-center mt-1 space-x-2">
-                      <Badge className={`cyber-badge ${project.is_active ? 'cyber-badge-success' : 'cyber-badge-muted'}`}>
-                        {project.is_active ? '活跃' : '暂停'}
-                      </Badge>
-                      <Badge className={`cyber-badge ${isRepositoryProject(project) ? 'cyber-badge-info' : 'cyber-badge-warning'}`}>
-                        {getSourceTypeBadge(project.source_type)}
-                      </Badge>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Card Body */}
-              <div className="p-4 flex-1 space-y-3">
-                {project.description && (
-                  <p className="text-sm text-muted-foreground font-mono line-clamp-2 border-l-2 border-border pl-2">
-                    {project.description}
-                  </p>
-                )}
-
-                <div className="space-y-2">
-                  {project.repository_url && (
-                    <div className="flex items-center text-xs font-mono text-muted-foreground bg-muted p-2 border border-border rounded">
-                      <GitBranch className="w-3 h-3 mr-2 flex-shrink-0 text-muted-foreground" />
-                      <a
-                        href={project.repository_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="hover:text-primary transition-colors truncate"
-                      >
-                        {project.repository_url.replace('https://', '')}
-                      </a>
-                    </div>
-                  )}
-
-                  <div className="flex justify-between items-center text-xs font-mono text-muted-foreground">
-                    <span className="flex items-center"><Calendar className="w-3 h-3 mr-1" /> {formatDate(project.created_at)}</span>
-                    <span className="flex items-center"><Users className="w-3 h-3 mr-1" /> {project.owner?.full_name || '未知'}</span>
-                  </div>
-                </div>
-
-                {project.programming_languages && (
-                  <div className="flex flex-wrap gap-1">
-                    {JSON.parse(project.programming_languages).slice(0, 4).map((lang: string) => (
-                      <span key={lang} className="text-xs font-mono font-bold border border-primary/30 px-1.5 py-0.5 bg-primary/10 text-primary rounded">
-                        {lang.toUpperCase()}
-                      </span>
-                    ))}
-                    {JSON.parse(project.programming_languages).length > 4 && (
-                      <span className="text-xs font-mono font-bold border border-border px-1.5 py-0.5 bg-muted text-muted-foreground rounded">
-                        +{JSON.parse(project.programming_languages).length - 4}
-                      </span>
-                    )}
-                  </div>
-                )}
-              </div>
-
-              {/* Card Footer */}
-              <div className="p-4 border-t border-border bg-muted/50 grid grid-cols-2 gap-2">
-                <Link to={`/projects/${project.id}`} className="col-span-2">
-                  <Button variant="outline" className="w-full cyber-btn-outline h-8 text-xs">
-                    <Code className="w-3 h-3 mr-2" />
-                    查看详情
-                    <ArrowUpRight className="w-3 h-3 ml-auto" />
-                  </Button>
-                </Link>
-                <Button size="sm" className="cyber-btn-primary h-8 text-xs" onClick={() => handleCreateTask(project.id)}>
-                  <Shield className="w-3 h-3 mr-2" />
-                  审计
+            <Select value={filterLang} onValueChange={setFilterLang}>
+              <SelectTrigger className="cyber-input h-8 w-[140px] text-sm">
+                <SelectValue placeholder="开发语言" />
+                </SelectTrigger>
+                <SelectContent className="cyber-dialog border-border">
+                  <SelectItem value="all">全部语言</SelectItem>
+                  {supportedLanguages.map(lang => (
+                    <SelectItem key={lang.toLowerCase()} value={lang.toLowerCase()}>{lang}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <div className="ml-auto flex gap-2">
+                <Button className="cyber-btn-primary h-8" onClick={() => setShowCreateDialog(true)}>
+                  <Plus className="w-4 h-4 mr-2" />
+                  新建项目
                 </Button>
-                <div className="grid grid-cols-2 gap-2">
-                  <Button size="sm" variant="outline" className="cyber-btn-ghost h-8 px-0" onClick={() => handleEditClick(project)}>
-                    <Edit className="w-3 h-3" />
-                  </Button>
-                  <Button size="sm" variant="outline" className="cyber-btn-ghost h-8 px-0 hover:bg-destructive/8 hover:text-destructive hover:border-destructive/25" onClick={() => handleDeleteClick(project)}>
-                    <Trash2 className="w-3 h-3" />
-                  </Button>
-                </div>
               </div>
             </div>
-          ))
-        ) : (
-          <div className="col-span-full">
-            <div className="cyber-card p-16 text-center border-dashed">
-              <Code className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
-              <h3 className="text-xl font-bold text-foreground mb-2">
-                {searchTerm ? '未找到匹配项' : '当前无项目，请添加项目'}
-              </h3>
-              <p className="text-muted-foreground font-mono">
-                {searchTerm ? '调整搜索参数' : '点击上方新建项目按钮创建项目'}
-              </p>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-border text-muted-foreground">
+                    <th className="text-left py-2 px-6 font-medium">项目名称</th>
+                    <th className="text-left py-2 px-3 font-medium">项目描述</th>
+                    <th className="text-left py-2 px-3 font-medium">开发语言</th>
+                    <th className="text-left py-2 px-3 font-medium">项目负责人</th>
+                    <th className="text-left py-2 px-3 font-medium">操作</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredProjects.length === 0 ? (
+                    <tr>
+                      <td colSpan={5} className="py-8 text-center text-muted-foreground">
+                        {searchTerm || filterLang !== 'all' ? '未找到匹配项' : '当前无项目'}
+                      </td>
+                    </tr>
+                  ) : (
+                    filteredProjects.map((project) => (
+                      <tr key={project.id} className="border-b border-border/50 hover:bg-muted/50 transition-colors">
+                        <td className="py-2.5 px-6">
+                          <span className="font-medium text-foreground">{project.name}</span>
+                        </td>
+                        <td className="py-2.5 px-3 text-muted-foreground max-w-md truncate">{project.description || '-'}</td>
+                        <td className="py-2.5 px-3">
+                          <div className="flex flex-wrap gap-1">
+                            {project.programming_languages ? (
+                              JSON.parse(project.programming_languages).slice(0, 3).map((lang: string) => (
+                                <span key={lang} className="text-xs font-mono font-bold border border-primary/30 px-1.5 py-0.5 bg-primary/10 text-primary rounded">
+                                  {lang.toUpperCase()}
+                                </span>
+                              ))
+                            ) : (
+                              <span className="text-muted-foreground">-</span>
+                            )}
+                            {project.programming_languages && JSON.parse(project.programming_languages).length > 3 && (
+                              <span className="text-xs font-mono font-bold border border-border px-1.5 py-0.5 bg-muted text-muted-foreground rounded">
+                                +{JSON.parse(project.programming_languages).length - 3}
+                              </span>
+                            )}
+                          </div>
+                        </td>
+                        <td className="py-2.5 px-3 text-muted-foreground">
+                          {project.owner?.full_name || '-'}
+                        </td>
+                        <td className="py-2.5 px-3">
+                          <div className="flex items-center gap-1">
+                            <Link to={`/projects/${project.id}`}>
+                              <Button variant="ghost" size="icon" className="cyber-btn-ghost h-7 w-7" title="查看详情">
+                                <Eye className="w-3.5 h-3.5" />
+                              </Button>
+                            </Link>
+                            <Button variant="ghost" size="icon" onClick={() => handleCreateTask(project.id)} className="cyber-btn-ghost h-7 w-7" title="开始执行">
+                              <Play className="w-3.5 h-3.5" />
+                            </Button>
+                            <Button variant="ghost" size="icon" onClick={() => handleEditClick(project)} className="cyber-btn-ghost h-7 w-7">
+                              <Edit className="w-3.5 h-3.5" />
+                            </Button>
+                            <Button variant="ghost" size="icon" onClick={() => handleDeleteClick(project)} className="h-7 w-7 hover:bg-destructive/12 hover:text-destructive">
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </Button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
             </div>
           </div>
-        )}
-      </div>
+        </div>
 
       {/* Create Task Dialog */}
       <CreateTaskDialog

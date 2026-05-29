@@ -700,7 +700,7 @@ export function SystemConfig() {
                     onChange={(e) => updateConfig('agentTimeout', Number(e.target.value))}
                     className="h-10 cyber-input"
                   />
-                  <p className="text-xs text-muted-foreground">整个Agent审计任务的最大时间</p>
+                  <p className="text-xs text-muted-foreground">整个AI审计任务的最大时间</p>
                 </div>
               </div>
             </details>

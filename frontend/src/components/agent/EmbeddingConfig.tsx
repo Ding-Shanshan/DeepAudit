@@ -1,7 +1,7 @@
 /**
  * 嵌入模型配置组件
  * Cyberpunk Terminal Aesthetic
- * 独立于 LLM 配置，专门用于 Agent 审计的 RAG 系统
+ * 独立于 LLM 配置，专门用于 AI审计的 RAG 系统
  */
 
 import { useState, useEffect } from "react";
@@ -465,7 +465,7 @@ export default function EmbeddingConfigPanel() {
           关于嵌入模型
         </p>
         <ul className="text-muted-foreground space-y-1 ml-6">
-          <li>• 嵌入模型用于 Agent 审计的代码语义搜索 (RAG)</li>
+          <li>• 嵌入模型用于 AI审计的代码语义搜索 (RAG)</li>
           <li>• 与分析使用的 LLM 独立配置，互不影响</li>
           <li>• 推荐使用 <span className="text-foreground">OpenAI text-embedding-3-small</span> 或本地 <span className="text-foreground">Ollama</span></li>
           <li>• 向量维度影响存储空间和检索精度</li>

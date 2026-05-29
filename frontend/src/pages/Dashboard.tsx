@@ -527,7 +527,7 @@ export default function Dashboard() {
               <Link to="/agent-audit" className="block">
                 <Button className="w-full justify-start cyber-btn-primary h-10">
                   <Bot className="w-4 h-4 mr-2" />
-                  Agent 智能审计
+                  AI智能审计
                 </Button>
               </Link>
               <Link to="/instant-analysis" className="block">
@@ -641,9 +641,9 @@ export default function Dashboard() {
                   })();
 
                   const statusText = isAgent
-                    ? (isCompleted ? 'Agent任务完成' :
-                       isRunning ? 'Agent任务运行中' :
-                       isFailed ? 'Agent任务失败' : 'Agent任务待处理')
+                    ? (isCompleted ? 'AI任务完成' :
+                       isRunning ? 'AI任务运行中' :
+                       isFailed ? 'AI任务失败' : 'AI任务待处理')
                     : (isCompleted ? '任务完成' :
                        isRunning ? '任务运行中' :
                        isFailed ? '任务失败' : '任务待处理');

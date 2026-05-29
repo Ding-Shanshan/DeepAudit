@@ -123,10 +123,10 @@
 @layer utilities {
   .cyber-card {
     background: rgba(255, 255, 255, 0.96);
-    border: 1px solid var(--cyber-border);
+    border: none;
     border-radius: var(--radius);
     box-shadow: var(--shadow-sm);
-    transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+    transition: box-shadow 0.2s ease, transform 0.2s ease;
     overflow: hidden;
     position: relative;
   }
@@ -140,7 +140,6 @@
   }
 
   .cyber-card:hover {
-    border-color: rgba(99, 102, 241, 0.18);
     box-shadow: var(--shadow-md);
     transform: translateY(-1px);
   }

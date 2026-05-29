@@ -29,13 +29,13 @@ const routes: RouteConfig[] = [
     visible: false,
   },
   {
-    name: "Agent审计",
+    name: "AI审计",
     path: AGENT_AUDIT_ROUTE,
     element: <AgentAudit />,
     visible: false,
   },
   {
-    name: "Agent审计任务",
+    name: "AI审计任务",
     path: "/agent-audit/:taskId",
     element: <AgentAudit />,
     visible: false,

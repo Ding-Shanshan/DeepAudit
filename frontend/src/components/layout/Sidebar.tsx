@@ -48,7 +48,6 @@ const routeIcons: Record<string, ReactNode> = {
 const auditSubItems = [
   { path: "/audit-tasks?tab=regular", name: "规则审计", icon: <FileSearch className="h-[18px] w-[18px]" /> },
   { path: "/audit-tasks?tab=agent", name: "AI审计", icon: <Bot className="h-[18px] w-[18px]" /> },
-  { path: "/instant-analysis", name: "审计工具", icon: <Wrench className="h-[18px] w-[18px]" /> },
 ];
 
 const rulesSubItems = [
