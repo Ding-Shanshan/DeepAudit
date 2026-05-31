@@ -36,6 +36,8 @@ SENSITIVE_LLM_FIELDS = [
 class RuleGenerateRequest(BaseModel):
     """规则生成请求"""
     description: str
+    positive_example: Optional[str] = None  # 正样例描述（可选）
+    negative_example: Optional[str] = None  # 反样例描述（可选）
     language: Optional[str] = "zh"  # 输出语言，默认中文
 
 
@@ -83,6 +85,8 @@ async def generate_rule(
         # 调用规则生成服务
         rule_content = await generate_audit_rule(
             description=request.description.strip(),
+            positive_example=request.positive_example.strip() if request.positive_example else None,
+            negative_example=request.negative_example.strip() if request.negative_example else None,
             user_config=user_config,
             language=request.language or "zh",
         )

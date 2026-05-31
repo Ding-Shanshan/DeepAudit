@@ -65,6 +65,8 @@ export default function PromptManager() {
   const [filterType, setFilterType] = useState('all');
   const [filterEnabled, setFilterEnabled] = useState('all');
   const [ruleSummaryEn, setRuleSummaryEn] = useState('');
+  const [positiveExample, setPositiveExample] = useState('');
+  const [negativeExample, setNegativeExample] = useState('');
   const [generating, setGenerating] = useState(false);
   const [editTab, setEditTab] = useState('zh');
   const [viewTab, setViewTab] = useState('zh');
@@ -140,6 +142,8 @@ export default function PromptManager() {
   const resetForm = () => {
     setForm({ name: '', description: '', template_type: 'system', content_zh: '', content_en: '', is_active: true });
     setRuleSummaryEn('');
+    setPositiveExample('');
+    setNegativeExample('');
     setEditTab('zh');
   };
 
@@ -147,7 +151,12 @@ export default function PromptManager() {
     if (!ruleSummaryEn.trim()) return;
     setGenerating(true);
     try {
-      const response = await generateAIRule(ruleSummaryEn, 'zh');
+      const response = await generateAIRule(
+        ruleSummaryEn,
+        positiveExample.trim() || undefined,
+        negativeExample.trim() || undefined,
+        'zh'
+      );
       if (response.success && (response.rule || response.content)) {
         setForm(prev => ({ ...prev, content_en: response.rule || response.content || '' }));
         toast.success(`规则生成成功${response.execution_time ? `，耗时 ${response.execution_time}s` : ''}`);
@@ -168,6 +177,8 @@ export default function PromptManager() {
     setSelectedTemplate(template);
     setForm({ name: template.name, description: template.description || '', template_type: template.template_type, content_zh: template.content_zh || '', content_en: template.content_en || '', is_active: template.is_active });
     setRuleSummaryEn('');
+    setPositiveExample('');
+    setNegativeExample('');
     setEditTab('zh');
     setShowEditDialog(true);
   };
@@ -367,6 +378,14 @@ export default function PromptManager() {
                     </Button>
                   </div>
                   <Textarea value={ruleSummaryEn} onChange={e => setRuleSummaryEn(e.target.value)} placeholder="请用自然语言简述检测逻辑" rows={4} className="cyber-input font-mono text-sm text-primary" />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-xs font-bold text-muted-foreground">正样例描述（可选）</Label>
+                  <Textarea value={positiveExample} onChange={e => setPositiveExample(e.target.value)} placeholder="应该被报告的情况，如：使用f-string拼接SQL语句" rows={2} className="cyber-input font-mono text-sm text-primary" />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-xs font-bold text-muted-foreground">反样例描述（可选）</Label>
+                  <Textarea value={negativeExample} onChange={e => setNegativeExample(e.target.value)} placeholder="不应被报告的情况，如：使用ORM参数化查询" rows={2} className="cyber-input font-mono text-sm text-primary" />
                 </div>
                 <div className="space-y-2">
                   <Label className="text-xs font-bold text-muted-foreground">生成结果</Label>

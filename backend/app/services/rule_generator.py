@@ -86,6 +86,8 @@ SQL 注入是 Web 应用最常见的安全漏洞之一。攻击者通过在用�
 
 async def generate_audit_rule(
     description: str,
+    positive_example: Optional[str] = None,
+    negative_example: Optional[str] = None,
     user_config: Optional[dict] = None,
     language: str = "zh",
 ) -> str:
@@ -94,6 +96,8 @@ async def generate_audit_rule(
 
     Args:
         description: 用户的规则简述，如"检测 SQL 注入"、"检查硬编码密码"等
+        positive_example: 正样例描述，应该被报告的情况（可选）
+        negative_example: 反样例描述，不应被报告的情况（可选）
         user_config: 用户配置，包含 LLM 连接信息
         language: 输出语言，默认中文
 
@@ -106,8 +110,16 @@ async def generate_audit_rule(
     # 构建用户提示
     if language == "zh":
         user_prompt = f"请根据以下描述生成代码审计规则：\n\n{description}"
+        if positive_example:
+            user_prompt += f"\n\n【正样例】应该被报告的情况：\n{positive_example}"
+        if negative_example:
+            user_prompt += f"\n\n【反样例】不应被报告的情况：\n{negative_example}"
     else:
         user_prompt = f"Please generate a code audit rule based on the following description:\n\n{description}"
+        if positive_example:
+            user_prompt += f"\n\n【Positive Example】Cases that should be reported:\n{positive_example}"
+        if negative_example:
+            user_prompt += f"\n\n【Negative Example】Cases that should NOT be reported:\n{negative_example}"
 
     try:
         request = LLMRequest(
