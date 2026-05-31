@@ -15,7 +15,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Switch } from "@/components/ui/switch";
 import {
   Collapsible,
@@ -31,7 +30,6 @@ import {
 } from "@/components/ui/select";
 import { BranchSelector } from "@/components/ui/branch-selector";
 import {
-  Search,
   ChevronRight,
   GitBranch,
   Package,
@@ -43,7 +41,6 @@ import {
   Upload,
   FolderOpen,
   CalendarClock,
-  CheckCircle2,
 } from "lucide-react";
 import { toast } from "sonner";
 import { api } from "@/shared/config/database";
@@ -79,7 +76,6 @@ export default function CreateAgentTaskDialog({
   const [loadingProjects, setLoadingProjects] = useState(true);
   const [selectedProjectId, setSelectedProjectId] = useState<string>("");
   const [taskName, setTaskName] = useState("");
-  const [searchTerm, setSearchTerm] = useState("");
   const [branch, setBranch] = useState("main");
   const [branches, setBranches] = useState<string[]>([]);
   const [loadingBranches, setLoadingBranches] = useState(false);
@@ -118,7 +114,6 @@ export default function CreateAgentTaskDialog({
       // 重置状态
       setSelectedProjectId("");
       setTaskName("");
-      setSearchTerm("");
       setBranch("main");
       setExcludePatterns(DEFAULT_EXCLUDES);
       setShowAdvanced(false);
@@ -184,17 +179,6 @@ export default function CreateAgentTaskDialog({
 
     loadZipInfo();
   }, [selectedProject?.id]);
-
-  // 过滤项目
-  const filteredProjects = useMemo(() => {
-    if (!searchTerm) return projects;
-    const term = searchTerm.toLowerCase();
-    return projects.filter(
-      (p) =>
-        p.name.toLowerCase().includes(term) ||
-        p.description?.toLowerCase().includes(term)
-    );
-  }, [projects, searchTerm]);
 
   // 是否可以开始
   const canStart = useMemo(() => {
@@ -315,46 +299,46 @@ export default function CreateAgentTaskDialog({
 
           {/* 项目选择 */}
           <div className="space-y-1.5">
-            <div className="flex items-center justify-between">
-              <Label className="text-xs font-medium text-muted-foreground">选择项目</Label>
-              <span className="text-xs text-muted-foreground">{filteredProjects.length} 个可用</span>
-            </div>
-
-            {/* 搜索框 */}
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-              <Input
-                placeholder="搜索项目..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="!pl-9 h-9"
-              />
-            </div>
-
-            {/* 项目列表 */}
-            <ScrollArea className="h-[160px] border border-border rounded">
-              {loadingProjects ? (
-                <div className="flex items-center justify-center h-full">
-                  <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
-                </div>
-              ) : filteredProjects.length === 0 ? (
-                <div className="flex flex-col items-center justify-center h-full text-muted-foreground py-8">
-                  <Package className="w-6 h-6 mb-1.5 opacity-50" />
-                  <span className="text-sm">{searchTerm ? "无匹配项目" : "暂无项目"}</span>
-                </div>
-              ) : (
-                <div className="p-1.5 space-y-1">
-                  {filteredProjects.map((project) => (
-                    <ProjectItem
-                      key={project.id}
-                      project={project}
-                      selected={selectedProjectId === project.id}
-                      onSelect={() => setSelectedProjectId(project.id)}
-                    />
-                  ))}
-                </div>
-              )}
-            </ScrollArea>
+            <Label className="text-xs font-medium text-muted-foreground">选择项目</Label>
+            <Select
+              value={selectedProjectId}
+              onValueChange={setSelectedProjectId}
+              disabled={loadingProjects}
+            >
+              <SelectTrigger className="h-9">
+                {loadingProjects ? (
+                  <div className="flex items-center gap-2">
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <span className="text-muted-foreground">加载中...</span>
+                  </div>
+                ) : (
+                  <SelectValue placeholder="选择要审计的项目" />
+                )}
+              </SelectTrigger>
+              <SelectContent>
+                {projects.length === 0 ? (
+                  <div className="py-6 text-center text-muted-foreground text-sm">
+                    暂无可用项目
+                  </div>
+                ) : (
+                  projects.map((project) => (
+                    <SelectItem key={project.id} value={project.id}>
+                      <div className="flex items-center gap-2">
+                        {isRepositoryProject(project) ? (
+                          <Globe className="w-4 h-4 text-muted-foreground" />
+                        ) : (
+                          <Package className="w-4 h-4 text-muted-foreground" />
+                        )}
+                        <span>{project.name}</span>
+                        <Badge variant="outline" className="text-xs ml-2">
+                          {isRepositoryProject(project) ? "Git" : "ZIP"}
+                        </Badge>
+                      </div>
+                    </SelectItem>
+                  ))
+                )}
+              </SelectContent>
+            </Select>
           </div>
 
           {/* 配置区域 */}
@@ -615,58 +599,5 @@ export default function CreateAgentTaskDialog({
         onConfirm={setSelectedFiles}
       />
     </>
-  );
-}
-
-// 项目列表项
-function ProjectItem({
-  project,
-  selected,
-  onSelect,
-}: {
-  project: Project;
-  selected: boolean;
-  onSelect: () => void;
-}) {
-  const isRepo = isRepositoryProject(project);
-
-  return (
-    <button
-      className={`w-full flex items-center gap-2.5 p-2.5 cursor-pointer rounded transition-all text-left ${
-        selected
-          ? "bg-primary/10 border border-primary"
-          : "border border-transparent hover:bg-muted/50 hover:border-border"
-      }`}
-      onClick={onSelect}
-    >
-      {/* 图标 */}
-      {isRepo ? (
-        <Globe className="w-4 h-4 text-muted-foreground" />
-      ) : (
-        <Package className="w-4 h-4 text-muted-foreground" />
-      )}
-
-      {/* 内容 */}
-      <div className="flex-1 min-w-0">
-        <span className={`text-sm truncate ${selected ? 'font-medium' : ''}`}>
-          {project.name}
-        </span>
-        {project.description && (
-          <p className="text-xs text-muted-foreground truncate">
-            {project.description}
-          </p>
-        )}
-      </div>
-
-      {/* 类型标签 */}
-      <Badge variant="outline" className="text-xs">
-        {isRepo ? "Git" : "ZIP"}
-      </Badge>
-
-      {/* 选中指示 */}
-      {selected && (
-        <CheckCircle2 className="w-4 h-4 text-primary" />
-      )}
-    </button>
   );
 }
