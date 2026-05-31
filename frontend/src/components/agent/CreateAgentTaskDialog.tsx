@@ -1,16 +1,16 @@
 /**
- * Agent 审计任务创建对话框
- * Cyberpunk Terminal Aesthetic
+ * Agent 审计任务创建侧边栏
+ * 从右侧滑出的抽屉式界面
  */
 
 import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -43,6 +43,7 @@ import {
   Upload,
   FolderOpen,
   CalendarClock,
+  X,
 } from "lucide-react";
 import { toast } from "sonner";
 import { api } from "@/shared/config/database";
@@ -283,32 +284,32 @@ export default function CreateAgentTaskDialog({
 
   return (
     <>
-      <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="!w-[min(90vw,520px)] !max-w-none max-h-[85vh] flex flex-col p-0 gap-0 cyber-dialog border border-border rounded-lg">
+      <Sheet open={open} onOpenChange={onOpenChange}>
+        <SheetContent side="right" className="!w-[min(90vw,520px)] !max-w-none flex flex-col p-0 gap-0 border-l border-border bg-background">
         {/* Header */}
-        <DialogHeader className="px-5 py-4 border-b border-border flex-shrink-0 bg-muted">
-          <DialogTitle className="flex items-center gap-3 font-mono text-foreground">
+        <SheetHeader className="px-5 py-4 border-b border-border flex-shrink-0 bg-muted/50">
+          <SheetTitle className="flex items-center gap-3">
             <div className="p-2 bg-primary/20 rounded border border-primary/30">
               <Bot className="w-5 h-5 text-primary" />
             </div>
             <div>
-              <span className="text-base font-bold uppercase tracking-wider">New Agent Audit</span>
-              <p className="text-xs text-muted-foreground font-normal mt-0.5">
-                AI-Powered Security Analysis
+              <span className="text-base font-semibold">新建深度审计任务</span>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                AI驱动的自动化安全分析
               </p>
             </div>
-          </DialogTitle>
-        </DialogHeader>
+          </SheetTitle>
+        </SheetHeader>
 
         <div className="flex-1 overflow-y-auto p-5 space-y-5">
           {/* 项目选择 */}
           <div className="space-y-3">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-mono font-bold uppercase text-muted-foreground">
-                Select Project
+              <span className="text-xs font-semibold text-muted-foreground">
+                选择项目
               </span>
-              <Badge className="cyber-badge-muted font-mono text-xs">
-                {filteredProjects.length} available
+              <Badge variant="outline" className="text-xs">
+                {filteredProjects.length} 个可用
               </Badge>
             </div>
 
@@ -316,23 +317,23 @@ export default function CreateAgentTaskDialog({
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <Input
-                placeholder="Search projects..."
+                placeholder="搜索项目..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="!pl-9 h-10 cyber-input"
+                className="!pl-9 h-10"
               />
             </div>
 
             {/* 项目列表 */}
-            <ScrollArea className="h-[200px] border border-border rounded bg-muted/50">
+            <ScrollArea className="h-[200px] border border-border rounded bg-muted/30">
               {loadingProjects ? (
                 <div className="flex items-center justify-center h-full">
                   <Loader2 className="w-5 h-5 animate-spin text-primary" />
                 </div>
               ) : filteredProjects.length === 0 ? (
-                <div className="flex flex-col items-center justify-center h-full text-muted-foreground font-mono">
+                <div className="flex flex-col items-center justify-center h-full text-muted-foreground">
                   <Package className="w-8 h-8 mb-2 opacity-50" />
-                  <span className="text-sm">{searchTerm ? "No matches" : "No projects"}</span>
+                  <span className="text-sm">{searchTerm ? "无匹配项目" : "暂无项目"}</span>
                 </div>
               ) : (
                 <div className="p-1">
@@ -354,20 +355,20 @@ export default function CreateAgentTaskDialog({
             <div className="space-y-4">
               {/* 仓库项目：分支选择 */}
               {isRepositoryProject(selectedProject) && (
-                <div className="flex items-center gap-3 p-3 border border-border rounded bg-blue-950/20">
-                  <GitBranch className="w-5 h-5 text-blue-400" />
-                  <span className="font-mono text-sm text-muted-foreground w-16">Branch</span>
+                <div className="flex items-center gap-3 p-3 border border-border rounded bg-blue-50/50">
+                  <GitBranch className="w-5 h-5 text-blue-500" />
+                  <span className="text-sm text-muted-foreground w-16">分支</span>
                   {loadingBranches ? (
                     <div className="flex items-center gap-2 flex-1">
-                      <Loader2 className="w-4 h-4 animate-spin text-blue-400" />
-                      <span className="text-sm text-blue-400 font-mono">Loading...</span>
+                      <Loader2 className="w-4 h-4 animate-spin text-blue-500" />
+                      <span className="text-sm text-blue-500">加载中...</span>
                     </div>
                   ) : (
                     <BranchSelector
                       value={branch}
                       onChange={setBranch}
                       branches={branches}
-                      placeholder="Select branch"
+                      placeholder="选择分支"
                       className="flex-1"
                     />
                   )}
@@ -376,28 +377,28 @@ export default function CreateAgentTaskDialog({
 
               {/* ZIP 项目：文件选择 */}
               {isZipProject(selectedProject) && (
-                <div className="p-3 border border-border rounded bg-amber-950/20 space-y-3">
+                <div className="p-3 border border-border rounded bg-amber-50/50 space-y-3">
                   <div className="flex items-center gap-3">
-                    <Package className="w-5 h-5 text-warning" />
-                    <span className="font-mono text-sm text-muted-foreground uppercase font-bold">ZIP File</span>
+                    <Package className="w-5 h-5 text-amber-500" />
+                    <span className="text-sm text-muted-foreground font-semibold">ZIP 文件</span>
                   </div>
 
                   {storedZipInfo?.has_file && (
                     <div
                       className={`p-2 rounded border cursor-pointer transition-colors ${useStoredZip
-                          ? 'border-emerald-500/50 bg-emerald-950/30'
-                          : 'border-border hover:border-border bg-muted/50'
+                          ? 'border-emerald-500/50 bg-emerald-50/50'
+                          : 'border-border hover:bg-muted/50'
                         }`}
                       onClick={() => setUseStoredZip(true)}
                     >
                       <div className="flex items-center gap-2">
-                        <div className={`w-3 h-3 rounded-full border-2 ${useStoredZip ? 'border-emerald-500 bg-primary' : 'border-border'
+                        <div className={`w-3 h-3 rounded-full border-2 ${useStoredZip ? 'border-emerald-500 bg-emerald-500' : 'border-border'
                           }`} />
-                        <span className="text-sm text-foreground font-mono">
+                        <span className="text-sm text-foreground">
                           {storedZipInfo.original_filename}
                         </span>
-                        <Badge className="cyber-badge-success text-xs">
-                          Stored
+                        <Badge className="text-xs bg-emerald-100 text-emerald-700 border-emerald-200">
+                          已存储
                         </Badge>
                       </div>
                     </div>
@@ -405,16 +406,16 @@ export default function CreateAgentTaskDialog({
 
                   <div
                     className={`p-2 rounded border cursor-pointer transition-colors ${!useStoredZip && zipFile
-                        ? 'border-amber-500/50 bg-amber-950/30'
-                        : 'border-border hover:border-border bg-muted/50'
+                        ? 'border-amber-500/50 bg-amber-50/50'
+                        : 'border-border hover:bg-muted/50'
                       }`}
                   >
                     <label className="flex items-center gap-2 cursor-pointer">
                       <div className={`w-3 h-3 rounded-full border-2 ${!useStoredZip && zipFile ? 'border-amber-500 bg-amber-500' : 'border-border'
                         }`} />
                       <Upload className="w-4 h-4 text-muted-foreground" />
-                      <span className="text-sm text-muted-foreground font-mono">
-                        {zipFile ? zipFile.name : "Upload new file..."}
+                      <span className="text-sm text-muted-foreground">
+                        {zipFile ? zipFile.name : "上传新文件..."}
                       </span>
                       <input
                         type="file"
@@ -429,10 +430,10 @@ export default function CreateAgentTaskDialog({
 
               {/* 高级选项 */}
               <Collapsible open={showAdvanced} onOpenChange={setShowAdvanced}>
-                <CollapsibleTrigger className="flex items-center gap-2 text-xs font-mono text-muted-foreground hover:text-foreground transition-colors">
+                <CollapsibleTrigger className="flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground transition-colors">
                   <ChevronRight className={`w-4 h-4 transition-transform ${showAdvanced ? "rotate-90" : ""}`} />
                   <Settings2 className="w-4 h-4" />
-                  <span className="uppercase font-bold">Advanced Options</span>
+                  <span className="font-semibold">高级选项</span>
                 </CollapsibleTrigger>
                 <CollapsibleContent className="mt-3 space-y-3">
                   {/* 文件选择 */}
@@ -443,15 +444,15 @@ export default function CreateAgentTaskDialog({
                     const canSelectFiles = isRepo || (isZip && useStoredZip && hasStoredZip);
 
                     return (
-                      <div className="flex items-center justify-between p-3 border border-dashed border-border rounded bg-muted/50">
+                      <div className="flex items-center justify-between p-3 border border-dashed border-border rounded bg-muted/30">
                         <div>
-                          <p className="font-mono text-xs uppercase font-bold text-muted-foreground">
-                            Scan Scope
+                          <p className="text-xs font-semibold text-muted-foreground">
+                            扫描范围
                           </p>
-                          <p className="text-sm text-foreground font-mono font-bold mt-1">
+                          <p className="text-sm text-foreground font-semibold mt-1">
                             {selectedFiles
-                              ? `${selectedFiles.length} files selected`
-                              : "All files"}
+                              ? `已选择 ${selectedFiles.length} 个文件`
+                              : "全部文件"}
                           </p>
                         </div>
                         <div className="flex gap-2">
@@ -460,9 +461,9 @@ export default function CreateAgentTaskDialog({
                               size="sm"
                               variant="ghost"
                               onClick={() => setSelectedFiles(undefined)}
-                              className="h-8 text-xs text-destructive hover:bg-rose-900/30 hover:text-rose-300"
+                              className="h-8 text-xs text-destructive hover:bg-rose-100 hover:text-rose-600"
                             >
-                              Reset
+                              重置
                             </Button>
                           )}
                           <Button
@@ -470,10 +471,10 @@ export default function CreateAgentTaskDialog({
                             variant="outline"
                             onClick={() => setShowFileSelection(true)}
                             disabled={!canSelectFiles}
-                            className="h-8 text-xs cyber-btn-outline font-mono font-bold disabled:opacity-50"
+                            className="h-8 text-xs disabled:opacity-50"
                           >
                             <FolderOpen className="w-3 h-3 mr-1" />
-                            Select Files
+                            选择文件
                           </Button>
                         </div>
                       </div>
@@ -481,17 +482,17 @@ export default function CreateAgentTaskDialog({
                   })()}
 
                   {/* 排除模式 */}
-                  <div className="p-3 border border-dashed border-border rounded bg-muted/50 space-y-3">
+                  <div className="p-3 border border-dashed border-border rounded bg-muted/30 space-y-3">
                     <div className="flex items-center justify-between">
-                      <span className="font-mono text-xs uppercase font-bold text-muted-foreground">
-                        Exclude Patterns
+                      <span className="text-xs font-semibold text-muted-foreground">
+                        排除模式
                       </span>
                       <button
                         type="button"
                         onClick={() => setExcludePatterns(DEFAULT_EXCLUDES)}
-                        className="text-xs font-mono text-primary hover:text-primary/80"
+                        className="text-xs text-primary hover:text-primary/80"
                       >
-                        Reset
+                        重置
                       </button>
                     </div>
 
@@ -499,7 +500,7 @@ export default function CreateAgentTaskDialog({
                       {excludePatterns.map((p) => (
                         <Badge
                           key={p}
-                          className="bg-muted text-foreground border-0 font-mono text-xs cursor-pointer hover:bg-rose-900/50 hover:text-destructive"
+                          className="bg-muted text-foreground border-0 text-xs cursor-pointer hover:bg-rose-100 hover:text-rose-600"
                           onClick={() => setExcludePatterns((prev) => prev.filter((x) => x !== p))}
                         >
                           {p} ×
@@ -508,8 +509,8 @@ export default function CreateAgentTaskDialog({
                     </div>
 
                     <Input
-                      placeholder="Add pattern, press Enter..."
-                      className="h-8 cyber-input text-sm"
+                      placeholder="添加模式，按回车确认..."
+                      className="h-8 text-sm"
                       onKeyDown={(e) => {
                         if (e.key === "Enter" && e.currentTarget.value) {
                           const val = e.currentTarget.value.trim();
@@ -522,12 +523,12 @@ export default function CreateAgentTaskDialog({
                     />
                   </div>
 
-                  <div className="p-3 border border-dashed border-border rounded bg-muted/50 space-y-3">
+                  <div className="p-3 border border-dashed border-border rounded bg-muted/30 space-y-3">
                     <div className="flex items-center justify-between gap-3">
                       <div className="flex items-center gap-2">
                         <CalendarClock className="w-4 h-4 text-primary" />
-                        <span className="font-mono text-xs uppercase font-bold text-muted-foreground">
-                          Scheduled Audit
+                        <span className="text-xs font-semibold text-muted-foreground">
+                          定时审计
                         </span>
                       </div>
                       <Switch checked={scheduleEnabled} onCheckedChange={setScheduleEnabled} />
@@ -536,31 +537,31 @@ export default function CreateAgentTaskDialog({
                     {scheduleEnabled && (
                       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                         <div className="space-y-1.5">
-                          <Label className="text-xs">Interval (min)</Label>
+                          <Label className="text-xs">周期（分钟）</Label>
                           <Input
                             type="number"
                             min="1"
                             value={scheduleIntervalMinutes}
                             onChange={(e) => setScheduleIntervalMinutes(e.target.value)}
-                            className="h-9 cyber-input text-sm"
+                            className="h-9 text-sm"
                           />
                         </div>
                         <div className="space-y-1.5">
-                          <Label className="text-xs">Start</Label>
+                          <Label className="text-xs">开始时间</Label>
                           <Input
                             type="time"
                             value={scheduleWindowStart}
                             onChange={(e) => setScheduleWindowStart(e.target.value)}
-                            className="h-9 cyber-input text-sm"
+                            className="h-9 text-sm"
                           />
                         </div>
                         <div className="space-y-1.5">
-                          <Label className="text-xs">End</Label>
+                          <Label className="text-xs">结束时间</Label>
                           <Input
                             type="time"
                             value={scheduleWindowEnd}
                             onChange={(e) => setScheduleWindowEnd(e.target.value)}
-                            className="h-9 cyber-input text-sm"
+                            className="h-9 text-sm"
                           />
                         </div>
                       </div>
@@ -573,35 +574,35 @@ export default function CreateAgentTaskDialog({
         </div>
 
         {/* Footer */}
-        <div className="flex-shrink-0 flex justify-end gap-3 px-5 py-4 bg-muted border-t border-border">
+        <div className="flex-shrink-0 flex justify-end gap-3 px-5 py-4 bg-muted/30 border-t border-border">
           <Button
             variant="ghost"
             onClick={() => onOpenChange(false)}
             disabled={creating}
-            className="px-4 h-10 font-mono text-muted-foreground hover:text-foreground hover:bg-muted"
+            className="px-4 h-10 text-muted-foreground hover:text-foreground hover:bg-muted"
           >
-            Cancel
+            取消
           </Button>
           <Button
             onClick={handleCreate}
             disabled={!canStart || creating}
-            className="px-5 h-10 cyber-btn-primary font-mono font-bold uppercase"
+            className="px-5 h-10 bg-primary text-white hover:bg-primary/90"
           >
             {creating ? (
               <>
                 <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                Starting...
+                正在启动...
               </>
             ) : (
               <>
                 <Play className="w-4 h-4 mr-2" />
-                Start Audit
+                开始审计
               </>
             )}
           </Button>
         </div>
-        </DialogContent>
-      </Dialog>
+        </SheetContent>
+      </Sheet>
 
       {/* 文件选择对话框 */}
       <FileSelectionDialog
@@ -636,37 +637,37 @@ function ProjectItem({
         }`}
       onClick={onSelect}
     >
-      <div className={`p-1.5 rounded ${isRepo ? "bg-blue-500/20" : "bg-amber-500/20"}`}>
+      <div className={`p-1.5 rounded ${isRepo ? "bg-blue-100" : "bg-amber-100"}`}>
         {isRepo ? (
-          <Globe className="w-4 h-4 text-blue-400" />
+          <Globe className="w-4 h-4 text-blue-500" />
         ) : (
-          <Package className="w-4 h-4 text-warning" />
+          <Package className="w-4 h-4 text-amber-500" />
         )}
       </div>
 
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2">
-          <span className={`font-mono text-sm truncate ${selected ? 'text-foreground font-bold' : 'text-foreground'}`}>
+          <span className={`text-sm truncate ${selected ? 'text-foreground font-semibold' : 'text-foreground'}`}>
             {project.name}
           </span>
           <Badge
-            className={`text-xs px-1 py-0 font-mono ${isRepo
-                ? "bg-blue-500/20 text-blue-400 border-blue-500/30"
-                : "bg-amber-500/20 text-warning border-warning/25"
+            className={`text-xs px-1 py-0 ${isRepo
+                ? "bg-blue-100 text-blue-600 border-blue-200"
+                : "bg-amber-100 text-amber-600 border-amber-200"
               }`}
           >
-            {isRepo ? "REPO" : "ZIP"}
+            {isRepo ? "仓库" : "ZIP"}
           </Badge>
         </div>
         {project.description && (
-          <p className="text-xs text-muted-foreground mt-0.5 font-mono truncate">
+          <p className="text-xs text-muted-foreground mt-0.5 truncate">
             {project.description}
           </p>
         )}
       </div>
 
       {selected && (
-        <div className="w-2 h-2 rounded-full bg-primary animate-pulse shadow-[0_0_8px_rgba(255,107,44,0.6)]" />
+        <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
       )}
     </div>
   );
