@@ -16,8 +16,7 @@ import {
   XCircle,
   Eye,
   Bot,
-  Download
-} from "lucide-react";
+  } from "lucide-react";
 import { api } from "@/shared/config/database";
 import { apiClient } from "@/shared/api/serverClient";
 import type { AuditTask } from "@/shared/types";
@@ -25,10 +24,8 @@ import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 import CreateTaskDialog from "@/components/audit/CreateTaskDialog";
 import TerminalProgressDialog from "@/components/audit/TerminalProgressDialog";
-import ExportReportDialog from "@/components/reports/ExportReportDialog";
 import { calculateTaskProgress } from "@/shared/utils/utils";
-import { getAgentTasks, cancelAgentTask, getAgentFindings, type AgentTask, type AgentFinding } from "@/shared/api/agentTasks";
-import ReportExportDialog from "@/pages/AgentAudit/components/ReportExportDialog";
+import { getAgentTasks, cancelAgentTask, type AgentTask } from "@/shared/api/agentTasks";
 import { AGENT_AUDIT_ROUTE } from "@/shared/constants/branding";
 
 // Zombie task detection config
@@ -56,14 +53,6 @@ export default function AuditTasks() {
   const [agentTasks, setAgentTasks] = useState<AgentTask[]>([]);
   const [agentLoading, setAgentLoading] = useState(true);
   const [cancellingAgentTaskId, setCancellingAgentTaskId] = useState<string | null>(null);
-  const [exportingTaskId, setExportingTaskId] = useState<string | null>(null);
-  const [showExportDialog, setShowExportDialog] = useState(false);
-  const [exportTask, setExportTask] = useState<AuditTask | null>(null);
-  const [exportIssues, setExportIssues] = useState<any[]>([]);
-  // Agent 任务导出对话框状态
-  const [showAgentExportDialog, setShowAgentExportDialog] = useState(false);
-  const [exportAgentTask, setExportAgentTask] = useState<AgentTask | null>(null);
-  const [exportAgentFindings, setExportAgentFindings] = useState<AgentFinding[]>([]);
 
   // Zombie task detection: track progress and time for each task
   const taskProgressRef = useRef<Map<string, { progress: number; time: number }>>(new Map());
@@ -206,39 +195,6 @@ export default function AuditTasks() {
     }
   };
 
-  // 打开快速扫描任务导出对话框
-  const handleOpenExportDialog = async (task: AuditTask) => {
-    try {
-      setExportingTaskId(task.id);
-      // 获取任务的问题列表
-      const issuesResponse = await apiClient.get(`/tasks/${task.id}/issues`);
-      setExportTask(task);
-      setExportIssues(issuesResponse.data || []);
-      setShowExportDialog(true);
-    } catch (error: any) {
-      console.error('获取问题列表失败:', error);
-      toast.error("获取问题列表失败");
-    } finally {
-      setExportingTaskId(null);
-    }
-  };
-
-  // 打开 Agent 任务导出对话框
-  const handleOpenAgentExportDialog = async (task: AgentTask) => {
-    try {
-      setExportingTaskId(task.id);
-      // 获取任务的 findings 列表
-      const findings = await getAgentFindings(task.id);
-      setExportAgentTask(task);
-      setExportAgentFindings(findings);
-      setShowAgentExportDialog(true);
-    } catch (error: any) {
-      console.error('获取 findings 列表失败:', error);
-      toast.error("获取审计结果失败");
-    } finally {
-      setExportingTaskId(null);
-    }
-  };
 
   const loadTasks = async () => {
     try {
@@ -383,12 +339,7 @@ export default function AuditTasks() {
                               <XCircle className="w-3.5 h-3.5" />
                             </Button>
                           )}
-                          {(task.status === 'completed' || (task.findings_count != null && task.findings_count > 0)) && (
-                            <Button variant="ghost" size="icon" className="cyber-btn-ghost h-7 w-7" title="导出报告" onClick={() => handleOpenAgentExportDialog(task)} disabled={exportingTaskId === task.id}>
-                              <Download className="w-3.5 h-3.5" />
-                            </Button>
-                          )}
-                        </div>
+                                                  </div>
                       </td>
                     </tr>
                   ))
@@ -479,12 +430,7 @@ export default function AuditTasks() {
                               <XCircle className="w-3.5 h-3.5" />
                             </Button>
                           )}
-                          {(task.issues_count > 0 || task.status === 'completed') && (
-                            <Button variant="ghost" size="icon" className="cyber-btn-ghost h-7 w-7" title="导出报告" onClick={() => handleOpenExportDialog(task)} disabled={exportingTaskId === task.id}>
-                              <Download className="w-3.5 h-3.5" />
-                            </Button>
-                          )}
-                        </div>
+                                                  </div>
                       </td>
                     </tr>
                   ))
@@ -511,25 +457,6 @@ export default function AuditTasks() {
         taskType="repository"
       />
 
-      {/* 快速扫描任务导出对话框 */}
-      {exportTask && (
-        <ExportReportDialog
-          open={showExportDialog}
-          onOpenChange={setShowExportDialog}
-          task={exportTask}
-          issues={exportIssues}
-        />
-      )}
-
-      {/* Agent 任务导出对话框 */}
-      {exportAgentTask && (
-        <ReportExportDialog
-          open={showAgentExportDialog}
-          onOpenChange={setShowAgentExportDialog}
-          task={exportAgentTask}
-          findings={exportAgentFindings}
-        />
-      )}
     </div>
   );
 }

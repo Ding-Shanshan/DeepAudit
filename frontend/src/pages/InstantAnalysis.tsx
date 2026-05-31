@@ -297,7 +297,7 @@ public class Example {
         'js': 'javascript', 'jsx': 'javascript', 'ts': 'typescript', 'tsx': 'typescript',
         'py': 'python', 'java': 'java', 'go': 'go', 'rs': 'rust',
         'cpp': 'cpp', 'c': 'cpp', 'cs': 'csharp', 'php': 'php',
-        'rb': 'ruby', 'swift': 'swift', 'kt': 'kotlin'
+        'rb': 'ruby', 'swift': 'swift'
       };
 
       if (extension && languageMap[extension]) {

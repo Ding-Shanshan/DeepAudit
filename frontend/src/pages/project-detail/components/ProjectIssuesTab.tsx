@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import { Link } from "react-router-dom";
-import { FileText, CheckCircle, Search } from "lucide-react";
+import { FileText, Shield, Search } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -172,10 +172,10 @@ export function ProjectIssuesTab(props: {
                                 : issue.severity === "medium"
                                   ? "severity-medium"
                                   : "severity-low"}
-                            font-bold uppercase px-2 py-1 rounded text-xs
+                            font-bold uppercase px-2 py-1 rounded text-xs inline-flex justify-center min-w-[56px] text-center
                           `}
                         >
-                          {issue.severity === "critical" ? "严重" : issue.severity === "high" ? "高" : issue.severity === "medium" ? "中等" : "低"}
+                          {issue.severity === "critical" ? "严重" : issue.severity === "high" ? "高" : issue.severity === "medium" ? "中" : "低"}
                         </Badge>
                       </td>
                       <td className="py-2.5 px-3">
@@ -241,9 +241,9 @@ export function ProjectIssuesTab(props: {
         </>
       ) : (
         <div className="p-12 text-center">
-          <CheckCircle className="w-16 h-16 text-primary dark:text-emerald-500 mx-auto mb-4" />
+          <Shield className="w-16 h-16 text-primary/40 mx-auto mb-4" />
           <h3 className="text-lg font-bold text-foreground mb-2 uppercase">未发现问题</h3>
-          <p className="text-sm text-muted-foreground font-mono">最近一次审计未发现明显问题，或尚未进行审计。</p>
+          <p className="text-sm text-muted-foreground font-mono">该项目暂未发现安全问题，或尚未进行审计。</p>
         </div>
       )}
     </div>

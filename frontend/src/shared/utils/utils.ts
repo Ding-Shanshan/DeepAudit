@@ -97,7 +97,6 @@ export function getLanguageFromExtension(extension: string): string {
     'cs': 'csharp',
     'php': 'php',
     'rb': 'ruby',
-    'kt': 'kotlin',
     'swift': 'swift'
   };
   

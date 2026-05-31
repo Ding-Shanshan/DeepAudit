@@ -15,7 +15,6 @@ export const SUPPORTED_LANGUAGES = [
   'php',
   'ruby',
   'swift',
-  'kotlin',
 ] as const;
 
 // 问题类型

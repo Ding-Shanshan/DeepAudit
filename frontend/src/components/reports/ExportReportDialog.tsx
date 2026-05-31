@@ -1,23 +1,30 @@
 /**
- * Export Report Dialog
- * Cyberpunk Terminal Aesthetic
+ * Export Report Dialog — Redesigned
+ * Left: Document cover preview mockup
+ * Right: Report info cards + export action
  */
 
 import { useState } from "react";
 import {
     Dialog,
     DialogContent,
-    DialogDescription,
     DialogHeader,
     DialogTitle,
-    DialogFooter
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Label } from "@/components/ui/label";
-import { FileJson, FileText, Download, Loader2, Terminal } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import {
+    Download,
+    Loader2,
+    Shield,
+    FolderOpen,
+    User,
+    FileText,
+    Hash,
+    AlertTriangle,
+} from "lucide-react";
 import type { AuditTask, AuditIssue } from "@/shared/types";
-import { exportToJSON, exportToPDF } from "@/features/reports/services/reportExport";
+import { exportToPDF } from "@/features/reports/services/reportExport";
 import { toast } from "sonner";
 
 interface ExportReportDialogProps {
@@ -27,30 +34,19 @@ interface ExportReportDialogProps {
     issues: AuditIssue[];
 }
 
-type ExportFormat = "json" | "pdf";
-
 export default function ExportReportDialog({
     open,
     onOpenChange,
     task,
-    issues
+    issues,
 }: ExportReportDialogProps) {
-    const [selectedFormat, setSelectedFormat] = useState<ExportFormat>("pdf");
     const [isExporting, setIsExporting] = useState(false);
 
     const handleExport = async () => {
         setIsExporting(true);
         try {
-            switch (selectedFormat) {
-                case "json":
-                    await exportToJSON(task, issues);
-                    toast.success("JSON 报告已导出");
-                    break;
-                case "pdf":
-                    await exportToPDF(task, issues);
-                    toast.success("PDF 报告已导出");
-                    break;
-            }
+            await exportToPDF(task, issues);
+            toast.success("PDF 报告已导出");
             onOpenChange(false);
         } catch (error) {
             console.error("导出报告失败:", error);
@@ -60,109 +56,192 @@ export default function ExportReportDialog({
         }
     };
 
+    const projectName = task.project?.name || "未知";
+    const projectOwner = task.project?.owner?.full_name || task.project?.owner?.phone || "未知";
+    const taskName = task.task_type === "repository" ? "仓库审计任务" : "即时分析任务";
+    const fileCount = task.total_files ?? 0;
+    const issueCount = issues.length;
+    const today = new Date().toLocaleDateString("zh-CN", {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+    });
+
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-[600px] cyber-dialog border-border">
-                <DialogHeader>
-                    <DialogTitle className="flex items-center gap-3 text-lg font-bold uppercase tracking-wider text-foreground">
-                        <Download className="w-5 h-5 text-primary" />
-                        导出审计报告
-                    </DialogTitle>
-                    <DialogDescription className="text-muted-foreground font-mono text-xs">
-                        选择报告格式并导出完整的代码审计结果
-                    </DialogDescription>
-                </DialogHeader>
+            <DialogContent className="sm:max-w-[720px] cyber-dialog border-border p-0 overflow-hidden">
+                {/* Header */}
+                <div className="px-6 pt-5 pb-0">
+                    <DialogHeader>
+                        <DialogTitle className="flex items-center gap-3 text-lg font-bold uppercase tracking-wider text-foreground">
+                            <Download className="w-5 h-5 text-primary" />
+                            导出审计报告
+                        </DialogTitle>
+                    </DialogHeader>
+                </div>
 
-                <div className="py-4">
-                    <RadioGroup
-                        value={selectedFormat}
-                        onValueChange={(value) => setSelectedFormat(value as ExportFormat)}
-                        className="space-y-4"
-                    >
-                        <div className="flex items-center space-x-3 p-4 border border-border rounded bg-muted/50 cursor-pointer hover:bg-muted">
-                            <RadioGroupItem value="json" id="json" />
-                            <Label htmlFor="json" className="flex items-center gap-3 cursor-pointer flex-1">
-                                <FileJson className="w-5 h-5 text-warning" />
-                                <div>
-                                    <div className="font-bold text-foreground">JSON 格式</div>
-                                    <div className="text-xs text-muted-foreground">结构化数据，适合程序处理和集成</div>
-                                </div>
-                            </Label>
-                        </div>
-                        <div className="flex items-center space-x-3 p-4 border border-border rounded bg-muted/50 cursor-pointer hover:bg-muted">
-                            <RadioGroupItem value="pdf" id="pdf" />
-                            <Label htmlFor="pdf" className="flex items-center gap-3 cursor-pointer flex-1">
-                                <FileText className="w-5 h-5 text-destructive" />
-                                <div>
-                                    <div className="font-bold text-foreground">PDF 格式</div>
-                                    <div className="text-xs text-muted-foreground">专业报告，适合打印和分享</div>
-                                </div>
-                            </Label>
-                        </div>
-                    </RadioGroup>
+                {/* Body: two-column layout */}
+                <div className="px-6 py-5 flex gap-6">
+                    {/* ====== Left: Document Preview ====== */}
+                    <div className="w-[220px] flex-shrink-0 flex flex-col items-center">
+                        <div className="relative w-full bg-white dark:bg-zinc-900 rounded-lg shadow-lg border border-border/60 overflow-hidden"
+                            style={{ aspectRatio: "210 / 297" }}
+                        >
+                            {/* PDF badge */}
+                            <div className="absolute top-2.5 right-2.5 z-10">
+                                <Badge className="bg-red-500 text-white text-[8px] px-1.5 py-0 border-0 font-bold shadow-sm">
+                                    PDF
+                                </Badge>
+                            </div>
 
-                    {/* 报告预览信息 */}
-                    <div className="mt-6 border border-border rounded bg-muted/50">
-                        <div className="px-4 py-2 border-b border-border bg-muted flex items-center gap-2">
-                            <Terminal className="w-3 h-3 text-primary" />
-                            <h4 className="font-bold text-foreground uppercase text-xs">报告内容预览</h4>
+                            <div className="p-5 h-full flex flex-col">
+                                {/* Top accent stripe */}
+                                <div className="h-2 rounded-full bg-gradient-to-r from-primary to-violet-500 mb-5" />
+
+                                {/* Logo + title */}
+                                <div className="flex items-center gap-2 mb-2">
+                                    <Shield className="w-6 h-6 text-primary" />
+                                    <span className="text-[11px] font-extrabold text-foreground/90 uppercase tracking-[0.15em]">
+                                        Audit Report
+                                    </span>
+                                </div>
+
+                                <div className="h-px bg-border/60 mb-4" />
+
+                                {/* Fields */}
+                                <div className="space-y-3 flex-1">
+                                    <div>
+                                        <div className="text-[8px] text-muted-foreground uppercase tracking-wider font-semibold mb-0.5">
+                                            项目名称
+                                        </div>
+                                        <div className="text-[11px] font-bold text-foreground leading-tight truncate">
+                                            {projectName}
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <div className="text-[8px] text-muted-foreground uppercase tracking-wider font-semibold mb-0.5">
+                                            项目负责人
+                                        </div>
+                                        <div className="text-[11px] font-semibold text-foreground leading-tight">
+                                            {projectOwner}
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <div className="text-[8px] text-muted-foreground uppercase tracking-wider font-semibold mb-0.5">
+                                            任务名称
+                                        </div>
+                                        <div className="text-[11px] font-semibold text-foreground leading-tight">
+                                            {taskName}
+                                        </div>
+                                    </div>
+
+                                    {/* Stats row */}
+                                    <div className="flex gap-4 pt-1">
+                                        <div>
+                                            <div className="text-[8px] text-muted-foreground uppercase tracking-wider font-semibold">
+                                                文件数
+                                            </div>
+                                            <div className="text-[13px] font-extrabold text-foreground">
+                                                {fileCount}
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <div className="text-[8px] text-muted-foreground uppercase tracking-wider font-semibold">
+                                                问题数
+                                            </div>
+                                            <div className="text-[13px] font-extrabold text-amber-600">
+                                                {issueCount}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Bottom date + divider */}
+                                <div className="mt-auto pt-3 border-t border-border/40">
+                                    <div className="text-[8px] text-muted-foreground">
+                                        {today}
+                                    </div>
+                                </div>
+                            </div>
                         </div>
-                        <div className="p-4 grid grid-cols-2 gap-3 text-xs font-mono">
-                            <div className="flex items-center justify-between border-b border-border pb-2">
-                                <span className="text-muted-foreground">项目名称:</span>
-                                <span className="font-bold text-foreground">{task.project?.name || "未知"}</span>
-                            </div>
-                            <div className="flex items-center justify-between border-b border-border pb-2">
-                                <span className="text-muted-foreground">质量评分:</span>
-                                <span className="font-bold text-primary">{task.quality_score.toFixed(1)}/100</span>
-                            </div>
-                            <div className="flex items-center justify-between border-b border-border pb-2">
-                                <span className="text-muted-foreground">扫描文件:</span>
-                                <span className="font-bold text-foreground">{task.scanned_files}/{task.total_files}</span>
-                            </div>
-                            <div className="flex items-center justify-between border-b border-border pb-2">
-                                <span className="text-muted-foreground">发现问题:</span>
-                                <span className="font-bold text-warning">{issues.length}</span>
-                            </div>
-                            <div className="flex items-center justify-between border-b border-border pb-2">
-                                <span className="text-muted-foreground">代码行数:</span>
-                                <span className="font-bold text-foreground">{task.total_lines.toLocaleString()}</span>
-                            </div>
-                            <div className="flex items-center justify-between border-b border-border pb-2">
-                                <span className="text-muted-foreground">严重问题:</span>
-                                <span className="font-bold text-destructive">
-                                    {issues.filter(i => i.severity === "critical").length}
-                                </span>
-                            </div>
+                        <div className="text-[10px] text-muted-foreground font-mono uppercase tracking-wider mt-2.5">
+                            报告封面预览
+                        </div>
+                    </div>
+
+                    {/* ====== Right: Info + Action ====== */}
+                    <div className="flex-1 flex flex-col min-w-0">
+                        {/* Info cards */}
+                        <div className="space-y-2.5 flex-1">
+                            {[
+                                {
+                                    icon: FolderOpen,
+                                    label: "项目名称",
+                                    value: projectName,
+                                    color: "text-primary",
+                                },
+                                {
+                                    icon: User,
+                                    label: "项目负责人",
+                                    value: projectOwner,
+                                    color: "text-primary",
+                                },
+                                {
+                                    icon: FileText,
+                                    label: "任务名称",
+                                    value: taskName,
+                                    color: "text-primary",
+                                },
+                                {
+                                    icon: Hash,
+                                    label: "文件数",
+                                    value: String(fileCount),
+                                    color: "text-primary",
+                                },
+                                {
+                                    icon: AlertTriangle,
+                                    label: "问题数",
+                                    value: String(issueCount),
+                                    color: "text-amber-600",
+                                },
+                            ].map((item) => (
+                                <div
+                                    key={item.label}
+                                    className="flex items-center gap-3 px-3.5 py-2.5 rounded-lg bg-muted/40 border border-border/50"
+                                >
+                                    <item.icon className={`w-4 h-4 ${item.color} flex-shrink-0`} />
+                                    <span className="text-[11px] text-muted-foreground uppercase font-mono tracking-wider flex-shrink-0 w-16">
+                                        {item.label}
+                                    </span>
+                                    <span className="text-sm font-bold text-foreground truncate">
+                                        {item.value}
+                                    </span>
+                                </div>
+                            ))}
                         </div>
                     </div>
                 </div>
 
-                <DialogFooter className="border-t border-border pt-4">
-                    <Button
-                        variant="outline"
-                        onClick={() => onOpenChange(false)}
-                        disabled={isExporting}
-                    >
-                        取消
-                    </Button>
+                {/* Footer */}
+                <div className="px-6 pb-5">
                     <Button
                         onClick={handleExport}
                         disabled={isExporting}
+                        className="cyber-btn-primary w-full h-11 text-sm font-bold uppercase tracking-wider"
                     >
                         {isExporting ? (
                             <>
                                 <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                                导出中...
+                                正在生成报告...
                             </>
                         ) : (
                             <>
                                 <Download className="w-4 h-4 mr-2" />
-                                导出报告
+                                导出 PDF 报告
                             </>
                         )}
                     </Button>
-                </DialogFooter>
+                </div>
             </DialogContent>
         </Dialog>
     );

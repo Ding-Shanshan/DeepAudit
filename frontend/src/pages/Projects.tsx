@@ -11,16 +11,15 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
 import {
   Plus,
   Search,
   GitBranch,
-  Play,
   Eye,
   Upload,
   FileText,
@@ -28,7 +27,9 @@ import {
   Trash2,
   Edit,
   CheckCircle,
-  Terminal
+  Terminal,
+  ChevronDown,
+  X
 } from "lucide-react";
 import { api } from "@/shared/config/database";
 import { validateZipFile } from "@/features/projects/services";
@@ -99,8 +100,7 @@ export default function Projects() {
       'csharp': 'C#',
       'php': 'PHP',
       'ruby': 'Ruby',
-      'swift': 'Swift',
-      'kotlin': 'Kotlin'
+      'swift': 'Swift'
     };
     return nameMap[lang] || lang.charAt(0).toUpperCase() + lang.slice(1);
   };
@@ -405,54 +405,93 @@ export default function Projects() {
 
       {/* 创建项目抽屉 */}
       <Sheet open={showCreateDialog} onOpenChange={setShowCreateDialog}>
-        <SheetContent side="right" className="!w-[min(90vw,700px)] sm:max-w-[700px] !sm:max-w-none flex flex-col p-0 gap-0 border-border overflow-y-auto">
-          <SheetHeader className="px-6 py-4 border-b border-border flex-shrink-0 bg-muted">
-            <SheetTitle className="flex items-center gap-3 font-mono text-foreground">
-              <div className="p-2 bg-primary/20 rounded border border-primary/30">
-                <Terminal className="w-5 h-5 text-primary" />
-              </div>
-              <span className="text-base font-bold uppercase tracking-wider">
-                新建项目
-              </span>
+        <SheetContent side="right" className="!w-[min(90vw,600px)] sm:max-w-[600px] !sm:max-w-none flex flex-col p-0 gap-0 border-border">
+          {/* Header */}
+          <SheetHeader className="px-6 py-5 border-b border-border flex-shrink-0">
+            <SheetTitle className="font-mono text-lg text-foreground tracking-wide">
+              新建项目
             </SheetTitle>
-            <SheetDescription className="text-xs text-muted-foreground font-normal">
-              创建新项目以开始代码审计
-            </SheetDescription>
           </SheetHeader>
 
-          <div className="flex-1 overflow-y-auto p-6">
-            <Tabs defaultValue="repository" className="w-full">
-              <TabsList className="flex w-full bg-muted border border-border p-1 h-auto gap-1 rounded">
-                <TabsTrigger
-                  value="repository"
-                  className="flex-1 data-[state=active]:bg-primary data-[state=active]:text-foreground font-mono font-bold uppercase py-2 text-muted-foreground transition-all rounded-sm"
-                >
-                  <GitBranch className="w-4 h-4 mr-2" />
-                  Git 仓库
-                </TabsTrigger>
-                <TabsTrigger
-                  value="upload"
-                  className="flex-1 data-[state=active]:bg-primary data-[state=active]:text-foreground font-mono font-bold uppercase py-2 text-muted-foreground transition-all rounded-sm"
-                >
-                  <Upload className="w-4 h-4 mr-2" />
-                  上传源码
-                </TabsTrigger>
-              </TabsList>
+          <div className="flex-1 overflow-y-auto">
+            {/* 基本信息区 */}
+            <div className="px-6 py-5 space-y-4 border-b border-border">
+              <h3 className="text-xs font-mono font-bold uppercase text-muted-foreground tracking-widest">基本信息</h3>
+              <div className="space-y-1.5">
+                <Label htmlFor="name" className="text-sm text-foreground">项目名称 <span className="text-destructive">*</span></Label>
+                <Input
+                  id="name"
+                  value={createForm.name}
+                  onChange={(e) => setCreateForm({ ...createForm, name: e.target.value })}
+                  placeholder="输入项目名称"
+                  className="cyber-input"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="description" className="text-sm text-foreground">描述</Label>
+                <Textarea
+                  id="description"
+                  value={createForm.description}
+                  onChange={(e) => setCreateForm({ ...createForm, description: e.target.value })}
+                  placeholder="项目描述..."
+                  rows={2}
+                  className="cyber-input min-h-[60px]"
+                />
+              </div>
+            </div>
 
-              <TabsContent value="repository" className="flex flex-col gap-5 mt-5">
-                <div className="grid grid-cols-2 gap-5">
+            {/* 项目位置区 */}
+            <div className="px-6 py-5 space-y-4">
+              <h3 className="text-xs font-mono font-bold uppercase text-muted-foreground tracking-widest">项目位置</h3>
+              <div className="grid grid-cols-2 gap-0 border border-border rounded overflow-hidden">
+                <button
+                  type="button"
+                  className={`flex items-center justify-center gap-2 py-2.5 text-sm font-mono transition-colors ${
+                    createForm.source_type === 'repository'
+                      ? 'bg-primary text-foreground font-bold'
+                      : 'bg-muted/50 text-muted-foreground hover:bg-muted'
+                  }`}
+                  onClick={() => setCreateForm({ ...createForm, source_type: 'repository' })}
+                >
+                  <GitBranch className="w-4 h-4" />
+                  仓库地址
+                </button>
+                <button
+                  type="button"
+                  className={`flex items-center justify-center gap-2 py-2.5 text-sm font-mono transition-colors ${
+                    createForm.source_type === 'zip'
+                      ? 'bg-primary text-foreground font-bold'
+                      : 'bg-muted/50 text-muted-foreground hover:bg-muted'
+                  }`}
+                  onClick={() => setCreateForm({ ...createForm, source_type: 'zip' })}
+                >
+                  <Upload className="w-4 h-4" />
+                  本地上传
+                </button>
+              </div>
+            </div>
+
+            {/* 仓库地址表单 */}
+            {createForm.source_type === 'repository' && (
+              <div className="px-6 py-5 space-y-4 border-b border-border">
+                <h3 className="text-xs font-mono font-bold uppercase text-muted-foreground tracking-widest">仓库配置</h3>
+                <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-1.5">
-                    <Label htmlFor="name" className="font-mono font-bold uppercase text-xs text-muted-foreground">项目名称 *</Label>
+                    <Label htmlFor="repository_url" className="text-sm text-foreground">仓库地址</Label>
                     <Input
-                      id="name"
-                      value={createForm.name}
-                      onChange={(e) => setCreateForm({ ...createForm, name: e.target.value })}
-                      placeholder="输入项目名称"
+                      id="repository_url"
+                      value={createForm.repository_url}
+                      onChange={(e) => setCreateForm({ ...createForm, repository_url: e.target.value })}
+                      placeholder={
+                        createForm.repository_type === 'other'
+                          ? "git@github.com:user/repo.git"
+                          : "https://github.com/user/repo"
+                      }
                       className="cyber-input"
                     />
                   </div>
                   <div className="space-y-1.5">
-                    <Label htmlFor="repository_type" className="font-mono font-bold uppercase text-xs text-muted-foreground">认证类型</Label>
+                    <Label htmlFor="repository_type" className="text-sm text-foreground">仓库类型</Label>
                     <Select
                       value={createForm.repository_type}
                       onValueChange={(value: any) => setCreateForm({ ...createForm, repository_type: value })}
@@ -470,257 +509,171 @@ export default function Projects() {
                     </Select>
                   </div>
                 </div>
-
+                {createForm.repository_type === 'other' && (
+                  <p className="text-xs text-muted-foreground">
+                    SSH Key 认证请使用 git@ 格式的 SSH URL
+                  </p>
+                )}
                 <div className="space-y-1.5">
-                  <Label htmlFor="description" className="font-mono font-bold uppercase text-xs text-muted-foreground">描述</Label>
-                  <Textarea
-                    id="description"
-                    value={createForm.description}
-                    onChange={(e) => setCreateForm({ ...createForm, description: e.target.value })}
-                    placeholder="// 项目描述..."
-                    rows={3}
-                    className="cyber-input min-h-[80px]"
-                  />
-                </div>
-
-                <div className="grid grid-cols-2 gap-5">
-                  <div className="space-y-1.5">
-                    <Label htmlFor="repository_url" className="font-mono font-bold uppercase text-xs text-muted-foreground">仓库地址</Label>
-                    <Input
-                      id="repository_url"
-                      value={createForm.repository_url}
-                      onChange={(e) => setCreateForm({ ...createForm, repository_url: e.target.value })}
-                      placeholder={
-                        createForm.repository_type === 'other'
-                          ? "git@github.com:user/repo.git"
-                          : "https://github.com/user/repo"
-                      }
-                      className="cyber-input"
-                    />
-                    {createForm.repository_type === 'other' && (
-                      <p className="text-xs text-muted-foreground font-mono">
-                        💡 SSH Key认证请使用 git@ 格式的SSH URL
-                      </p>
-                    )}
-                    {createForm.repository_type === 'svn' && (
-                      <p className="text-xs text-muted-foreground font-mono">
-                        💡 SVN 仓库请使用 http(s):// 或 svn:// 地址，分支通常填写 trunk
-                      </p>
-                    )}
-                    {createForm.repository_type !== 'other' && createForm.repository_type !== 'svn' && (
-                      <p className="text-xs text-muted-foreground font-mono">
-                        💡 Token认证请使用 https:// 格式的URL
-                      </p>
-                    )}
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label htmlFor="default_branch" className="font-mono font-bold uppercase text-xs text-muted-foreground">默认分支</Label>
-                    <Input
-                      id="default_branch"
-                      value={createForm.default_branch}
-                      onChange={(e) => setCreateForm({ ...createForm, default_branch: e.target.value })}
-                      placeholder="main"
-                      className="cyber-input"
-                    />
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label className="font-mono font-bold uppercase text-xs text-muted-foreground">技术栈</Label>
-                  <div className="flex flex-wrap gap-2">
-                    {supportedLanguages.map((lang) => (
-                      <label key={lang} className={`flex items-center space-x-2 px-3 py-1.5 border cursor-pointer transition-all rounded ${createForm.programming_languages.includes(lang)
-                        ? 'border-primary bg-primary/10 text-primary'
-                        : 'border-border hover:border-border text-muted-foreground'
-                        }`}>
-                        <input
-                          type="checkbox"
-                          checked={createForm.programming_languages.includes(lang)}
-                          onChange={(e) => {
-                            if (e.target.checked) {
-                              setCreateForm({
-                                ...createForm,
-                                programming_languages: [...createForm.programming_languages, lang]
-                              });
-                            } else {
-                              setCreateForm({
-                                ...createForm,
-                                programming_languages: createForm.programming_languages.filter(l => l !== lang)
-                              });
-                            }
-                          }}
-                          className="rounded border border-border w-3.5 h-3.5 text-primary focus:ring-0 bg-transparent"
-                        />
-                        <span className="text-xs font-mono font-bold uppercase">{lang}</span>
-                      </label>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="flex justify-end space-x-4 pt-4 border-t border-border">
-                  <Button variant="outline" onClick={() => setShowCreateDialog(false)} className="cyber-btn-outline">
-                    取消
-                  </Button>
-                  <Button onClick={handleCreateProject} className="cyber-btn-primary">
-                    执行创建
-                  </Button>
-                </div>
-              </TabsContent>
-
-              <TabsContent value="upload" className="flex flex-col gap-5 mt-5">
-                <div className="space-y-1.5">
-                  <Label htmlFor="upload-name" className="font-mono font-bold uppercase text-xs text-muted-foreground">项目名称 *</Label>
+                  <Label htmlFor="default_branch" className="text-sm text-foreground">默认分支</Label>
                   <Input
-                    id="upload-name"
-                    value={createForm.name}
-                    onChange={(e) => setCreateForm({ ...createForm, name: e.target.value })}
-                    placeholder="输入项目名称"
+                    id="default_branch"
+                    value={createForm.default_branch}
+                    onChange={(e) => setCreateForm({ ...createForm, default_branch: e.target.value })}
+                    placeholder="main"
                     className="cyber-input"
                   />
                 </div>
+              </div>
+            )}
 
-                <div className="space-y-1.5">
-                  <Label htmlFor="upload-description" className="font-mono font-bold uppercase text-xs text-muted-foreground">描述</Label>
-                  <Textarea
-                    id="upload-description"
-                    value={createForm.description}
-                    onChange={(e) => setCreateForm({ ...createForm, description: e.target.value })}
-                    placeholder="// 项目描述..."
-                    rows={3}
-                    className="cyber-input min-h-[80px]"
-                  />
-                </div>
+            {/* 本地上传表单 */}
+            {createForm.source_type === 'zip' && (
+              <div className="px-6 py-5 space-y-4 border-b border-border">
+                <h3 className="text-xs font-mono font-bold uppercase text-muted-foreground tracking-widest">上传源码</h3>
 
-                <div className="space-y-2">
-                  <Label className="font-mono font-bold uppercase text-xs text-muted-foreground">技术栈</Label>
-                  <div className="flex flex-wrap gap-2">
-                    {supportedLanguages.map((lang) => (
-                      <label key={lang} className={`flex items-center space-x-2 px-3 py-1.5 border cursor-pointer transition-all rounded ${createForm.programming_languages.includes(lang)
-                        ? 'border-primary bg-primary/10 text-primary'
-                        : 'border-border hover:border-border text-muted-foreground'
-                        }`}>
-                        <input
-                          type="checkbox"
-                          checked={createForm.programming_languages.includes(lang)}
-                          onChange={(e) => {
-                            if (e.target.checked) {
-                              setCreateForm({
-                                ...createForm,
-                                programming_languages: [...createForm.programming_languages, lang]
-                              });
-                            } else {
+                {!selectedFile ? (
+                  <div
+                    className="border border-dashed border-border rounded-md p-8 text-center hover:border-primary/50 hover:bg-primary/5 transition-colors cursor-pointer"
+                    onClick={() => fileInputRef.current?.click()}
+                  >
+                    <Upload className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
+                    <p className="text-sm text-muted-foreground">点击选择文件，最大支持4GB</p>
+                    <p className="text-xs text-muted-foreground/50 mt-1">.zip .rar .7z .tar .gz .tgz .tar.gz</p>
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept=".zip,.rar,.7z,.tar,.gz,.tgz,.tar.gz"
+                      onChange={handleFileSelect}
+                      className="hidden"
+                      disabled={uploading}
+                    />
+                  </div>
+                ) : (
+                  <div className="border border-border rounded-md p-3 flex items-center justify-between">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="w-9 h-9 bg-primary/10 border border-primary/20 rounded flex items-center justify-center flex-shrink-0">
+                        <FileText className="w-4 h-4 text-primary" />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium truncate">{selectedFile.name}</p>
+                        <p className="text-xs text-muted-foreground">{(selectedFile.size / 1024 / 1024).toFixed(2)} MB</p>
+                      </div>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => setSelectedFile(null)}
+                      disabled={uploading}
+                      className="h-8 w-8 hover:bg-destructive/10 hover:text-destructive flex-shrink-0"
+                    >
+                      <X className="w-4 h-4" />
+                    </Button>
+                  </div>
+                )}
+
+                {uploading && (
+                  <div className="space-y-1.5">
+                    <div className="flex items-center justify-between text-xs text-muted-foreground">
+                      <span>{uploadProgress >= 100 ? '上传完成，处理中...' : '上传中...'}</span>
+                      <span className="text-primary font-bold">{uploadProgress}%</span>
+                    </div>
+                    <Progress value={uploadProgress} className="h-1.5 bg-muted [&>div]:bg-primary" />
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* 技术栈区 - 公共 */}
+            <div className="px-6 py-5 space-y-4">
+              <h3 className="text-xs font-mono font-bold uppercase text-muted-foreground tracking-widest">技术栈</h3>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <div className="cyber-input flex items-center justify-between cursor-pointer min-h-[36px] px-3 py-1.5 gap-1">
+                    <div className="flex items-center gap-1 flex-wrap flex-1 min-w-0">
+                      {createForm.programming_languages.length === 0 ? (
+                        <span className="text-sm text-muted-foreground">选择技术栈</span>
+                      ) : (
+                        createForm.programming_languages.map((lang) => (
+                          <Badge
+                            key={lang}
+                            className="bg-primary/10 text-primary border border-primary/20 px-1.5 py-0 text-xs font-mono leading-5 hover:bg-primary/20 cursor-pointer"
+                            onClick={(e) => {
+                              e.stopPropagation();
                               setCreateForm({
                                 ...createForm,
                                 programming_languages: createForm.programming_languages.filter(l => l !== lang)
                               });
-                            }
-                          }}
-                          className="rounded border border-border w-3.5 h-3.5 text-primary focus:ring-0 bg-transparent"
-                        />
-                        <span className="text-xs font-mono font-bold uppercase">{lang}</span>
-                      </label>
-                    ))}
+                            }}
+                          >
+                            {lang}
+                            <X className="w-3 h-3 ml-0.5" />
+                          </Badge>
+                        ))
+                      )}
+                    </div>
+                    <ChevronDown className="w-4 h-4 text-muted-foreground flex-shrink-0" />
                   </div>
-                </div>
-
-                <div className="space-y-4">
-                  <Label className="font-mono font-bold uppercase text-xs text-muted-foreground">源代码</Label>
-
-                  {!selectedFile ? (
-                    <div
-                      className="border border-dashed border-border bg-muted/50 rounded p-6 text-center hover:bg-muted hover:border-border transition-colors cursor-pointer group"
-                      onClick={() => fileInputRef.current?.click()}
+                </PopoverTrigger>
+                <PopoverContent className="w-[260px] p-1 cyber-dialog border-border" align="start">
+                  {createForm.programming_languages.length > 0 && (
+                    <button
+                      className="w-full text-left px-3 py-1.5 text-xs text-destructive hover:bg-destructive/10 rounded font-mono"
+                      onClick={() => setCreateForm({ ...createForm, programming_languages: [] })}
                     >
-                      <Upload className="w-10 h-10 text-muted-foreground mx-auto mb-3 group-hover:text-primary transition-colors" />
-                      <h3 className="text-base font-bold text-foreground uppercase mb-1">上传源码归档</h3>
-                      <p className="text-xs font-mono text-muted-foreground mb-3">
-                        最大: 2GB // 格式: .zip .rar .7z .tar .gz .tgz .tar.gz
-                      </p>
-                      <input
-                        ref={fileInputRef}
-                        type="file"
-                        accept=".zip,.rar,.7z,.tar,.gz,.tgz,.tar.gz"
-                        onChange={handleFileSelect}
-                        className="hidden"
-                        disabled={uploading}
-                      />
-                      <Button
-                        type="button"
-                        variant="outline"
-                        className="cyber-btn-outline h-8 text-xs"
-                        disabled={uploading || !createForm.name.trim()}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          fileInputRef.current?.click();
+                      清除全部
+                    </button>
+                  )}
+                  {supportedLanguages.map((lang) => {
+                    const isSelected = createForm.programming_languages.includes(lang);
+                    return (
+                      <div
+                        key={lang}
+                        className={`flex items-center gap-2 px-3 py-1.5 rounded cursor-pointer text-sm ${
+                          isSelected
+                            ? 'bg-primary/10 text-primary'
+                            : 'hover:bg-muted text-foreground'
+                        }`}
+                        onClick={() => {
+                          if (isSelected) {
+                            setCreateForm({
+                              ...createForm,
+                              programming_languages: createForm.programming_languages.filter(l => l !== lang)
+                            });
+                          } else {
+                            setCreateForm({
+                              ...createForm,
+                              programming_languages: [...createForm.programming_languages, lang]
+                            });
+                          }
                         }}
                       >
-                        <FileText className="w-3 h-3 mr-2" />
-                        选择文件
-                      </Button>
-                    </div>
-                  ) : (
-                    <div className="border border-border bg-muted/50 p-4 flex items-center justify-between rounded">
-                      <div className="flex items-center space-x-3 overflow-hidden">
-                        <div className="w-10 h-10 bg-muted border border-border rounded flex items-center justify-center flex-shrink-0">
-                          <FileText className="w-5 h-5 text-primary" />
+                        <div className={`w-3.5 h-3.5 border rounded-sm flex items-center justify-center flex-shrink-0 ${
+                          isSelected ? 'bg-primary border-primary' : 'border-border'
+                        }`}>
+                          {isSelected && <CheckCircle className="w-3 h-3 text-foreground" />}
                         </div>
-                        <div className="min-w-0">
-                          <p className="font-mono font-bold text-sm text-foreground truncate">{selectedFile.name}</p>
-                          <p className="font-mono text-xs text-muted-foreground">{(selectedFile.size / 1024 / 1024).toFixed(2)} MB</p>
-                        </div>
+                        <span className="font-mono text-xs">{lang}</span>
                       </div>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => setSelectedFile(null)}
-                        disabled={uploading}
-                        className="hover:bg-destructive/8 hover:text-destructive"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
-                    </div>
-                  )}
+                    );
+                  })}
+                </PopoverContent>
+              </Popover>
+            </div>
+          </div>
 
-                  {uploading && (
-                    <div className="space-y-1.5">
-                      <div className="flex items-center justify-between text-xs font-mono text-muted-foreground">
-                        <span>{uploadProgress >= 100 ? '上传完成，处理中...' : '上传中...'}</span>
-                        <span className="text-primary">{uploadProgress}%</span>
-                      </div>
-                      <Progress value={uploadProgress} className="h-2 bg-muted [&>div]:bg-primary" />
-                    </div>
-                  )}
-
-                  <div className="bg-warning/8 border border-warning/25 p-3 rounded">
-                    <div className="flex items-start space-x-3">
-                      <AlertCircle className="w-4 h-4 text-warning mt-0.5" />
-                      <div className="text-xs font-mono text-warning">
-                        <p className="font-bold mb-1 uppercase">上传协议:</p>
-                        <ul className="space-y-0.5 list-disc list-inside text-warning/80">
-                          <li>确保完整的项目代码</li>
-                          <li>移除 node_modules 等依赖目录</li>
-                          <li>包含必要的配置文件</li>
-                          <li>支持 zip、rar、7z、tar、gz 等归档格式</li>
-                        </ul>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="flex justify-end space-x-4 pt-4 border-t border-border mt-auto">
-                  <Button variant="outline" onClick={() => setShowCreateDialog(false)} disabled={uploading} className="cyber-btn-outline">
-                    取消
-                  </Button>
-                  <Button
-                    onClick={handleUploadAndCreate}
-                    className="cyber-btn-primary"
-                    disabled={!selectedFile || uploading}
-                  >
-                    {uploading ? '上传中...' : '执行创建'}
-                  </Button>
-                </div>
-              </TabsContent>
-            </Tabs>
+          {/* Footer */}
+          <div className="flex-shrink-0 flex justify-end gap-3 px-6 py-4 border-t border-border bg-background">
+            <Button variant="outline" onClick={() => setShowCreateDialog(false)} disabled={uploading} className="cyber-btn-outline">
+              取消
+            </Button>
+            <Button
+              onClick={createForm.source_type === 'zip' ? handleUploadAndCreate : handleCreateProject}
+              className="cyber-btn-primary"
+              disabled={createForm.source_type === 'zip' ? (!selectedFile || uploading) : false}
+            >
+              {uploading ? '上传中...' : '执行创建'}
+            </Button>
           </div>
         </SheetContent>
       </Sheet>
@@ -920,11 +873,6 @@ export default function Projects() {
                   {editForm.repository_type === 'other' && (
                     <p className="text-xs text-muted-foreground font-mono mt-1">
                       💡 SSH Key认证请使用 git@ 格式的SSH URL
-                    </p>
-                  )}
-                  {editForm.repository_type === 'svn' && (
-                    <p className="text-xs text-muted-foreground font-mono mt-1">
-                      💡 SVN 仓库请使用 http(s):// 或 svn:// 地址，分支通常填写 trunk
                     </p>
                   )}
                   {editForm.repository_type !== 'other' && editForm.repository_type !== 'svn' && (

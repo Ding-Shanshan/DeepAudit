@@ -20,7 +20,6 @@ import {
   Calendar,
   GitBranch,
   Bug,
-  Download,
   Code,
   Lightbulb,
   Info,
@@ -36,7 +35,6 @@ import {
 import { api } from "@/shared/config/database";
 import type { AuditTask, AuditIssue } from "@/shared/types";
 import { toast } from "sonner";
-import ExportReportDialog from "@/components/reports/ExportReportDialog";
 import { calculateTaskProgress } from "@/shared/utils/utils";
 
 // AI explanation parser
@@ -58,12 +56,13 @@ function parseAIExplanation(aiExplanation: string) {
 // Issues Table Component
 function IssuesTable({ issues, onStatusChange }: { issues: AuditIssue[]; onStatusChange?: (issue: AuditIssue, newStatus: string) => void }) {
   const getSeverityBadge = (severity: string) => {
+    const baseClass = "font-bold uppercase px-2 py-1 rounded text-xs inline-flex justify-center min-w-[56px] text-center";
     switch (severity) {
-      case 'critical': return <Badge className="severity-critical font-bold uppercase px-2 py-1 rounded text-xs">严重</Badge>;
-      case 'high': return <Badge className="severity-high font-bold uppercase px-2 py-1 rounded text-xs">高</Badge>;
-      case 'medium': return <Badge className="severity-medium font-bold uppercase px-2 py-1 rounded text-xs">中等</Badge>;
-      case 'low': return <Badge className="severity-low font-bold uppercase px-2 py-1 rounded text-xs">低</Badge>;
-      default: return <Badge className="severity-info font-bold uppercase px-2 py-1 rounded text-xs">信息</Badge>;
+      case 'critical': return <Badge className={`severity-critical ${baseClass}`}>严重</Badge>;
+      case 'high': return <Badge className={`severity-high ${baseClass}`}>高</Badge>;
+      case 'medium': return <Badge className={`severity-medium ${baseClass}`}>中</Badge>;
+      case 'low': return <Badge className={`severity-low ${baseClass}`}>低</Badge>;
+      default: return <Badge className={`severity-info ${baseClass}`}>信息</Badge>;
     }
   };
 
@@ -173,8 +172,7 @@ export default function TaskDetail() {
   const [task, setTask] = useState<AuditTask | null>(null);
   const [issues, setIssues] = useState<AuditIssue[]>([]);
   const [loading, setLoading] = useState(true);
-  const [exportDialogOpen, setExportDialogOpen] = useState(false);
-  const [cancelling, setCancelling] = useState(false);
+    const [cancelling, setCancelling] = useState(false);
     const [nameFilter, setNameFilter] = useState("");
   const [severityFilter, setSeverityFilter] = useState<string>("all");
   const [statusFilter, setStatusFilter] = useState<string>("all");
@@ -388,17 +386,7 @@ export default function TaskDetail() {
             </Button>
           )}
 
-          {task.status === 'completed' && (
-            <Button
-              size="sm"
-              className="cyber-btn-primary h-10"
-              onClick={() => setExportDialogOpen(true)}
-            >
-              <Download className="w-4 h-4 mr-2" />
-              导出报告
-            </Button>
-          )}
-        </div>
+                  </div>
       </div>
 
       {/* 任务信息 */}
@@ -548,15 +536,6 @@ export default function TaskDetail() {
         <IssuesTable issues={filteredIssues} onStatusChange={handleIssueStatusChange} />
       </div>
 
-      {/* Export Report Dialog */}
-      {task && (
-        <ExportReportDialog
-          open={exportDialogOpen}
-          onOpenChange={setExportDialogOpen}
-          task={task}
-          issues={issues}
-        />
-      )}
-    </div>
+          </div>
   );
 }

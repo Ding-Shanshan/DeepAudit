@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { FileText, Activity } from "lucide-react";
+import { FileText, FolderOpen } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -71,9 +71,9 @@ export function ProjectTasksTab(props: {
         </div>
       ) : (
         <div className="p-12 text-center">
-          <Activity className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
+          <FolderOpen className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
           <h3 className="text-lg font-bold text-foreground mb-2 uppercase">暂无审计任务</h3>
-          <p className="text-sm text-muted-foreground mb-6 font-mono">创建第一个审计任务开始代码质量分析</p>
+          <p className="text-sm text-muted-foreground mb-6 font-mono">该项目尚未创建审计任务</p>
         </div>
       )}
     </div>
