@@ -1,6 +1,5 @@
 /**
  * Agent 审计任务创建侧边栏
- * 表单分割线式布局
  */
 
 import { useState, useEffect, useMemo } from "react";
@@ -10,18 +9,12 @@ import {
   SheetContent,
   SheetHeader,
   SheetTitle,
-  SheetDescription,
 } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@/components/ui/collapsible";
 import {
   Select,
   SelectContent,
@@ -31,13 +24,10 @@ import {
 } from "@/components/ui/select";
 import { BranchSelector } from "@/components/ui/branch-selector";
 import {
-  ChevronDown,
   GitBranch,
   Package,
   Globe,
   Loader2,
-  Bot,
-  Settings,
   Play,
   Upload,
   FolderSync,
@@ -67,16 +57,6 @@ const DEFAULT_EXCLUDES = [
   "*.log",
 ];
 
-// 区块标题组件
-function SectionTitle({ icon, title }: { icon: React.ReactNode; title: string }) {
-  return (
-    <div className="flex items-center gap-2 pb-2">
-      <span className="text-muted-foreground">{icon}</span>
-      <span className="text-sm font-semibold">{title}</span>
-    </div>
-  );
-}
-
 export default function CreateAgentTaskDialog({
   open,
   onOpenChange,
@@ -92,7 +72,6 @@ export default function CreateAgentTaskDialog({
   const [branches, setBranches] = useState<string[]>([]);
   const [loadingBranches, setLoadingBranches] = useState(false);
   const [excludePatterns, setExcludePatterns] = useState(DEFAULT_EXCLUDES);
-  const [showAdvanced, setShowAdvanced] = useState(false);
   const [creating, setCreating] = useState(false);
   const [scheduleEnabled, setScheduleEnabled] = useState(false);
   const [scheduleIntervalMinutes, setScheduleIntervalMinutes] = useState("1440");
@@ -102,7 +81,6 @@ export default function CreateAgentTaskDialog({
   // ZIP 文件状态
   const [zipFile, setZipFile] = useState<File | null>(null);
   const [storedZipInfo, setStoredZipInfo] = useState<ZipFileMeta | null>(null);
-  const [useStoredZip, setUseStoredZip] = useState(true);
 
   // 文件选择状态
   const [selectedFiles, setSelectedFiles] = useState<string[] | undefined>();
@@ -128,7 +106,6 @@ export default function CreateAgentTaskDialog({
       setTaskName("");
       setBranch("main");
       setExcludePatterns(DEFAULT_EXCLUDES);
-      setShowAdvanced(false);
       setZipFile(null);
       setStoredZipInfo(null);
       setSelectedFiles(undefined);
@@ -183,7 +160,6 @@ export default function CreateAgentTaskDialog({
       try {
         const info = await getZipFileInfo(selectedProject.id);
         setStoredZipInfo(info);
-        setUseStoredZip(info.has_file);
       } catch {
         setStoredZipInfo(null);
       }
@@ -197,10 +173,10 @@ export default function CreateAgentTaskDialog({
     if (!selectedProject) return false;
     if (!taskName.trim()) return false;
     if (isZipProject(selectedProject)) {
-      return (useStoredZip && storedZipInfo?.has_file) || !!zipFile;
+      return storedZipInfo?.has_file || !!zipFile;
     }
     return !!selectedProject.repository_url && !!branch.trim();
-  }, [selectedProject, taskName, useStoredZip, storedZipInfo, zipFile, branch]);
+  }, [selectedProject, taskName, storedZipInfo, zipFile, branch]);
 
   // 创建任务
   const handleCreate = async () => {
@@ -281,7 +257,6 @@ export default function CreateAgentTaskDialog({
         return;
       }
       setZipFile(file);
-      setUseStoredZip(false);
     }
   };
 
@@ -290,95 +265,83 @@ export default function CreateAgentTaskDialog({
       <Sheet open={open} onOpenChange={onOpenChange}>
         <SheetContent side="right" className="!w-[min(90vw,480px)] !max-w-none flex flex-col p-0 gap-0 bg-background">
           {/* Header */}
-          <SheetHeader className="px-6 py-5 flex-shrink-0">
+          <SheetHeader className="px-6 py-4 flex-shrink-0">
             <SheetTitle className="flex items-center gap-3 text-lg">
-              <div className="p-2.5 rounded-lg bg-primary/10 border border-primary/20">
+              <div className="p-2 rounded-lg bg-primary/10 border border-primary/20">
                 <Sparkles className="w-5 h-5 text-primary" />
               </div>
               新建深度审计任务
             </SheetTitle>
-            <SheetDescription className="text-sm text-muted-foreground mt-1 pl-11">
-              AI 驱动的智能代码安全分析
-            </SheetDescription>
           </SheetHeader>
 
           {/* 内容区 */}
-          <div className="flex-1 overflow-y-auto">
-            {/* 基础配置区块 */}
-            <div className="px-6 pb-4">
-              <SectionTitle icon={<Sparkles className="w-4 h-4" />} title="基础配置" />
-              <div className="space-y-3">
-                {/* 任务名称 */}
-                <div className="space-y-1">
-                  <Label className="text-xs text-muted-foreground">任务名称</Label>
-                  <Input
-                    placeholder="为本次审计任务命名..."
-                    value={taskName}
-                    onChange={(e) => setTaskName(e.target.value)}
-                    className="h-10"
-                  />
-                </div>
-
-                {/* 选择项目 */}
-                <div className="space-y-1">
-                  <Label className="text-xs text-muted-foreground">目标项目</Label>
-                  <Select
-                    value={selectedProjectId}
-                    onValueChange={setSelectedProjectId}
-                    disabled={loadingProjects}
-                  >
-                    <SelectTrigger className="h-10">
-                      {loadingProjects ? (
-                        <div className="flex items-center gap-2">
-                          <Loader2 className="w-4 h-4 animate-spin" />
-                          <span className="text-muted-foreground">加载项目...</span>
-                        </div>
-                      ) : (
-                        <SelectValue placeholder="选择要审计的项目" />
-                      )}
-                    </SelectTrigger>
-                    <SelectContent className="max-h-[240px]">
-                      {projects.length === 0 ? (
-                        <div className="py-8 text-center text-muted-foreground text-sm">
-                          <Package className="w-5 h-5 mx-auto mb-2 opacity-50" />
-                          暂无可用项目
-                        </div>
-                      ) : (
-                        projects.map((project) => (
-                          <SelectItem key={project.id} value={project.id}>
-                            <div className="flex items-center gap-2.5">
-                              {isRepositoryProject(project) ? (
-                                <Globe className="w-4 h-4 opacity-60" />
-                              ) : (
-                                <Package className="w-4 h-4 opacity-60" />
-                              )}
-                              <span className="font-medium">{project.name}</span>
-                              <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
-                                {isRepositoryProject(project) ? "Git" : "ZIP"}
-                              </Badge>
-                            </div>
-                          </SelectItem>
-                        ))
-                      )}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
+          <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
+            {/* 任务名称 */}
+            <div className="space-y-1.5">
+              <Label className="text-xs text-muted-foreground">任务名称</Label>
+              <Input
+                placeholder="为本次审计任务命名..."
+                value={taskName}
+                onChange={(e) => setTaskName(e.target.value)}
+                className="h-10"
+              />
             </div>
 
-            {/* 分割线 */}
-            <div className="h-px bg-border mx-6" />
+            {/* 选择项目 */}
+            <div className="space-y-1.5">
+              <Label className="text-xs text-muted-foreground">目标项目</Label>
+              <Select
+                value={selectedProjectId}
+                onValueChange={setSelectedProjectId}
+                disabled={loadingProjects}
+              >
+                <SelectTrigger className="h-10">
+                  {loadingProjects ? (
+                    <div className="flex items-center gap-2">
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <span className="text-muted-foreground">加载项目...</span>
+                    </div>
+                  ) : (
+                    <SelectValue placeholder="选择要审计的项目" />
+                  )}
+                </SelectTrigger>
+                <SelectContent className="max-h-[240px]">
+                  {projects.length === 0 ? (
+                    <div className="py-8 text-center text-muted-foreground text-sm">
+                      <Package className="w-5 h-5 mx-auto mb-2 opacity-50" />
+                      暂无可用项目
+                    </div>
+                  ) : (
+                    projects.map((project) => (
+                      <SelectItem key={project.id} value={project.id}>
+                        <div className="flex items-center gap-2.5">
+                          {isRepositoryProject(project) ? (
+                            <Globe className="w-4 h-4 opacity-60" />
+                          ) : (
+                            <Package className="w-4 h-4 opacity-60" />
+                          )}
+                          <span className="font-medium">{project.name}</span>
+                          <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
+                            {isRepositoryProject(project) ? "Git" : "ZIP"}
+                          </Badge>
+                        </div>
+                      </SelectItem>
+                    ))
+                  )}
+                </SelectContent>
+              </Select>
+            </div>
 
-            {/* 项目配置区块（选择项目后显示） */}
+            {/* 项目配置（选择项目后显示） */}
             {selectedProject && (
-              <div className="px-6 py-4">
-                <SectionTitle icon={<FolderSync className="w-4 h-4" />} title="项目配置" />
+              <>
+                <div className="h-px bg-border" />
 
                 {/* 仓库项目：分支选择 */}
                 {isRepositoryProject(selectedProject) && (
-                  <div className="flex items-center gap-3 h-10">
+                  <div className="flex items-center gap-3">
                     <GitBranch className="w-4 h-4 text-muted-foreground" />
-                    <Label className="text-xs text-muted-foreground w-14">分支</Label>
+                    <Label className="text-xs text-muted-foreground w-12">分支</Label>
                     {loadingBranches ? (
                       <div className="flex items-center gap-2 flex-1">
                         <Loader2 className="w-4 h-4 animate-spin" />
@@ -396,156 +359,104 @@ export default function CreateAgentTaskDialog({
                   </div>
                 )}
 
-                {/* ZIP 项目：文件选择 */}
+                {/* ZIP 项目：文件显示 + 更换 */}
                 {isZipProject(selectedProject) && (
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                      <Package className="w-4 h-4" />
-                      <span>ZIP 文件来源</span>
-                    </div>
-
-                    {storedZipInfo?.has_file && (
-                      <div
-                        className={`flex items-center gap-3 h-10 px-3 rounded-lg border cursor-pointer transition-all ${
-                          useStoredZip
-                            ? 'border-primary/50 bg-primary/5 ring-1 ring-primary/20'
-                            : 'border-border hover:bg-muted/50'
-                        }`}
-                        onClick={() => setUseStoredZip(true)}
-                      >
-                        <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${
-                          useStoredZip ? 'border-primary bg-primary' : 'border-border'
-                        }`}>
-                          {useStoredZip && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
-                        </div>
-                        <span className="text-sm flex-1 truncate">{storedZipInfo.original_filename}</span>
-                        <Badge variant="outline" className="text-xs">已存储</Badge>
-                      </div>
-                    )}
-
-                    <div
-                      className={`flex items-center gap-3 h-10 px-3 rounded-lg border cursor-pointer transition-all ${
-                        !useStoredZip && zipFile
-                          ? 'border-primary/50 bg-primary/5 ring-1 ring-primary/20'
-                          : 'border-border hover:bg-muted/50'
-                      }`}
-                    >
-                      <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${
-                        !useStoredZip && zipFile ? 'border-primary bg-primary' : 'border-border'
-                      }`}>
-                        {!useStoredZip && zipFile && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
-                      </div>
-                      <Upload className="w-4 h-4 text-muted-foreground" />
-                      <label className="text-sm text-muted-foreground flex-1 cursor-pointer">
-                        {zipFile ? zipFile.name : "上传新 ZIP 文件"}
+                  <div className="flex items-center gap-3 h-10 px-3 rounded-lg border border-border bg-muted/30">
+                    <Package className="w-4 h-4 text-muted-foreground" />
+                    <span className="text-sm flex-1 truncate">
+                      {zipFile ? zipFile.name : storedZipInfo?.original_filename || "未选择文件"}
+                    </span>
+                    <label className="cursor-pointer">
+                      <Badge variant="outline" className="text-xs hover:bg-primary/10 cursor-pointer">
+                        <Upload className="w-3 h-3 mr-1" />
+                        更换文件
                         <input
                           type="file"
                           accept=".zip"
                           onChange={handleFileChange}
                           className="hidden"
                         />
-                      </label>
-                    </div>
+                      </Badge>
+                    </label>
                   </div>
                 )}
-              </div>
-            )}
 
-            {/* 分割线 */}
-            {selectedProject && <div className="h-px bg-border mx-6" />}
+                <div className="h-px bg-border" />
 
-            {/* 高级选项区块 */}
-            {selectedProject && (
-              <Collapsible open={showAdvanced} onOpenChange={setShowAdvanced} className="px-6 py-4">
-                <CollapsibleTrigger className="w-full group">
-                  <div className={`flex items-center justify-between p-3 rounded-lg border transition-all ${
-                    showAdvanced
-                      ? 'border-primary/30 bg-primary/5'
-                      : 'border-border hover:border-primary/20 hover:bg-muted/30'
-                  }`}>
-                    <div className="flex items-center gap-2.5">
-                      <Settings className="w-4 h-4 text-muted-foreground" />
-                      <span className="text-sm font-medium">高级选项</span>
-                      <Badge variant="secondary" className="text-[10px] px-1.5 py-0">可选</Badge>
-                    </div>
-                    <ChevronDown className={`w-4 h-4 text-muted-foreground transition-transform duration-200 ${
-                      showAdvanced ? 'rotate-180' : ''
-                    }`} />
-                  </div>
-                </CollapsibleTrigger>
+                {/* 扫描配置 */}
+                <div className="space-y-3">
+                  <Label className="text-xs text-muted-foreground">扫描配置</Label>
 
-                <CollapsibleContent className="pt-4 space-y-4">
-                  {/* 扫描范围 */}
-                  <div className="flex items-center justify-between p-3 rounded-lg border border-border bg-muted/20">
-                    <div className="flex items-center gap-2.5">
-                      <FolderSync className="w-4 h-4 text-muted-foreground" />
-                      <div>
-                        <span className="text-xs text-muted-foreground">扫描范围</span>
-                        <p className="text-sm font-medium mt-0.5">
-                          {selectedFiles ? `已选 ${selectedFiles.length} 个文件` : "全部文件"}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex gap-2">
-                      {selectedFiles && (
+                  {/* 扫描范围 + 排除模式 */}
+                  <div className="p-3 rounded-lg border border-border bg-muted/20 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm">
+                        {selectedFiles ? `已选 ${selectedFiles.length} 个文件` : "全部文件"}
+                      </span>
+                      <div className="flex gap-2">
+                        {selectedFiles && (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => setSelectedFiles(undefined)}
+                            className="h-7 text-xs text-destructive hover:text-destructive"
+                          >
+                            重置
+                          </Button>
+                        )}
                         <Button
                           size="sm"
-                          variant="ghost"
-                          onClick={() => setSelectedFiles(undefined)}
-                          className="h-8 text-xs text-destructive hover:text-destructive"
-                        >
-                          重置
-                        </Button>
-                      )}
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => setShowFileSelection(true)}
-                        disabled={!isRepositoryProject(selectedProject) && !(isZipProject(selectedProject) && useStoredZip && storedZipInfo?.has_file)}
-                        className="h-8 text-xs"
-                      >
-                        选择
-                      </Button>
-                    </div>
-                  </div>
-
-                  {/* 排除模式 */}
-                  <div className="p-3 rounded-lg border border-border bg-muted/20 space-y-2">
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs text-muted-foreground">排除模式</span>
-                      <button
-                        type="button"
-                        onClick={() => setExcludePatterns(DEFAULT_EXCLUDES)}
-                        className="text-xs text-primary hover:text-primary/80"
-                      >
-                        重置默认
-                      </button>
-                    </div>
-                    <div className="flex flex-wrap gap-1.5">
-                      {excludePatterns.map((p) => (
-                        <Badge
-                          key={p}
                           variant="outline"
-                          className="text-xs cursor-pointer hover:bg-destructive/10 hover:text-destructive hover:border-destructive/30 transition-colors"
-                          onClick={() => setExcludePatterns((prev) => prev.filter((x) => x !== p))}
+                          onClick={() => setShowFileSelection(true)}
+                          disabled={!isRepositoryProject(selectedProject) && !(isZipProject(selectedProject) && storedZipInfo?.has_file)}
+                          className="h-7 text-xs"
                         >
-                          {p} ×
-                        </Badge>
-                      ))}
+                          <FolderSync className="w-3 h-3 mr-1" />
+                          选择文件
+                        </Button>
+                      </div>
                     </div>
-                    <Input
-                      placeholder="输入排除模式后按回车添加..."
-                      className="h-9 text-sm"
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter" && e.currentTarget.value) {
-                          const val = e.currentTarget.value.trim();
-                          if (val && !excludePatterns.includes(val)) {
-                            setExcludePatterns((prev) => [...prev, val]);
+
+                    <div className="h-px bg-border/50" />
+
+                    {/* 排除模式 */}
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs text-muted-foreground">排除模式</span>
+                        <button
+                          type="button"
+                          onClick={() => setExcludePatterns(DEFAULT_EXCLUDES)}
+                          className="text-xs text-primary hover:text-primary/80"
+                        >
+                          重置默认
+                        </button>
+                      </div>
+                      <div className="flex flex-wrap gap-1.5">
+                        {excludePatterns.map((p) => (
+                          <Badge
+                            key={p}
+                            variant="outline"
+                            className="text-xs cursor-pointer hover:bg-destructive/10 hover:text-destructive hover:border-destructive/30 transition-colors"
+                            onClick={() => setExcludePatterns((prev) => prev.filter((x) => x !== p))}
+                          >
+                            {p} ×
+                          </Badge>
+                        ))}
+                      </div>
+                      <Input
+                        placeholder="输入排除模式后按回车添加..."
+                        className="h-9 text-sm"
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" && e.currentTarget.value) {
+                            const val = e.currentTarget.value.trim();
+                            if (val && !excludePatterns.includes(val)) {
+                              setExcludePatterns((prev) => [...prev, val]);
+                            }
+                            e.currentTarget.value = "";
                           }
-                          e.currentTarget.value = "";
-                        }
-                      }}
-                    />
+                        }}
+                      />
+                    </div>
                   </div>
 
                   {/* 定时审计 */}
@@ -553,7 +464,7 @@ export default function CreateAgentTaskDialog({
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2.5">
                         <Clock className="w-4 h-4 text-muted-foreground" />
-                        <span className="text-xs text-muted-foreground">定时审计</span>
+                        <span className="text-sm">定时审计</span>
                       </div>
                       <Switch checked={scheduleEnabled} onCheckedChange={setScheduleEnabled} />
                     </div>
@@ -561,7 +472,7 @@ export default function CreateAgentTaskDialog({
                     {scheduleEnabled && (
                       <div className="mt-3 grid grid-cols-3 gap-3">
                         <div className="space-y-1">
-                          <Label className="text-xs text-muted-foreground">周期</Label>
+                          <Label className="text-xs text-muted-foreground">周期（分钟）</Label>
                           <Input
                             type="number"
                             min="1"
@@ -591,8 +502,8 @@ export default function CreateAgentTaskDialog({
                       </div>
                     )}
                   </div>
-                </CollapsibleContent>
-              </Collapsible>
+                </div>
+              </>
             )}
           </div>
 
