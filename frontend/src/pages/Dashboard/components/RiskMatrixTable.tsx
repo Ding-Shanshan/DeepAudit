@@ -87,14 +87,22 @@ export const RiskMatrixTable = memo(function RiskMatrixTable({
       </div>
 
       <div className="overflow-x-auto">
-        <table className="w-full">
+        <table className="w-full table-fixed">
+          <colgroup>
+            <col className="w-[30%]" />
+            <col className="w-[14%]" />
+            <col className="w-[14%]" />
+            <col className="w-[14%]" />
+            <col className="w-[14%]" />
+            <col className="w-[14%]" />
+          </colgroup>
           <thead>
             <tr className="bg-muted/30 border-b border-border">
-              <th className="text-left py-2 px-3 text-xs font-semibold text-muted-foreground w-[40%]">项目</th>
+              <th className="text-left py-2 px-3 text-xs font-semibold text-muted-foreground">项目</th>
               {SEVERITY_COLUMNS.map((col) => (
-                <th key={col.key} className="text-center py-2 px-2 text-xs font-semibold text-muted-foreground w-[12%]">{col.label}</th>
+                <th key={col.key} className="text-center py-2 px-2 text-xs font-semibold text-muted-foreground">{col.label}</th>
               ))}
-              <th className="text-center py-2 px-2 text-xs font-semibold text-muted-foreground w-[12%]">总计</th>
+              <th className="text-center py-2 px-2 text-xs font-semibold text-muted-foreground">总计</th>
             </tr>
           </thead>
           <tbody>
@@ -103,7 +111,7 @@ export const RiskMatrixTable = memo(function RiskMatrixTable({
                 <td className="py-2 px-3">
                   <Link
                     to={`/projects/${row.projectId}`}
-                    className="font-medium text-sm text-foreground hover:text-primary transition-colors"
+                    className="font-medium text-sm text-foreground hover:text-primary transition-colors truncate block max-w-[200px]"
                   >
                     {row.projectName}
                   </Link>
