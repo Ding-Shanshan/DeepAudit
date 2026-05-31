@@ -40,18 +40,14 @@ export default function Dashboard() {
         getAgentTasks({ limit: 100 }),
       ]);
 
-      // 并发获取已完成任务的 issues/findings
-      const completedAuditTasks = (auditTasks as AuditTask[]).filter(
-        t => t.status === 'completed'
-      );
-      const completedAgentTasks = (agentTasks as AgentTask[]).filter(
-        t => t.status === 'completed'
-      );
+      // 并发获取所有任务的 issues/findings（包括失败的任务）
+      const allAuditTasks = auditTasks as AuditTask[];
+      const allAgentTasks = agentTasks as AgentTask[];
 
-      const auditIssuesPromises = completedAuditTasks.map(task =>
+      const auditIssuesPromises = allAuditTasks.map(task =>
         api.getAuditIssues(task.id).catch(() => [] as AuditIssue[])
       );
-      const agentFindingsPromises = completedAgentTasks.map(task =>
+      const agentFindingsPromises = allAgentTasks.map(task =>
         getAgentFindings(task.id).catch(() => [] as AgentFinding[])
       );
 
