@@ -11,6 +11,7 @@ import Account from "@/pages/Account";
 import AuditRules from "@/pages/AuditRules";
 import PromptManager from "@/pages/PromptManager";
 import ScheduleManager from "@/pages/ScheduleManager";
+import VulnerabilityManager from "@/pages/VulnerabilityManager";
 import { AGENT_AUDIT_ROUTE, CONSOLE_HOME_ROUTE } from "@/shared/constants/branding";
 import type { ReactNode } from "react";
 import { Navigate } from "react-router-dom";
@@ -30,13 +31,13 @@ const routes: RouteConfig[] = [
     visible: false,
   },
   {
-    name: "AI审计",
+    name: "深度审计",
     path: AGENT_AUDIT_ROUTE,
     element: <AgentAudit />,
     visible: false,
   },
   {
-    name: "AI审计任务",
+    name: "深度审计任务",
     path: "/agent-audit/:taskId",
     element: <AgentAudit />,
     visible: false,
@@ -82,6 +83,12 @@ const routes: RouteConfig[] = [
     path: "/audit-rules",
     element: <AuditRules />,
     visible: true,
+  },
+  {
+    name: "漏洞管理",
+    path: "/vulnerabilities",
+    element: <VulnerabilityManager />,
+    visible: false,
   },
   {
     name: "计划任务",

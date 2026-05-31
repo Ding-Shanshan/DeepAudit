@@ -1,25 +1,34 @@
 import { useEffect, useState } from "react";
-import { Database, BookOpen, RefreshCw, Settings, Shield, Terminal, Users } from "lucide-react";
+import { useSearchParams } from "react-router-dom";
+import {
+  KeyRound,
+  Plus,
+  Power,
+  Search,
+  Shield,
+  Trash2,
+} from "lucide-react";
 import { toast } from "sonner";
 
-import { DatabaseManager } from "@/components/database/DatabaseManager";
 import { SystemConfig } from "@/components/system/SystemConfig";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Switch } from "@/components/ui/switch";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Textarea } from "@/components/ui/textarea";
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
 import { apiClient } from "@/shared/api/serverClient";
 import { useAuth } from "@/shared/context/AuthContext";
 
@@ -41,16 +50,6 @@ type UserListResponse = {
   limit: number;
 };
 
-type KnowledgeEntry = {
-  id: string;
-  title: string;
-  category: string;
-  language: string;
-  content: string;
-  is_active: boolean;
-  created_at: string;
-};
-
 const DEFAULT_PASSWORD = "Admin@123456";
 
 function formatDate(value?: string) {
@@ -58,31 +57,42 @@ function formatDate(value?: string) {
   return new Date(value).toLocaleString("zh-CN");
 }
 
+/** Helper: derive display label from role + is_superuser */
+function getRoleLabel(role: string, is_superuser: boolean) {
+  if (is_superuser) return "超级管理员";
+  if (role === "admin") return "普通管理员";
+  return "普通用户";
+}
+
+/** Form role values: member / admin / superadmin */
+type FormRole = "member" | "admin" | "superadmin";
+
+const INITIAL_USER_FORM = {
+  username: "",
+  password: DEFAULT_PASSWORD,
+  email: "",
+  role: "member" as FormRole,
+};
+
 export default function AdminDashboard() {
+  const [searchParams] = useSearchParams();
+  const activeTab = searchParams.get("tab") || "users";
   const { user } = useAuth();
   const isAdmin = user?.role === "admin";
 
   const [loadingUsers, setLoadingUsers] = useState(false);
-  const [loadingKnowledge, setLoadingKnowledge] = useState(false);
-
   const [users, setUsers] = useState<AdminUser[]>([]);
-  const [knowledgeEntries, setKnowledgeEntries] = useState<KnowledgeEntry[]>([]);
 
-  const [userForm, setUserForm] = useState({
-    username: "",
-    full_name: "",
-    password: DEFAULT_PASSWORD,
-    email: "",
-    role: "member",
-    is_superuser: false,
-  });
-  const [knowledgeForm, setKnowledgeForm] = useState({
-    title: "",
-    category: "security",
-    language: "all",
-    content: "",
-    is_active: true,
-  });
+  // Sheet (sidebar) visibility
+  const [showCreateSheet, setShowCreateSheet] = useState(false);
+
+  // User creation form
+  const [userForm, setUserForm] = useState({ ...INITIAL_USER_FORM });
+
+  // Filters
+  const [filterUsername, setFilterUsername] = useState("");
+  const [filterEmail, setFilterEmail] = useState("");
+  const [filterRole, setFilterRole] = useState("all");
 
   const loadUsers = async () => {
     if (!isAdmin) return;
@@ -98,24 +108,9 @@ export default function AdminDashboard() {
     }
   };
 
-  const loadKnowledgeEntries = async () => {
-    if (!isAdmin) return;
-    setLoadingKnowledge(true);
-    try {
-      const response = await apiClient.get<KnowledgeEntry[]>("/knowledge");
-      setKnowledgeEntries(response.data);
-    } catch (error) {
-      console.error("加载知识库失败", error);
-      toast.error("加载知识库失败");
-    } finally {
-      setLoadingKnowledge(false);
-    }
-  };
-
   useEffect(() => {
     if (!isAdmin) return;
     void loadUsers();
-    void loadKnowledgeEntries();
   }, [isAdmin]);
 
   const handleCreateUser = async () => {
@@ -124,24 +119,19 @@ export default function AdminDashboard() {
       return;
     }
     try {
+      const apiRole = userForm.role === "member" ? "member" : "admin";
+      const isSuperuser = userForm.role === "superadmin";
       await apiClient.post("/users/", {
         username: userForm.username,
-        full_name: userForm.full_name || null,
         password: userForm.password,
         email: userForm.email || null,
-        role: userForm.role,
-        is_superuser: userForm.is_superuser,
+        role: apiRole,
+        is_superuser: isSuperuser,
         is_active: true,
       });
       toast.success("用户已创建");
-      setUserForm({
-        username: "",
-        full_name: "",
-        password: DEFAULT_PASSWORD,
-        email: "",
-        role: "member",
-        is_superuser: false,
-      });
+      setUserForm({ ...INITIAL_USER_FORM });
+      setShowCreateSheet(false);
       await loadUsers();
     } catch (error: any) {
       toast.error(error.response?.data?.detail || "创建用户失败");
@@ -160,7 +150,9 @@ export default function AdminDashboard() {
 
   const handleResetPassword = async (target: AdminUser) => {
     try {
-      await apiClient.put(`/users/${target.id}`, { password: DEFAULT_PASSWORD });
+      await apiClient.put(`/users/${target.id}`, {
+        password: DEFAULT_PASSWORD,
+      });
       toast.success(`已将 ${target.username} 的密码重置为 ${DEFAULT_PASSWORD}`);
     } catch (error: any) {
       toast.error(error.response?.data?.detail || "重置密码失败");
@@ -177,46 +169,23 @@ export default function AdminDashboard() {
     }
   };
 
-  const handleCreateKnowledge = async () => {
-    if (!knowledgeForm.title || !knowledgeForm.content) {
-      toast.error("请填写标题和内容");
-      return;
-    }
-    try {
-      await apiClient.post("/knowledge", knowledgeForm);
-      toast.success("知识条目已创建");
-      setKnowledgeForm({
-        title: "",
-        category: "security",
-        language: "all",
-        content: "",
-        is_active: true,
-      });
-      await loadKnowledgeEntries();
-    } catch (error: any) {
-      toast.error(error.response?.data?.detail || "创建知识条目失败");
-    }
-  };
-
-  const handleToggleKnowledge = async (target: KnowledgeEntry) => {
-    try {
-      await apiClient.put(`/knowledge/${target.id}`, { is_active: !target.is_active });
-      toast.success(`知识条目已${target.is_active ? "停用" : "启用"}`);
-      await loadKnowledgeEntries();
-    } catch (error: any) {
-      toast.error(error.response?.data?.detail || "更新知识条目失败");
-    }
-  };
-
-  const handleDeleteKnowledge = async (target: KnowledgeEntry) => {
-    try {
-      await apiClient.delete(`/knowledge/${target.id}`);
-      toast.success("知识条目已删除");
-      await loadKnowledgeEntries();
-    } catch (error: any) {
-      toast.error(error.response?.data?.detail || "删除知识条目失败");
-    }
-  };
+  // Filtered user list
+  const filteredUsers = users.filter((item) => {
+    if (
+      filterUsername &&
+      !item.username.toLowerCase().includes(filterUsername.toLowerCase())
+    )
+      return false;
+    if (
+      filterEmail &&
+      !(item.email || "").toLowerCase().includes(filterEmail.toLowerCase())
+    )
+      return false;
+    if (filterRole === "member" && item.role !== "member") return false;
+    if (filterRole === "admin" && (item.role !== "admin" || item.is_superuser)) return false;
+    if (filterRole === "superadmin" && !item.is_superuser) return false;
+    return true;
+  });
 
   if (!isAdmin) {
     return (
@@ -225,10 +194,12 @@ export default function AdminDashboard() {
         <div className="relative z-10 cyber-card p-8">
           <div className="cyber-card-header">
             <Shield className="w-5 h-5 text-primary" />
-            <h1 className="text-lg font-bold uppercase tracking-wider text-foreground">系统管理</h1>
+            <h1 className="text-lg font-bold uppercase tracking-wider text-foreground">
+              系统管理
+            </h1>
           </div>
           <div className="p-6 text-sm text-muted-foreground">
-            当前账号不是管理员，无法访问用户管理、计划扫描和知识库维护功能。
+            当前账号不是管理员，无法访问系统管理功能。
           </div>
         </div>
       </div>
@@ -239,270 +210,257 @@ export default function AdminDashboard() {
     <div className="space-y-4 px-6 pt-1 pb-6 cyber-bg-elevated min-h-screen font-mono relative">
       <div className="absolute inset-0 cyber-grid-subtle pointer-events-none" />
 
-      <div className="relative z-10">
-        <div className="cyber-card p-0">
-          <div className="cyber-card-header">
-            <Terminal className="w-5 h-5 text-primary" />
-            <h1 className="text-lg font-bold uppercase tracking-wider text-foreground">系统管理</h1>
-          </div>
-          <div className="px-6 py-4 flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
-            <Badge className="cyber-badge-info">本地用户管理</Badge>
-            <Badge className="cyber-badge-success">知识库维护</Badge>
-            <span>当前管理员：{user?.username}</span>
-          </div>
-        </div>
-      </div>
-
-      <Tabs defaultValue="users" className="w-full relative z-10">
-        <TabsList className="grid w-full grid-cols-4 bg-muted border border-border p-1 h-auto gap-1 rounded-lg mb-6">
-          <TabsTrigger value="users" className="data-[state=active]:bg-primary data-[state=active]:text-foreground font-mono font-bold uppercase py-3 text-xs flex items-center gap-2">
-            <Users className="w-4 h-4" />
-            用户
-          </TabsTrigger>
-          <TabsTrigger value="knowledge" className="data-[state=active]:bg-primary data-[state=active]:text-foreground font-mono font-bold uppercase py-3 text-xs flex items-center gap-2">
-            <BookOpen className="w-4 h-4" />
-            知识库
-          </TabsTrigger>
-          <TabsTrigger value="config" className="data-[state=active]:bg-primary data-[state=active]:text-foreground font-mono font-bold uppercase py-3 text-xs flex items-center gap-2">
-            <Settings className="w-4 h-4" />
-            配置
-          </TabsTrigger>
-          <TabsTrigger value="data" className="data-[state=active]:bg-primary data-[state=active]:text-foreground font-mono font-bold uppercase py-3 text-xs flex items-center gap-2">
-            <Database className="w-4 h-4" />
-            数据
-          </TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="users" className="space-y-6">
-          <div className="cyber-card p-5 space-y-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="text-base font-bold text-foreground uppercase">创建本地用户</h3>
-                <p className="text-xs text-muted-foreground mt-1">公开注册已关闭，所有账号由管理员统一创建。</p>
+      {activeTab === "users" && (
+        <div className="relative z-10">
+          <div className="cyber-card p-0">
+            {/* Toolbar: filters + actions (AuditRules style) */}
+            <div className="p-4 flex items-center gap-3 border-b border-border flex-wrap">
+              <div className="relative flex-1 min-w-[140px] max-w-[200px]">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+                <Input
+                  value={filterUsername}
+                  onChange={(e) => setFilterUsername(e.target.value)}
+                  placeholder="搜索用户名"
+                  className="h-8 text-sm !pl-9"
+                />
               </div>
-              <Button variant="outline" className="cyber-btn-outline h-9" onClick={() => void loadUsers()}>
-                <RefreshCw className="w-4 h-4 mr-2" />
-                刷新
-              </Button>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="space-y-2">
-                <Label>用户名</Label>
-                <Input value={userForm.username} onChange={(e) => setUserForm((prev) => ({ ...prev, username: e.target.value }))} className="cyber-input" />
+              <div className="relative flex-1 min-w-[140px] max-w-[200px]">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+                <Input
+                  value={filterEmail}
+                  onChange={(e) => setFilterEmail(e.target.value)}
+                  placeholder="搜索邮箱"
+                  className="h-8 text-sm !pl-9"
+                />
               </div>
-              <div className="space-y-2">
-                <Label>姓名（可选）</Label>
-                <Input value={userForm.full_name} onChange={(e) => setUserForm((prev) => ({ ...prev, full_name: e.target.value }))} className="cyber-input" />
-              </div>
-              <div className="space-y-2">
-                <Label>邮箱（可选）</Label>
-                <Input value={userForm.email} onChange={(e) => setUserForm((prev) => ({ ...prev, email: e.target.value }))} className="cyber-input" />
-              </div>
-              <div className="space-y-2">
-                <Label>初始密码</Label>
-                <Input value={userForm.password} onChange={(e) => setUserForm((prev) => ({ ...prev, password: e.target.value }))} className="cyber-input" />
-              </div>
-              <div className="space-y-2">
-                <Label>角色</Label>
-                <Select value={userForm.role} onValueChange={(value: "admin" | "member") => setUserForm((prev) => ({ ...prev, role: value }))}>
-                  <SelectTrigger className="cyber-input">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent className="cyber-dialog border-border">
-                    <SelectItem value="member">成员</SelectItem>
-                    <SelectItem value="admin">管理员</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label>超级管理员</Label>
-                <div className="h-10 px-3 border border-border rounded-md flex items-center justify-between bg-background">
-                  <span className="text-sm text-muted-foreground">启用系统级权限</span>
-                  <Switch checked={userForm.is_superuser} onCheckedChange={(checked) => setUserForm((prev) => ({ ...prev, is_superuser: checked }))} />
-                </div>
+              <Select value={filterRole} onValueChange={setFilterRole}>
+                <SelectTrigger className="cyber-input h-8 w-[130px] text-sm">
+                  <SelectValue placeholder="角色" />
+                </SelectTrigger>
+                <SelectContent className="cyber-dialog border-border">
+                  <SelectItem value="all">全部角色</SelectItem>
+                  <SelectItem value="member">普通用户</SelectItem>
+                  <SelectItem value="admin">普通管理员</SelectItem>
+                  <SelectItem value="superadmin">超级管理员</SelectItem>
+                </SelectContent>
+              </Select>
+              <div className="ml-auto flex gap-2">
+                <Button
+                  onClick={() => setShowCreateSheet(true)}
+                  className="cyber-btn-primary h-8"
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  创建用户
+                </Button>
               </div>
             </div>
 
-            <div className="flex justify-end">
-              <Button className="cyber-btn-primary" onClick={() => void handleCreateUser()}>
-                创建用户
-              </Button>
-            </div>
-          </div>
-
-          <div className="cyber-card p-5">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-base font-bold text-foreground uppercase">用户列表</h3>
-              <Badge className="cyber-badge-muted">{users.length} 个账户</Badge>
-            </div>
-            <div className="border border-border rounded-lg overflow-hidden">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>用户名</TableHead>
-                    <TableHead>姓名</TableHead>
-                    <TableHead>角色</TableHead>
-                    <TableHead>状态</TableHead>
-                    <TableHead>创建时间</TableHead>
-                    <TableHead className="text-right">操作</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
+            {/* User table (AuditRules flat-table style) */}
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-border text-muted-foreground">
+                    <th className="text-left py-2 px-6 font-medium">用户名</th>
+                    <th className="text-left py-2 px-3 font-medium">角色</th>
+                    <th className="text-left py-2 px-3 font-medium">状态</th>
+                    <th className="text-left py-2 px-3 font-medium">创建时间</th>
+                    <th className="text-left py-2 px-3 font-medium">操作</th>
+                  </tr>
+                </thead>
+                <tbody>
                   {loadingUsers ? (
-                    <TableRow>
-                      <TableCell colSpan={6} className="text-center text-muted-foreground">加载中...</TableCell>
-                    </TableRow>
-                  ) : users.length === 0 ? (
-                    <TableRow>
-                      <TableCell colSpan={6} className="text-center text-muted-foreground">暂无用户</TableCell>
-                    </TableRow>
+                    <tr>
+                      <td
+                        colSpan={5}
+                        className="py-12 text-center text-muted-foreground"
+                      >
+                        加载中...
+                      </td>
+                    </tr>
+                  ) : filteredUsers.length === 0 ? (
+                    <tr>
+                      <td
+                        colSpan={5}
+                        className="py-12 text-center text-muted-foreground"
+                      >
+                        无匹配用户
+                      </td>
+                    </tr>
                   ) : (
-                    users.map((item) => (
-                      <TableRow key={item.id}>
-                        <TableCell className="font-semibold">{item.username}</TableCell>
-                        <TableCell>{item.full_name || "-"}</TableCell>
-                        <TableCell>{item.role === "admin" ? "管理员" : "成员"}</TableCell>
-                        <TableCell>
-                          <Badge className={item.is_active ? "cyber-badge-success" : "cyber-badge-danger"}>
+                    filteredUsers.map((item) => (
+                      <tr
+                        key={item.id}
+                        className="border-b border-border/50 hover:bg-muted/50 transition-colors"
+                      >
+                        <td className="py-2.5 px-6">
+                          <span className="font-medium text-foreground">
+                            {item.username}
+                          </span>
+                        </td>
+                        <td className="py-2.5 px-3">
+                          <Badge className="cyber-badge-muted">
+                            {getRoleLabel(item.role, item.is_superuser)}
+                          </Badge>
+                        </td>
+                        <td className="py-2.5 px-3">
+                          <Badge
+                            className={
+                              item.is_active
+                                ? "cyber-badge-success"
+                                : "cyber-badge-danger"
+                            }
+                          >
                             {item.is_active ? "启用" : "禁用"}
                           </Badge>
-                        </TableCell>
-                        <TableCell>{formatDate(item.created_at)}</TableCell>
-                        <TableCell className="text-right">
-                          <div className="flex justify-end gap-2">
-                            <Button variant="outline" size="sm" className="cyber-btn-outline h-8" onClick={() => void handleResetPassword(item)}>
-                              重置密码
+                        </td>
+                        <td className="py-2.5 px-3 text-muted-foreground">
+                          {formatDate(item.created_at)}
+                        </td>
+                        <td className="py-2.5 px-3">
+                          <div className="flex items-center gap-1">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => void handleResetPassword(item)}
+                              className="h-7 w-7 hover:bg-primary/12 hover:text-primary"
+                              title="重置密码"
+                            >
+                              <KeyRound className="w-3.5 h-3.5" />
                             </Button>
-                            <Button variant="outline" size="sm" className="cyber-btn-outline h-8" onClick={() => void handleToggleUserStatus(item)}>
-                              {item.is_active ? "禁用" : "启用"}
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() =>
+                                void handleToggleUserStatus(item)
+                              }
+                              className={`h-7 w-7 ${item.is_active ? "bg-primary/12 text-primary" : "hover:bg-primary/12 hover:text-primary"}`}
+                              title={item.is_active ? "禁用" : "启用"}
+                            >
+                              <Power className="w-3.5 h-3.5" />
                             </Button>
                             {item.username !== user?.username && (
-                              <Button variant="outline" size="sm" className="cyber-btn-ghost h-8 hover:text-destructive" onClick={() => void handleDeleteUser(item)}>
-                                删除
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => void handleDeleteUser(item)}
+                                className="h-7 w-7 hover:bg-destructive/12 hover:text-destructive"
+                                title="删除"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
                               </Button>
                             )}
                           </div>
-                        </TableCell>
-                      </TableRow>
+                        </td>
+                      </tr>
                     ))
                   )}
-                </TableBody>
-              </Table>
+                </tbody>
+              </table>
             </div>
           </div>
-        </TabsContent>
+        </div>
+      )}
 
-        <TabsContent value="knowledge" className="space-y-6">
-          <div className="cyber-card p-5 space-y-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="text-base font-bold text-foreground uppercase">维护漏洞知识库</h3>
-                <p className="text-xs text-muted-foreground mt-1">供 AI 解释、规则生成和修复建议引用的本地知识条目。</p>
-              </div>
-              <Button variant="outline" className="cyber-btn-outline h-9" onClick={() => void loadKnowledgeEntries()}>
-                <RefreshCw className="w-4 h-4 mr-2" />
-                刷新
-              </Button>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="space-y-2">
-                <Label>标题</Label>
-                <Input value={knowledgeForm.title} onChange={(e) => setKnowledgeForm((prev) => ({ ...prev, title: e.target.value }))} className="cyber-input" />
-              </div>
-              <div className="space-y-2">
-                <Label>分类</Label>
-                <Input value={knowledgeForm.category} onChange={(e) => setKnowledgeForm((prev) => ({ ...prev, category: e.target.value }))} className="cyber-input" />
-              </div>
-              <div className="space-y-2">
-                <Label>语言</Label>
-                <Input value={knowledgeForm.language} onChange={(e) => setKnowledgeForm((prev) => ({ ...prev, language: e.target.value }))} className="cyber-input" />
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label>内容</Label>
-              <Textarea value={knowledgeForm.content} onChange={(e) => setKnowledgeForm((prev) => ({ ...prev, content: e.target.value }))} rows={6} className="cyber-input min-h-[160px]" />
-            </div>
-
-            <div className="h-10 px-3 border border-border rounded-md flex items-center justify-between bg-background">
-              <span className="text-sm text-muted-foreground">创建后立即启用</span>
-              <Switch checked={knowledgeForm.is_active} onCheckedChange={(checked) => setKnowledgeForm((prev) => ({ ...prev, is_active: checked }))} />
-            </div>
-
-            <div className="flex justify-end">
-              <Button className="cyber-btn-primary" onClick={() => void handleCreateKnowledge()}>
-                新增知识条目
-              </Button>
-            </div>
-          </div>
-
-          <div className="cyber-card p-5">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-base font-bold text-foreground uppercase">知识条目列表</h3>
-              <Badge className="cyber-badge-muted">{knowledgeEntries.length} 条</Badge>
-            </div>
-            <div className="border border-border rounded-lg overflow-hidden">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>标题</TableHead>
-                    <TableHead>分类</TableHead>
-                    <TableHead>语言</TableHead>
-                    <TableHead>状态</TableHead>
-                    <TableHead>创建时间</TableHead>
-                    <TableHead className="text-right">操作</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {loadingKnowledge ? (
-                    <TableRow>
-                      <TableCell colSpan={6} className="text-center text-muted-foreground">加载中...</TableCell>
-                    </TableRow>
-                  ) : knowledgeEntries.length === 0 ? (
-                    <TableRow>
-                      <TableCell colSpan={6} className="text-center text-muted-foreground">暂无知识条目</TableCell>
-                    </TableRow>
-                  ) : (
-                    knowledgeEntries.map((item) => (
-                      <TableRow key={item.id}>
-                        <TableCell className="font-semibold">{item.title}</TableCell>
-                        <TableCell>{item.category}</TableCell>
-                        <TableCell>{item.language}</TableCell>
-                        <TableCell>
-                          <Badge className={item.is_active ? "cyber-badge-success" : "cyber-badge-danger"}>
-                            {item.is_active ? "启用" : "停用"}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>{formatDate(item.created_at)}</TableCell>
-                        <TableCell className="text-right">
-                          <div className="flex justify-end gap-2">
-                            <Button variant="outline" size="sm" className="cyber-btn-outline h-8" onClick={() => void handleToggleKnowledge(item)}>
-                              {item.is_active ? "停用" : "启用"}
-                            </Button>
-                            <Button variant="outline" size="sm" className="cyber-btn-ghost h-8 hover:text-destructive" onClick={() => void handleDeleteKnowledge(item)}>
-                              删除
-                            </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))
-                  )}
-                </TableBody>
-              </Table>
-            </div>
-          </div>
-        </TabsContent>
-
-        <TabsContent value="config" className="flex flex-col gap-6">
+      {activeTab === "config" && (
+        <div className="relative z-10 flex flex-col gap-6">
           <SystemConfig />
-        </TabsContent>
+        </div>
+      )}
 
-        <TabsContent value="data" className="space-y-6">
-          <DatabaseManager />
-        </TabsContent>
-      </Tabs>
+      {/* Create User Sheet (sidebar) */}
+      <Sheet open={showCreateSheet} onOpenChange={setShowCreateSheet}>
+        <SheetContent
+          side="right"
+          className="!w-[min(90vw,500px)] sm:max-w-[500px] !sm:max-w-none flex flex-col p-0 gap-0 border-border overflow-y-auto"
+        >
+          <SheetHeader className="px-6 py-4 border-b border-border flex-shrink-0 bg-muted">
+            <SheetTitle className="flex items-center gap-3 font-mono text-foreground">
+              <div className="p-2 bg-primary/20 rounded border border-primary/30">
+                <Plus className="w-5 h-5 text-primary" />
+              </div>
+              <span className="text-base font-bold uppercase tracking-wider">
+                创建新用户
+              </span>
+            </SheetTitle>
+          </SheetHeader>
+          <div className="flex-1 overflow-y-auto p-6 space-y-4">
+            <div className="space-y-2">
+              <Label className="text-xs font-bold text-muted-foreground uppercase">
+                用户名 *
+              </Label>
+              <Input
+                value={userForm.username}
+                onChange={(e) =>
+                  setUserForm((prev) => ({ ...prev, username: e.target.value }))
+                }
+                placeholder="输入用户名"
+                className="cyber-input"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label className="text-xs font-bold text-muted-foreground uppercase">
+                邮箱
+              </Label>
+              <Input
+                value={userForm.email}
+                onChange={(e) =>
+                  setUserForm((prev) => ({ ...prev, email: e.target.value }))
+                }
+                placeholder="输入邮箱"
+                className="cyber-input"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label className="text-xs font-bold text-muted-foreground uppercase">
+                初始密码 *
+              </Label>
+              <Input
+                value={userForm.password}
+                onChange={(e) =>
+                  setUserForm((prev) => ({ ...prev, password: e.target.value }))
+                }
+                placeholder="输入初始密码"
+                className="cyber-input"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label className="text-xs font-bold text-muted-foreground uppercase">
+                角色
+              </Label>
+              <Select
+                value={userForm.role}
+                onValueChange={(value: FormRole) =>
+                  setUserForm((prev) => ({ ...prev, role: value }))
+                }
+              >
+                <SelectTrigger className="cyber-input">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="cyber-dialog border-border">
+                  <SelectItem value="member">普通用户</SelectItem>
+                  <SelectItem value="admin">普通管理员</SelectItem>
+                  <SelectItem value="superadmin">超级管理员</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <div className="flex-shrink-0 flex justify-end gap-3 px-6 py-4 bg-muted border-t border-border">
+            <Button
+              variant="outline"
+              onClick={() => setShowCreateSheet(false)}
+              className="cyber-btn-outline"
+            >
+              取消
+            </Button>
+            <Button
+              onClick={() => void handleCreateUser()}
+              className="cyber-btn-primary"
+            >
+              保存
+            </Button>
+          </div>
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }

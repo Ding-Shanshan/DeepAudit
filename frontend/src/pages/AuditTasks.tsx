@@ -1,7 +1,7 @@
 /**
  * Audit Tasks Page
  * Cyberpunk Terminal Aesthetic
- * 支持普通审计任务和AI审计任务
+ * 支持普通审计任务和深度审计任务
  */
 
 import { useState, useEffect, useRef } from "react";
@@ -330,7 +330,7 @@ export default function AuditTasks() {
             <div className="ml-auto flex gap-2">
               <Button className="cyber-btn-primary h-8" onClick={() => navigate(AGENT_AUDIT_ROUTE)}>
                 <Bot className="w-4 h-4 mr-2" />
-                新建AI审计
+                新建深度审计
               </Button>
             </div>
           </div>
@@ -350,14 +350,14 @@ export default function AuditTasks() {
                 {filteredAgentTasks.length === 0 ? (
                   <tr>
                     <td colSpan={6} className="py-8 text-center text-muted-foreground">
-                      {searchTerm || statusFilter !== "all" ? '未找到匹配项' : '当前无AI审计任务'}
+                      {searchTerm || statusFilter !== "all" ? '未找到匹配项' : '当前无深度审计任务'}
                     </td>
                   </tr>
                 ) : (
                   filteredAgentTasks.map((task) => (
                     <tr key={task.id} className="border-b border-border/50 hover:bg-muted/50 transition-colors">
                       <td className="py-2.5 px-6">
-                        <span className="font-medium text-foreground">{task.name || 'AI审计任务'}</span>
+                        <span className="font-medium text-foreground">{task.name || '深度审计任务'}</span>
                       </td>
                       <td className="py-2.5 px-3 text-muted-foreground">
                         {(task.progress_percentage || 0).toFixed(0)}%

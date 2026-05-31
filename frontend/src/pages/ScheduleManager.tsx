@@ -285,8 +285,8 @@ export default function ScheduleManager() {
               </SelectTrigger>
               <SelectContent className="cyber-dialog border-border">
                 <SelectItem value="all">全部方式</SelectItem>
-                <SelectItem value="fast">规则审计</SelectItem>
-                <SelectItem value="agent">AI审计</SelectItem>
+                <SelectItem value="fast">快速审计</SelectItem>
+                <SelectItem value="agent">深度审计</SelectItem>
               </SelectContent>
             </Select>
             <div className="ml-auto flex gap-2">
@@ -325,7 +325,7 @@ export default function ScheduleManager() {
                       </td>
                       <td className="py-2.5 px-3 text-muted-foreground">{getProjectName(item.project_id)}</td>
                       <td className="py-2.5 px-3 text-muted-foreground">
-                        {item.scan_mode === "agent" ? "AI审计" : "规则审计"}
+                        {item.scan_mode === "agent" ? "深度审计" : "快速审计"}
                       </td>
                       <td className="py-2.5 px-3 text-muted-foreground">{formatDate(item.next_run_at)}</td>
                       <td className="py-2.5 px-3">
@@ -384,7 +384,7 @@ export default function ScheduleManager() {
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1.5">
                   <Label className="text-xs font-bold text-muted-foreground uppercase">扫描方式</Label>
-                  <p className="text-sm text-foreground">{selectedSchedule.scan_mode === "agent" ? "AI审计" : "规则审计"}</p>
+                  <p className="text-sm text-foreground">{selectedSchedule.scan_mode === "agent" ? "深度审计" : "快速审计"}</p>
                 </div>
                 <div className="space-y-1.5">
                   <Label className="text-xs font-bold text-muted-foreground uppercase">分支</Label>
@@ -478,8 +478,8 @@ export default function ScheduleManager() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent className="cyber-dialog border-border">
-                    <SelectItem value="fast">规则审计</SelectItem>
-                    <SelectItem value="agent">AI审计</SelectItem>
+                    <SelectItem value="fast">快速审计</SelectItem>
+                    <SelectItem value="agent">深度审计</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -570,8 +570,8 @@ export default function ScheduleManager() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent className="cyber-dialog border-border">
-                    <SelectItem value="fast">规则审计</SelectItem>
-                    <SelectItem value="agent">AI审计</SelectItem>
+                    <SelectItem value="fast">快速审计</SelectItem>
+                    <SelectItem value="agent">深度审计</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

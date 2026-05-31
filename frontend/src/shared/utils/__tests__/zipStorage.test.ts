@@ -72,13 +72,14 @@ describe("zipStorage", () => {
 			expect(apiClient.post).toHaveBeenCalledWith(
 				"/projects/project-1/zip",
 				expect.any(FormData),
-				{
+				expect.objectContaining({
 					headers: { "Content-Type": "multipart/form-data" },
-				},
+					timeout: expect.any(Number),
+				}),
 			);
 		});
 
-		it("should return failure when the upload fails", async () => {
+		it("should throw an error with server detail when the upload fails", async () => {
 			const error = {
 				response: { data: { detail: "File too large" } },
 			};
@@ -89,13 +90,26 @@ describe("zipStorage", () => {
 			const file = new File(["content"], "big.zip", {
 				type: "application/zip",
 			});
-			const result = await uploadZipFile("project-1", file);
-
-			expect(result.success).toBe(false);
-			expect(result.message).toBe("File too large");
+			await expect(uploadZipFile("project-1", file)).rejects.toThrow(
+				"File too large",
+			);
 		});
 
-		it("should return default error message when error has no detail", async () => {
+		it("should throw timeout error when upload times out", async () => {
+			const error = { code: "ECONNABORTED" };
+			(apiClient.post as ReturnType<typeof vi.fn>).mockRejectedValueOnce(
+				error,
+			);
+
+			const file = new File(["content"], "test.zip", {
+				type: "application/zip",
+			});
+			await expect(uploadZipFile("project-1", file)).rejects.toThrow(
+				"上传超时",
+			);
+		});
+
+		it("should throw default error message when error has no detail", async () => {
 			(apiClient.post as ReturnType<typeof vi.fn>).mockRejectedValueOnce(
 				new Error("Unknown error"),
 			);
@@ -103,10 +117,37 @@ describe("zipStorage", () => {
 			const file = new File(["content"], "test.zip", {
 				type: "application/zip",
 			});
-			const result = await uploadZipFile("project-1", file);
+			await expect(uploadZipFile("project-1", file)).rejects.toThrow(
+				"上传失败",
+			);
+		});
 
-			expect(result.success).toBe(false);
-			expect(result.message).toBe("\u4E0A\u4F20\u5931\u8D25");
+		it("should call onProgress callback during upload", async () => {
+			const mockResponse = {
+				message: "Uploaded",
+				original_filename: "project.zip",
+				file_size: 2048,
+			};
+			(apiClient.post as ReturnType<typeof vi.fn>).mockImplementation(
+				(_url, _data, options) => {
+					// Simulate progress callback
+					const onUploadProgress = options?.onUploadProgress;
+					if (onUploadProgress) {
+						onUploadProgress({ loaded: 50, total: 100 });
+						onUploadProgress({ loaded: 100, total: 100 });
+					}
+					return Promise.resolve({ data: mockResponse });
+				},
+			);
+
+			const onProgress = vi.fn();
+			const file = new File(["content"], "project.zip", {
+				type: "application/zip",
+			});
+			await uploadZipFile("project-1", file, onProgress);
+
+			expect(onProgress).toHaveBeenCalledWith(50);
+			expect(onProgress).toHaveBeenCalledWith(100);
 		});
 	});
 

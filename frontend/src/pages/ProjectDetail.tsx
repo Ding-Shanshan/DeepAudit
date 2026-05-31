@@ -714,7 +714,7 @@ export default function ProjectDetail() {
                             <p className="text-sm font-bold text-foreground group-hover:text-primary transition-colors uppercase">
                               {t.kind === 'audit'
                                 ? ((t.task as AuditTask).task_type === 'repository' ? '审计任务' : '即时分析')
-                                : 'AI审计'}
+                                : '深度审计'}
                             </p>
                             <p className="text-xs text-muted-foreground font-mono">
                               {formatDate(t.task.created_at)}

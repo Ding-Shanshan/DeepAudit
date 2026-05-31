@@ -24,6 +24,9 @@ import {
   FileSearch,
   Wrench,
   Shield,
+  Users,
+  BookOpen,
+  Bug,
   CalendarClock,
 } from "lucide-react";
 import routes from "@/app/routes";
@@ -41,6 +44,7 @@ const routeIcons: Record<string, ReactNode> = {
   "/instant-analysis": <Zap className="h-[18px] w-[18px]" />,
   "/audit-tasks": <ClipboardList className="h-[18px] w-[18px]" />,
   "/audit-rules": <Scale className="h-[18px] w-[18px]" />,
+  "/vulnerabilities": <Bug className="h-[18px] w-[18px]" />,
   "/schedules": <CalendarClock className="h-[18px] w-[18px]" />,
   "/prompts": <Sparkles className="h-[18px] w-[18px]" />,
   "/admin": <Settings className="h-[18px] w-[18px]" />,
@@ -48,14 +52,19 @@ const routeIcons: Record<string, ReactNode> = {
 };
 
 const auditSubItems = [
-  { path: "/audit-tasks?tab=regular", name: "规则审计", icon: <FileSearch className="h-[18px] w-[18px]" /> },
-  { path: "/audit-tasks?tab=agent", name: "AI审计", icon: <Bot className="h-[18px] w-[18px]" /> },
+  { path: "/audit-tasks?tab=regular", name: "快速审计", icon: <FileSearch className="h-[18px] w-[18px]" /> },
+  { path: "/audit-tasks?tab=agent", name: "深度审计", icon: <Bot className="h-[18px] w-[18px]" /> },
   { path: "/schedules", name: "计划任务", icon: <CalendarClock className="h-[18px] w-[18px]" /> },
 ];
 
 const rulesSubItems = [
   { path: "/audit-rules?tab=static", name: "静态规则", icon: <Shield className="h-[18px] w-[18px]" /> },
   { path: "/audit-rules?tab=ai", name: "AI规则", icon: <Sparkles className="h-[18px] w-[18px]" /> },
+];
+
+const systemSubItems = [
+  { path: "/admin?tab=users", name: "用户管理", icon: <Users className="h-[18px] w-[18px]" /> },
+  { path: "/admin?tab=config", name: "配置管理", icon: <Wrench className="h-[18px] w-[18px]" /> },
 ];
 
 export default function Sidebar() {
@@ -69,6 +78,10 @@ export default function Sidebar() {
   const [rulesDropdownPos, setRulesDropdownPos] = useState({ top: 0, left: 0, width: 0 });
   const rulesDropdownRef = useRef<HTMLDivElement>(null);
   const rulesDropdownPanelRef = useRef<HTMLDivElement>(null);
+  const [systemDropdownOpen, setSystemDropdownOpen] = useState(false);
+  const [systemDropdownPos, setSystemDropdownPos] = useState({ top: 0, left: 0, width: 0 });
+  const systemDropdownRef = useRef<HTMLDivElement>(null);
+  const systemDropdownPanelRef = useRef<HTMLDivElement>(null);
   const { user } = useAuth();
 
   useEffect(() => {
@@ -86,6 +99,12 @@ export default function Sidebar() {
       ) {
         setRulesDropdownOpen(false);
       }
+      if (
+        systemDropdownRef.current && !systemDropdownRef.current.contains(target) &&
+        systemDropdownPanelRef.current && !systemDropdownPanelRef.current.contains(target)
+      ) {
+        setSystemDropdownOpen(false);
+      }
     }
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
@@ -99,6 +118,7 @@ export default function Sidebar() {
 
   const isAuditGroupActive = location.pathname === "/audit-tasks" || location.pathname === "/instant-analysis" || location.pathname === "/schedules";
   const isRulesGroupActive = location.pathname === "/audit-rules";
+  const isSystemGroupActive = location.pathname === "/admin";
 
   return (
     <>
@@ -117,7 +137,7 @@ export default function Sidebar() {
           <nav className="flex items-center gap-1 ml-6 flex-1 overflow-x-auto">
             {visibleRoutes.map((route) => {
               if (route.path === "/audit-tasks") {
-                const currentSubName = location.search === "?tab=agent" ? "AI审计" : "规则审计";
+                const currentSubName = location.search === "?tab=agent" ? "深度审计" : "快速审计";
                 return (
                   <div key={route.path} ref={dropdownRef} className="relative">
                     <button
@@ -179,6 +199,39 @@ export default function Sidebar() {
                         规则管理
                       </span>
                       <ChevronDown className={`h-4 w-4 transition-transform duration-200 ${rulesDropdownOpen ? "rotate-180" : ""}`} />
+                    </button>
+                  </div>
+                );
+              }
+
+              if (route.path === "/admin") {
+                return (
+                  <div key={route.path} ref={systemDropdownRef} className="relative">
+                    <button
+                      className={`group flex items-center gap-2 rounded-md px-3 py-2 transition-all duration-200 whitespace-nowrap ${
+                        isSystemGroupActive
+                          ? "bg-[#E0E7FF] text-[#6366F1] shadow-[0_2px_8px_rgba(99,102,241,0.10)] ring-1 ring-[#C7D2FE]/60"
+                          : "text-[#374151] hover:bg-white hover:text-[#1E1B4B]"
+                      }`}
+                      onClick={(e) => {
+                        const rect = e.currentTarget.getBoundingClientRect();
+                        setSystemDropdownPos({ top: rect.bottom + 4, left: rect.left, width: rect.width });
+                        setSystemDropdownOpen(!systemDropdownOpen);
+                      }}
+                    >
+                      <span
+                        className={`flex h-7 w-7 shrink-0 items-center justify-center rounded transition-colors ${
+                          isSystemGroupActive
+                            ? "text-[#6366F1]"
+                            : "text-[#6B7280] group-hover:text-[#6366F1]"
+                        }`}
+                      >
+                        {routeIcons[route.path] || <BriefcaseBusiness className="h-[18px] w-[18px]" />}
+                      </span>
+                      <span className={`text-sm ${isSystemGroupActive ? "font-semibold tracking-[0.01em]" : "font-medium"}`}>
+                        系统管理
+                      </span>
+                      <ChevronDown className={`h-4 w-4 transition-transform duration-200 ${systemDropdownOpen ? "rotate-180" : ""}`} />
                     </button>
                   </div>
                 );
@@ -342,6 +395,45 @@ export default function Sidebar() {
                   );
                 }
 
+                if (route.path === "/admin") {
+                  return (
+                    <div key={route.path}>
+                      <div className="flex items-center gap-3 rounded-md px-3 py-2.5 text-[#374151]">
+                        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded text-[#6B7280]">
+                          {routeIcons[route.path] || <BriefcaseBusiness className="h-[18px] w-[18px]" />}
+                        </span>
+                        <span className="text-sm font-medium">系统管理</span>
+                      </div>
+                      {systemSubItems.map((item) => {
+                        const isActive =
+                          location.pathname === "/admin" &&
+                          location.search === item.path.replace("/admin", "");
+                        return (
+                          <Link
+                            key={item.path}
+                            to={item.path}
+                            className={`flex items-center gap-3 rounded-md px-3 py-2 pl-12 transition-all duration-200 ${
+                              isActive
+                                ? "bg-[#E0E7FF] text-[#6366F1] ring-1 ring-[#C7D2FE]/60"
+                                : "text-[#374151] hover:bg-white hover:text-[#1E1B4B]"
+                            }`}
+                            onClick={() => setMobileOpen(false)}
+                          >
+                            <span className={`flex h-7 w-7 items-center justify-center rounded ${
+                              isActive ? "text-[#6366F1]" : "text-[#6B7280]"
+                            }`}>
+                              {item.icon}
+                            </span>
+                            <span className={`text-sm ${isActive ? "font-semibold" : "font-medium"}`}>
+                              {item.name}
+                            </span>
+                          </Link>
+                        );
+                      })}
+                    </div>
+                  );
+                }
+
                 return (
                   <Link
                     key={route.path}
@@ -453,6 +545,40 @@ export default function Sidebar() {
                     : "text-[#374151] hover:bg-[#F5F3FF] hover:text-[#1E1B4B]"
                 }`}
                 onClick={() => setRulesDropdownOpen(false)}
+              >
+                <span className={`flex h-6 w-6 items-center justify-center rounded ${
+                  isActive ? "text-[#6366F1]" : "text-[#6B7280]"
+                }`}>
+                  {item.icon}
+                </span>
+                <span className="text-sm">{item.name}</span>
+              </Link>
+            );
+          })}
+        </div>
+      )}
+
+      {/* System dropdown panel */}
+      {systemDropdownOpen && (
+        <div
+          className="fixed z-50 rounded-lg border border-[#E0E7FF] bg-white shadow-[0_8px_24px_rgba(99,102,241,0.12)] py-1"
+          ref={systemDropdownPanelRef}
+          style={{ top: systemDropdownPos.top, left: systemDropdownPos.left, width: systemDropdownPos.width }}
+        >
+          {systemSubItems.map((item) => {
+            const isActive =
+              location.pathname === "/admin" &&
+              location.search === item.path.replace("/admin", "");
+            return (
+              <Link
+                key={item.path}
+                to={item.path}
+                className={`flex items-center gap-3 px-4 py-2.5 transition-colors ${
+                  isActive
+                    ? "bg-[#E0E7FF] text-[#6366F1] font-semibold"
+                    : "text-[#374151] hover:bg-[#F5F3FF] hover:text-[#1E1B4B]"
+                }`}
+                onClick={() => setSystemDropdownOpen(false)}
               >
                 <span className={`flex h-6 w-6 items-center justify-center rounded ${
                   isActive ? "text-[#6366F1]" : "text-[#6B7280]"

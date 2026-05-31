@@ -207,16 +207,7 @@ export default function Projects() {
       setUploading(true);
       setUploadProgress(0);
 
-      const progressInterval = setInterval(() => {
-        setUploadProgress(prev => {
-          if (prev >= 100) {
-            clearInterval(progressInterval);
-            return 100;
-          }
-          return prev + 20;
-        });
-      }, 100);
-
+      // 第一步：创建项目记录
       const project = await api.createProject({
         ...createForm,
         source_type: "zip",
@@ -224,39 +215,45 @@ export default function Projects() {
         repository_url: undefined
       } as any);
 
+      // 第二步：上传归档文件（使用真实的上传进度）
       try {
-        await uploadZipFile(project.id, selectedFile);
-      } catch (error) {
-        console.error('保存归档文件失败:', error);
-      }
-
-      clearInterval(progressInterval);
-      setUploadProgress(100);
-
-      import('@/shared/utils/logger').then(({ logger }) => {
-        logger.logUserAction('上传归档文件创建项目', {
-          projectName: project.name,
-          fileName: selectedFile.name,
-          fileSize: selectedFile.size,
+        await uploadZipFile(project.id, selectedFile, (percent) => {
+          setUploadProgress(percent);
         });
-      });
+
+        import('@/shared/utils/logger').then(({ logger }) => {
+          logger.logUserAction('上传归档文件创建项目', {
+            projectName: project.name,
+            fileName: selectedFile.name,
+            fileSize: selectedFile.size,
+          });
+        });
+
+        toast.success(`项目 "${project.name}" 已创建`, {
+          description: '归档文件已保存，您可以启动代码审计',
+          duration: 4000
+        });
+      } catch (uploadError: any) {
+        // 上传失败但项目已创建，提示用户可以在编辑中重新上传
+        console.error('上传归档文件失败:', uploadError);
+        toast.warning(`项目 "${project.name}" 已创建，但归档文件上传失败`, {
+          description: uploadError.message || '请在项目编辑中重新上传归档文件',
+          duration: 6000
+        });
+      }
 
       setShowCreateDialog(false);
       resetCreateForm();
       loadProjects();
 
-      toast.success(`项目 "${project.name}" 已创建`, {
-        description: '归档文件已保存，您可以启动代码审计',
-        duration: 4000
-      });
-
     } catch (error: any) {
-      console.error('Upload failed:', error);
+      // 创建项目本身失败
+      console.error('Create project failed:', error);
       import('@/shared/utils/errorHandler').then(({ handleError }) => {
-        handleError(error, '上传归档文件失败');
+        handleError(error, '创建项目失败');
       });
       const errorMessage = error?.message || '未知错误';
-      toast.error(`上传失败: ${errorMessage}`);
+      toast.error(`创建项目失败: ${errorMessage}`);
     } finally {
       setUploading(false);
       setUploadProgress(0);
@@ -319,11 +316,13 @@ export default function Projects() {
       await api.updateProject(projectToEdit.id, editForm);
 
       if (editZipFile && editForm.source_type === 'zip') {
-        const result = await uploadZipFile(projectToEdit.id, editZipFile);
-        if (result.success) {
-          toast.success(`归档文件已更新: ${result.original_filename}`);
-        } else {
-          toast.error(`归档文件上传失败: ${result.message}`);
+        try {
+          const result = await uploadZipFile(projectToEdit.id, editZipFile);
+          if (result.success) {
+            toast.success(`归档文件已更新: ${result.original_filename}`);
+          }
+        } catch (uploadError: any) {
+          toast.error(`归档文件上传失败: ${uploadError.message || '未知错误'}`);
         }
       }
 
@@ -685,7 +684,7 @@ export default function Projects() {
                   {uploading && (
                     <div className="space-y-1.5">
                       <div className="flex items-center justify-between text-xs font-mono text-muted-foreground">
-                        <span>上传并分析中...</span>
+                        <span>{uploadProgress >= 100 ? '上传完成，处理中...' : '上传中...'}</span>
                         <span className="text-primary">{uploadProgress}%</span>
                       </div>
                       <Progress value={uploadProgress} className="h-2 bg-muted [&>div]:bg-primary" />

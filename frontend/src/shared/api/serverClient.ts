@@ -10,6 +10,8 @@ export const apiClient = axios.create({
   },
   // 确保重定向时保留Authorization header
   maxRedirects: 5,
+  // 默认请求超时时间（毫秒），上传大文件时会在具体请求中覆盖
+  timeout: 30_000,
 });
 
 // Request interceptor to add token

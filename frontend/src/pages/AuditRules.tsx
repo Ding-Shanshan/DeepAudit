@@ -8,7 +8,6 @@ import { useSearchParams } from 'react-router-dom';
 import PromptManager from './PromptManager';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Switch } from '@/components/ui/switch';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
@@ -21,6 +20,8 @@ import {
   Plus,
   Trash2,
   Edit,
+  Eye,
+  Power,
   Download,
   Upload,
   Shield,
@@ -77,7 +78,7 @@ const LANGUAGES = [
 ];
 
 const RULE_TYPES = [
-  { value: 'security', label: '安全规则' },
+  { value: 'security', label: '漏洞规则' },
   { value: 'quality', label: '质量规则' },
   { value: 'performance', label: '性能规则' },
   { value: 'custom', label: '自定义规则' },
@@ -91,6 +92,7 @@ export default function AuditRules() {
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [showRuleDialog, setShowRuleDialog] = useState(false);
+  const [showViewRuleSheet, setShowViewRuleSheet] = useState(false);
   const [showImportDialog, setShowImportDialog] = useState(false);
   const [selectedRuleSet, setSelectedRuleSet] = useState<AuditRuleSet | null>(null);
   const [selectedRule, setSelectedRule] = useState<AuditRule | null>(null);
@@ -216,8 +218,9 @@ export default function AuditRules() {
     setShowEditDialog(true);
   };
 
-  const openAddRuleDialog = (ruleSet: AuditRuleSet) => {
-    setSelectedRuleSet(ruleSet);
+  const openAddRuleDialog = (ruleSet?: AuditRuleSet) => {
+    const targetRuleSet = ruleSet || ruleSets.find(rs => !rs.is_system) || ruleSets[0] || null;
+    setSelectedRuleSet(targetRuleSet);
     setSelectedRule(null);
     setRuleForm({ rule_code: '', name: '', description: '', category: 'security', severity: 'medium', custom_prompt: '', fix_suggestion: '', reference_url: '', enabled: true });
     setShowRuleDialog(true);
@@ -228,6 +231,12 @@ export default function AuditRules() {
     setSelectedRule(rule);
     setRuleForm({ rule_code: rule.rule_code, name: rule.name, description: rule.description || '', category: rule.category, severity: rule.severity, custom_prompt: rule.custom_prompt || '', fix_suggestion: rule.fix_suggestion || '', reference_url: rule.reference_url || '', enabled: rule.enabled });
     setShowRuleDialog(true);
+  };
+
+  const openViewRuleDialog = (ruleSet: AuditRuleSet, rule: AuditRule) => {
+    setSelectedRuleSet(ruleSet);
+    setSelectedRule(rule);
+    setShowViewRuleSheet(true);
   };
 
   const getCategoryInfo = (category: string) => CATEGORIES.find(c => c.value === category) || CATEGORIES[0];
@@ -312,7 +321,7 @@ export default function AuditRules() {
                 </SelectContent>
               </Select>
               <div className="ml-auto flex gap-2">
-                <Button onClick={() => setShowCreateDialog(true)} className="cyber-btn-primary h-8">
+                <Button onClick={() => openAddRuleDialog()} className="cyber-btn-primary h-8">
                   <Plus className="w-4 h-4 mr-2" />
                   新建规则
                 </Button>
@@ -325,8 +334,8 @@ export default function AuditRules() {
                     <th className="text-left py-2 px-6 font-medium">规则名称</th>
                     <th className="text-left py-2 px-3 font-medium">简介</th>
                     <th className="text-left py-2 px-3 font-medium">所属集合</th>
-                    <th className="text-left py-2 px-3 font-medium">查看详情</th>
-                    <th className="text-left py-2 px-3 font-medium">是否启用</th>
+                    <th className="text-left py-2 px-3 font-medium">规则类型</th>
+	                    <th className="text-left py-2 px-3 font-medium">操作</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -347,22 +356,23 @@ export default function AuditRules() {
                           <span className="text-muted-foreground">{ruleSet.name}</span>
                         </td>
                         <td className="py-2.5 px-3">
-                          {rule.reference_url ? (
-                            <a href={rule.reference_url} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
-                              查看详情
-                            </a>
-                          ) : (
-                            <span className="text-muted-foreground">-</span>
-                          )}
+                          <Badge className="cyber-badge-muted">{RULE_TYPES.find(t => t.value === ruleSet.rule_type)?.label || ruleSet.rule_type}</Badge>
                         </td>
                         <td className="py-2.5 px-3">
-                          <div className="flex items-center gap-2">
-                            <Switch checked={rule.enabled} onCheckedChange={() => handleToggleRule(ruleSet.id, rule.id)} className="h-5 w-9 data-[state=checked]:bg-violet-300 data-[state=unchecked]:bg-muted [&>[data-slot=switch-thumb]]:w-4 [&>[data-slot=switch-thumb]]:h-4 [&>[data-slot=switch-thumb]]:data-[state=checked]:translate-x-4 [&>[data-slot=switch-thumb]]:data-[state=unchecked]:translate-x-0.5" />
+                          <div className="flex items-center gap-1">
+                            <Button variant="ghost" size="icon" onClick={() => handleToggleRule(ruleSet.id, rule.id)} className={`h-7 w-7 ${rule.enabled ? 'bg-primary/12 text-primary' : 'hover:bg-primary/12 hover:text-primary'}`}>
+                              <Power className="w-3.5 h-3.5" />
+                            </Button>
+                            <Button variant="ghost" size="icon" onClick={() => openViewRuleDialog(ruleSet, rule)} className="h-7 w-7 hover:bg-primary/12 hover:text-primary">
+                              <Eye className="w-3.5 h-3.5" />
+                            </Button>
+                            <Button variant="ghost" size="icon" onClick={() => openEditRuleDialog(ruleSet, rule)} className="h-7 w-7 hover:bg-primary/12 hover:text-primary">
+                              <Edit className="w-3.5 h-3.5" />
+                            </Button>
                             {!ruleSet.is_system && (
-                              <>
-                                <Button variant="ghost" size="icon" onClick={() => openEditRuleDialog(ruleSet, rule)} className="cyber-btn-ghost h-7 w-7"><Edit className="w-3.5 h-3.5" /></Button>
-                                <Button variant="ghost" size="icon" onClick={() => handleDeleteRule(ruleSet.id, rule.id)} className="h-7 w-7 hover:bg-destructive/12 hover:text-destructive"><Trash2 className="w-3.5 h-3.5" /></Button>
-                              </>
+                              <Button variant="ghost" size="icon" onClick={() => handleDeleteRule(ruleSet.id, rule.id)} className="h-7 w-7 hover:bg-destructive/12 hover:text-destructive">
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </Button>
                             )}
                           </div>
                         </td>
@@ -375,6 +385,78 @@ export default function AuditRules() {
           </div>
         )}
       </div>
+      {/* View Rule Sheet */}
+      <Sheet open={showViewRuleSheet} onOpenChange={setShowViewRuleSheet}>
+        <SheetContent side="right" className="!w-[min(90vw,500px)] sm:max-w-[500px] !sm:max-w-none flex flex-col p-0 gap-0 border-border overflow-y-auto">
+          <SheetHeader className="px-6 py-4 border-b border-border flex-shrink-0 bg-muted">
+            <SheetTitle className="flex items-center gap-3 font-mono text-foreground">
+              <div className="p-2 bg-primary/20 rounded border border-primary/30">
+                <Eye className="w-5 h-5 text-primary" />
+              </div>
+              <span className="text-base font-bold uppercase tracking-wider">查看规则</span>
+            </SheetTitle>
+          </SheetHeader>
+          {selectedRule && selectedRuleSet && (
+            <div className="flex-1 overflow-y-auto p-6 space-y-4">
+              <div className="space-y-1.5">
+                <Label className="text-xs font-bold text-muted-foreground uppercase">规则代码</Label>
+                <p className="text-sm text-primary font-semibold">{selectedRule.rule_code}</p>
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs font-bold text-muted-foreground uppercase">规则名称</Label>
+                <p className="text-sm text-foreground">{selectedRule.name}</p>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-bold text-muted-foreground uppercase">类别</Label>
+                  <p className="text-sm text-foreground">{CATEGORIES.find(c => c.value === selectedRule.category)?.label || selectedRule.category}</p>
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-bold text-muted-foreground uppercase">严重程度</Label>
+                  <p className="text-sm text-foreground">{SEVERITIES.find(s => s.value === selectedRule.severity)?.label || selectedRule.severity}</p>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-bold text-muted-foreground uppercase">所属集合</Label>
+                  <p className="text-sm text-foreground">{selectedRuleSet.name}</p>
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-bold text-muted-foreground uppercase">规则类型</Label>
+                  <Badge className="cyber-badge-muted">{RULE_TYPES.find(t => t.value === selectedRuleSet.rule_type)?.label || selectedRuleSet.rule_type}</Badge>
+                </div>
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs font-bold text-muted-foreground uppercase">描述</Label>
+                <p className="text-sm text-foreground whitespace-pre-wrap">{selectedRule.description || '-'}</p>
+              </div>
+              {selectedRule.custom_prompt && (
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-bold text-muted-foreground uppercase">检测规则</Label>
+                  <p className="text-sm text-foreground whitespace-pre-wrap">{selectedRule.custom_prompt}</p>
+                </div>
+              )}
+              {selectedRule.fix_suggestion && (
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-bold text-muted-foreground uppercase">修复建议</Label>
+                  <p className="text-sm text-foreground whitespace-pre-wrap">{selectedRule.fix_suggestion}</p>
+                </div>
+              )}
+              {selectedRule.reference_url && (
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-bold text-muted-foreground uppercase">参考链接</Label>
+                  <a href={selectedRule.reference_url} target="_blank" rel="noopener noreferrer" className="text-sm text-primary hover:underline">{selectedRule.reference_url}</a>
+                </div>
+              )}
+              <div className="space-y-1.5">
+                <Label className="text-xs font-bold text-muted-foreground uppercase">启用状态</Label>
+                <Badge className={selectedRule.enabled ? "cyber-badge-success" : "cyber-badge-danger"}>{selectedRule.enabled ? '已启用' : '已禁用'}</Badge>
+              </div>
+            </div>
+          )}
+        </SheetContent>
+      </Sheet>
+
       {/* Create Rule Set Sheet */}
       <Sheet open={showCreateDialog} onOpenChange={setShowCreateDialog}>
         <SheetContent side="right" className="!w-[min(90vw,500px)] sm:max-w-[500px] !sm:max-w-none flex flex-col p-0 gap-0 border-border overflow-y-auto">
@@ -478,7 +560,7 @@ export default function AuditRules() {
               <div className="p-2 bg-primary/20 rounded border border-primary/30">
                 <Code className="w-5 h-5 text-primary" />
               </div>
-              <span className="text-base font-bold uppercase tracking-wider">{selectedRule ? '编辑规则' : '添加规则'}</span>
+              <span className="text-base font-bold uppercase tracking-wider">{selectedRule ? '编辑规则' : '新建规则'}</span>
             </DialogTitle>
           </DialogHeader>
           <div className="flex-1 overflow-y-auto p-6 space-y-4">
@@ -527,8 +609,8 @@ export default function AuditRules() {
               </div>
             </div>
             <div className="space-y-2">
-              <Label className="text-xs font-bold text-muted-foreground uppercase">自定义检测提示词</Label>
-              <Textarea value={ruleForm.custom_prompt} onChange={e => setRuleForm({ ...ruleForm, custom_prompt: e.target.value })} placeholder="用于增强LLM检测的自定义提示词" rows={3} className="cyber-input" />
+              <Label className="text-xs font-bold text-muted-foreground uppercase">检测规则</Label>
+              <Textarea value={ruleForm.custom_prompt} onChange={e => setRuleForm({ ...ruleForm, custom_prompt: e.target.value })} placeholder={"如：检测SQL拼接模式：execute(f\"...{INPUT}...\")、cursor.execute(\"...\" + input)"} rows={3} className="cyber-input" />
             </div>
             <div className="space-y-2">
               <Label className="text-xs font-bold text-muted-foreground uppercase">修复建议</Label>

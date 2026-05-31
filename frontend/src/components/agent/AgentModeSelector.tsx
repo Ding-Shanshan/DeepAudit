@@ -1,5 +1,5 @@
 /**
- * AI审计模式选择器
+ * 深度审计模式选择器
  * Cyberpunk Terminal Aesthetic
  */
 
@@ -94,7 +94,7 @@ export default function AgentModeSelector({
           </div>
         </label>
 
-        {/* AI审计模式 */}
+        {/* 深度审计模式 */}
         <label
           className={cn(
             "relative flex flex-col p-4 border cursor-pointer transition-all rounded",
@@ -135,7 +135,7 @@ export default function AgentModeSelector({
               "font-bold text-sm font-mono uppercase",
               value === "agent" ? "text-violet-700 dark:text-violet-300" : "text-muted-foreground"
             )}>
-              AI审计
+              深度审计
             </span>
             {value === "agent" && (
               <CheckCircle2 className="w-4 h-4 text-violet-600 dark:text-secondary ml-auto" />
@@ -171,7 +171,7 @@ export default function AgentModeSelector({
       {/* 模式说明 */}
       {value === "agent" && (
         <div className="p-3 bg-violet-50 dark:bg-violet-950/30 border border-violet-500/30 text-xs text-violet-700 dark:text-violet-300 rounded font-mono">
-          <p className="font-bold mb-1 uppercase text-violet-700 dark:text-secondary">AI审计模式说明：</p>
+          <p className="font-bold mb-1 uppercase text-violet-700 dark:text-secondary">深度审计模式说明：</p>
           <ul className="list-disc list-inside space-y-0.5 text-violet-600 dark:text-violet-300/80">
             <li>AI智能体会自主规划审计策略</li>
             <li>使用 RAG 技术进行代码语义检索</li>

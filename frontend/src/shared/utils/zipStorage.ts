@@ -12,6 +12,8 @@ export interface ZipFileMeta {
   uploaded_at?: string;
 }
 
+export type UploadProgressCallback = (progress: number) => void;
+
 /**
  * 获取项目归档文件信息
  */
@@ -27,8 +29,17 @@ export async function getZipFileInfo(projectId: string): Promise<ZipFileMeta> {
 
 /**
  * 上传项目归档文件
+ *
+ * @param projectId 项目ID
+ * @param file 要上传的文件
+ * @param onProgress 上传进度回调 (0-100)
+ * @throws 上传失败时抛出错误，由调用方处理
  */
-export async function uploadZipFile(projectId: string, file: File): Promise<{
+export async function uploadZipFile(
+  projectId: string,
+  file: File,
+  onProgress?: UploadProgressCallback,
+): Promise<{
   success: boolean;
   message?: string;
   original_filename?: string;
@@ -42,6 +53,17 @@ export async function uploadZipFile(projectId: string, file: File): Promise<{
       headers: {
         'Content-Type': 'multipart/form-data',
       },
+      // 上传大文件需要更长的超时时间：基于文件大小动态计算
+      // 假设最低上传速度 1MB/s，至少给 60 秒基础时间
+      timeout: Math.max(60_000, (file.size / 1024 / 1024) * 1000) * 2,
+      onUploadProgress: (progressEvent) => {
+        if (progressEvent.total && onProgress) {
+          const percentCompleted = Math.round(
+            (progressEvent.loaded * 100) / progressEvent.total,
+          );
+          onProgress(percentCompleted);
+        }
+      },
     });
     return {
       success: true,
@@ -51,10 +73,15 @@ export async function uploadZipFile(projectId: string, file: File): Promise<{
     };
   } catch (error: any) {
     console.error('上传归档文件失败:', error);
-    return {
-      success: false,
-      message: error.response?.data?.detail || '上传失败',
-    };
+    // 优先使用服务器返回的详细错误信息，否则根据错误类型生成提示
+    const serverDetail = error.response?.data?.detail;
+    const detail = serverDetail
+      ? serverDetail
+      : error.code === 'ECONNABORTED'
+        ? '上传超时，请检查网络连接或尝试较小的文件'
+        : '上传失败';
+    // 向调用方抛出错误而非静默返回，确保 UI 能正确提示
+    throw new Error(detail);
   }
 }
 

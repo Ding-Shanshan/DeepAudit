@@ -10,8 +10,8 @@ import { ChevronRight, Home } from "lucide-react";
 import { CONSOLE_HOME_ROUTE } from "@/shared/constants/branding";
 
 const auditSubMap: Record<string, string> = {
-  "regular": "规则审计",
-  "agent": "AI审计",
+  "regular": "快速审计",
+  "agent": "深度审计",
 };
 
 function Breadcrumb() {
@@ -42,6 +42,10 @@ function Breadcrumb() {
     primaryName = "规则管理";
     const tab = new URLSearchParams(location.search).get("tab");
     secondaryName = tab === "ai" ? "AI规则" : "静态规则";
+  } else if (location.pathname === "/admin") {
+    primaryName = "系统管理";
+    const tab = new URLSearchParams(location.search).get("tab");
+    secondaryName = tab === "config" ? "配置管理" : "用户管理";
   } else if (match) {
     primaryName = match.name;
   }
@@ -57,7 +61,7 @@ function Breadcrumb() {
           <ChevronRight className="h-4 w-4 text-[#C7D2FE]" />
           {secondaryName ? (
             <>
-              <span className="text-[#374151]">任务管理</span>
+              <span className="text-[#374151]">{primaryName}</span>
               <ChevronRight className="h-4 w-4 text-[#C7D2FE]" />
               <span className="text-[#6366F1] font-medium">{secondaryName}</span>
             </>
