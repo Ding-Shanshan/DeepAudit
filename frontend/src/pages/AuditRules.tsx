@@ -68,6 +68,14 @@ const SEVERITIES = [
   { value: 'low', label: '低', color: 'severity-low' },
 ];
 
+const CATEGORY_ABBREV: Record<string, string> = {
+  security: 'SEC',
+  bug: 'BUG',
+  performance: 'PERF',
+  style: 'STYLE',
+  maintainability: 'MAINT',
+};
+
 const LANGUAGES = [
   { value: 'all', label: '所有语言' },
   { value: 'python', label: 'Python' },
@@ -222,7 +230,8 @@ export default function AuditRules() {
     const targetRuleSet = ruleSet || ruleSets.find(rs => !rs.is_system) || ruleSets[0] || null;
     setSelectedRuleSet(targetRuleSet);
     setSelectedRule(null);
-    setRuleForm({ rule_code: '', name: '', description: '', category: 'security', severity: 'medium', custom_prompt: '', fix_suggestion: '', reference_url: '', enabled: true });
+    const initialCategory = 'security';
+    setRuleForm({ rule_code: generateRuleCode(initialCategory), name: '', description: '', category: initialCategory, severity: 'medium', custom_prompt: '', fix_suggestion: '', reference_url: '', enabled: true });
     setShowRuleDialog(true);
   };
 
@@ -241,6 +250,15 @@ export default function AuditRules() {
 
   const getCategoryInfo = (category: string) => CATEGORIES.find(c => c.value === category) || CATEGORIES[0];
   const getSeverityInfo = (severity: string) => SEVERITIES.find(s => s.value === severity) || SEVERITIES[2];
+
+  const generateRuleCode = (category: string) => {
+    const abbrev = CATEGORY_ABBREV[category] || 'RULE';
+    const now = new Date();
+    const dateStr = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}`;
+    const existingCount = ruleSets.flatMap(rs => rs.rules).filter(r => r.category === category).length;
+    const seq = String(existingCount + 1).padStart(4, '0');
+    return `${abbrev}-${dateStr}-${seq}`;
+  };
 
   const filteredRules = ruleSets.flatMap(ruleSet =>
     ruleSet.rules.map(rule => ({ ruleSet, rule }))
@@ -552,81 +570,76 @@ export default function AuditRules() {
         </DialogContent>
       </Dialog>
 
-      {/* Rule Edit Dialog */}
-      <Dialog open={showRuleDialog} onOpenChange={setShowRuleDialog}>
-        <DialogContent className="!w-[min(90vw,700px)] !max-w-none max-h-[85vh] flex flex-col p-0 gap-0 cyber-dialog border border-border rounded-lg">
-          <DialogHeader className="px-6 py-4 border-b border-border flex-shrink-0 bg-muted">
-            <DialogTitle className="flex items-center gap-3 font-mono text-foreground">
+      {/* Rule Edit Sheet */}
+      <Sheet open={showRuleDialog} onOpenChange={setShowRuleDialog}>
+        <SheetContent side="right" className="!w-[min(90vw,500px)] sm:max-w-[500px] !sm:max-w-none flex flex-col p-0 gap-0 border-border overflow-y-auto">
+          <SheetHeader className="px-6 py-4 border-b border-border flex-shrink-0 bg-muted">
+            <SheetTitle className="flex items-center gap-3 font-mono text-foreground">
               <div className="p-2 bg-primary/20 rounded border border-primary/30">
                 <Code className="w-5 h-5 text-primary" />
               </div>
               <span className="text-base font-bold uppercase tracking-wider">{selectedRule ? '编辑规则' : '新建规则'}</span>
-            </DialogTitle>
-          </DialogHeader>
+            </SheetTitle>
+          </SheetHeader>
           <div className="flex-1 overflow-y-auto p-6 space-y-4">
-            {!selectedRule && (
-              <div className="space-y-2">
-                <Label className="text-xs font-bold text-muted-foreground uppercase">所属规则集 *</Label>
-                <Select value={selectedRuleSet?.id || ''} onValueChange={v => {
-                  const rs = ruleSets.find(r => r.id === v);
-                  if (rs) setSelectedRuleSet(rs);
-                }}>
-                  <SelectTrigger className="cyber-input"><SelectValue placeholder="选择规则集" /></SelectTrigger>
-                  <SelectContent className="cyber-dialog border-border">
-                    {ruleSets.filter(rs => !rs.is_system).map(rs => <SelectItem key={rs.id} value={rs.id}>{rs.name}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label className="text-xs font-bold text-muted-foreground uppercase">规则代码 *</Label>
-                <Input value={ruleForm.rule_code} onChange={e => setRuleForm({ ...ruleForm, rule_code: e.target.value })} placeholder="如 SEC001" className="cyber-input" />
-              </div>
-              <div className="space-y-2">
-                <Label className="text-xs font-bold text-muted-foreground uppercase">规则名称 *</Label>
-                <Input value={ruleForm.name} onChange={e => setRuleForm({ ...ruleForm, name: e.target.value })} placeholder="规则名称" className="cyber-input" />
-              </div>
+            {/* 1. 规则名称 */}
+            <div className="space-y-2">
+              <Label className="text-xs font-bold text-muted-foreground uppercase">规则名称 *</Label>
+              <Input value={ruleForm.name} onChange={e => setRuleForm({ ...ruleForm, name: e.target.value })} placeholder="规则名称" className="h-10 cyber-input" />
             </div>
+            {/* 2. 类别 */}
+            <div className="space-y-2">
+              <Label className="text-xs font-bold text-muted-foreground uppercase">类别</Label>
+              <Select value={ruleForm.category} onValueChange={v => {
+                setRuleForm({ ...ruleForm, category: v, rule_code: selectedRule ? ruleForm.rule_code : generateRuleCode(v) });
+              }}>
+                <SelectTrigger className="h-10 cyber-input"><SelectValue /></SelectTrigger>
+                <SelectContent className="cyber-dialog border-border">{CATEGORIES.map(c => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}</SelectContent>
+              </Select>
+            </div>
+            {/* 3. 严重程度 */}
+            <div className="space-y-2">
+              <Label className="text-xs font-bold text-muted-foreground uppercase">严重程度</Label>
+              <Select value={ruleForm.severity} onValueChange={v => setRuleForm({ ...ruleForm, severity: v })}>
+                <SelectTrigger className="h-10 cyber-input"><SelectValue /></SelectTrigger>
+                <SelectContent className="cyber-dialog border-border">{SEVERITIES.map(s => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}</SelectContent>
+              </Select>
+            </div>
+            {/* 4. 所属集合 */}
+            <div className="space-y-2">
+              <Label className="text-xs font-bold text-muted-foreground uppercase">所属集合 *</Label>
+              <Select value={selectedRuleSet?.id || ''} onValueChange={v => {
+                const rs = ruleSets.find(r => r.id === v);
+                if (rs) setSelectedRuleSet(rs);
+              }} disabled={!!selectedRule}>
+                <SelectTrigger className="h-10 cyber-input"><SelectValue placeholder="选择规则集" /></SelectTrigger>
+                <SelectContent className="cyber-dialog border-border">
+                  {ruleSets.filter(rs => !rs.is_system).map(rs => <SelectItem key={rs.id} value={rs.id}>{rs.name}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            {/* 5. 描述 */}
             <div className="space-y-2">
               <Label className="text-xs font-bold text-muted-foreground uppercase">描述</Label>
               <Textarea value={ruleForm.description} onChange={e => setRuleForm({ ...ruleForm, description: e.target.value })} placeholder="规则描述" className="cyber-input" />
             </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label className="text-xs font-bold text-muted-foreground uppercase">类别</Label>
-                <Select value={ruleForm.category} onValueChange={v => setRuleForm({ ...ruleForm, category: v })}>
-                  <SelectTrigger className="cyber-input"><SelectValue /></SelectTrigger>
-                  <SelectContent className="cyber-dialog border-border">{CATEGORIES.map(c => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}</SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label className="text-xs font-bold text-muted-foreground uppercase">严重程度</Label>
-                <Select value={ruleForm.severity} onValueChange={v => setRuleForm({ ...ruleForm, severity: v })}>
-                  <SelectTrigger className="cyber-input"><SelectValue /></SelectTrigger>
-                  <SelectContent className="cyber-dialog border-border">{SEVERITIES.map(s => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}</SelectContent>
-                </Select>
-              </div>
-            </div>
+            {/* 6. 检测规则 */}
             <div className="space-y-2">
               <Label className="text-xs font-bold text-muted-foreground uppercase">检测规则</Label>
               <Textarea value={ruleForm.custom_prompt} onChange={e => setRuleForm({ ...ruleForm, custom_prompt: e.target.value })} placeholder={"如：检测SQL拼接模式：execute(f\"...{INPUT}...\")、cursor.execute(\"...\" + input)"} rows={3} className="cyber-input" />
             </div>
+            {/* 7. 修复建议 */}
             <div className="space-y-2">
               <Label className="text-xs font-bold text-muted-foreground uppercase">修复建议</Label>
               <Textarea value={ruleForm.fix_suggestion} onChange={e => setRuleForm({ ...ruleForm, fix_suggestion: e.target.value })} placeholder="修复建议模板" rows={2} className="cyber-input" />
             </div>
-            <div className="space-y-2">
-              <Label className="text-xs font-bold text-muted-foreground uppercase">参考链接</Label>
-              <Input value={ruleForm.reference_url} onChange={e => setRuleForm({ ...ruleForm, reference_url: e.target.value })} placeholder="如 https://owasp.org/..." className="cyber-input" />
-            </div>
           </div>
-          <DialogFooter className="flex-shrink-0 flex justify-end gap-3 px-6 py-4 bg-muted border-t border-border">
+          <div className="flex-shrink-0 flex justify-end gap-3 px-6 py-4 bg-muted border-t border-border">
             <Button variant="outline" onClick={() => setShowRuleDialog(false)} className="cyber-btn-outline">取消</Button>
             <Button onClick={selectedRule ? handleUpdateRule : handleAddRule} className="cyber-btn-primary">{selectedRule ? '保存' : '添加'}</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          </div>
+        </SheetContent>
+      </Sheet>
 
       {/* Import Dialog */}
       <Dialog open={showImportDialog} onOpenChange={setShowImportDialog}>

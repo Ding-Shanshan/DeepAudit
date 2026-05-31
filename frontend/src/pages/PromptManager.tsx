@@ -5,12 +5,11 @@
 
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Switch } from '@/components/ui/switch';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -19,7 +18,8 @@ import {
   Plus,
   Trash2,
   Edit,
-  Copy,
+  Eye,
+  Power,
   Play,
   FileText,
   Sparkles,
@@ -159,11 +159,6 @@ export default function PromptManager() {
     setShowViewDialog(true);
   };
 
-  const copyToClipboard = (text: string) => {
-    navigator.clipboard.writeText(text);
-    toast.success('已复制到剪贴板');
-  };
-
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen cyber-bg-elevated">
@@ -235,14 +230,13 @@ export default function PromptManager() {
                   <th className="text-left py-2 px-6 font-medium">规则名称</th>
                   <th className="text-left py-2 px-3 font-medium">简介</th>
                   <th className="text-left py-2 px-3 font-medium">模板类型</th>
-                  <th className="text-left py-2 px-3 font-medium">查看详情</th>
-                  <th className="text-left py-2 px-3 font-medium">是否启用</th>
+                  <th className="text-left py-2 px-3 font-medium">操作</th>
                 </tr>
               </thead>
               <tbody>
                 {filteredTemplates.length === 0 ? (
                   <tr>
-                    <td colSpan={5} className="py-12 text-center text-muted-foreground">
+                    <td colSpan={4} className="py-12 text-center text-muted-foreground">
                       无匹配规则
                     </td>
                   </tr>
@@ -257,23 +251,8 @@ export default function PromptManager() {
                         <span className="text-muted-foreground">{TEMPLATE_TYPES.find(t => t.value === template.template_type)?.label}</span>
                       </td>
                       <td className="py-2.5 px-3">
-                        <button onClick={() => openViewDialog(template)} className="text-primary hover:underline">
-                          查看详情
-                        </button>
-                      </td>
-                      <td className="py-2.5 px-3">
-                        <div className="flex items-center gap-2">
-                          <Switch checked={template.is_active} onCheckedChange={() => {
-                            const updated = { ...form, is_active: !template.is_active };
-                            setSelectedTemplate(template);
-                            setForm({
-                              name: template.name,
-                              description: template.description || '',
-                              template_type: template.template_type,
-                              content_zh: template.content_zh || '',
-                              content_en: template.content_en || '',
-                              is_active: !template.is_active,
-                            });
+                        <div className="flex items-center gap-1">
+                          <Button variant="ghost" size="icon" onClick={() => {
                             updatePromptTemplate(template.id, {
                               name: template.name,
                               description: template.description || '',
@@ -285,11 +264,20 @@ export default function PromptManager() {
                               toast.success(template.is_active ? '已禁用' : '已启用');
                               loadTemplates();
                             }).catch(() => toast.error('操作失败'));
-                          }} className="h-5 w-9 data-[state=checked]:bg-violet-300 data-[state=unchecked]:bg-muted [&>[data-slot=switch-thumb]]:w-4 [&>[data-slot=switch-thumb]]:h-4 [&>[data-slot=switch-thumb]]:data-[state=checked]:translate-x-4 [&>[data-slot=switch-thumb]]:data-[state=unchecked]:translate-x-0.5" />
+                          }} className={`h-7 w-7 ${template.is_active ? 'bg-primary/12 text-primary' : 'hover:bg-primary/12 hover:text-primary'}`}>
+                            <Power className="w-3.5 h-3.5" />
+                          </Button>
+                          <Button variant="ghost" size="icon" onClick={() => openViewDialog(template)} className="h-7 w-7 hover:bg-primary/12 hover:text-primary">
+                            <Eye className="w-3.5 h-3.5" />
+                          </Button>
                           {!template.is_system && (
                             <>
-                              <Button variant="ghost" size="icon" onClick={() => openEditDialog(template)} className="cyber-btn-ghost h-7 w-7"><Edit className="w-3.5 h-3.5" /></Button>
-                              <Button variant="ghost" size="icon" onClick={() => handleDelete(template.id)} className="h-7 w-7 hover:bg-destructive/12 hover:text-destructive"><Trash2 className="w-3.5 h-3.5" /></Button>
+                              <Button variant="ghost" size="icon" onClick={() => openEditDialog(template)} className="h-7 w-7 hover:bg-primary/12 hover:text-primary">
+                                <Edit className="w-3.5 h-3.5" />
+                              </Button>
+                              <Button variant="ghost" size="icon" onClick={() => handleDelete(template.id)} className="h-7 w-7 hover:bg-destructive/12 hover:text-destructive">
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </Button>
                             </>
                           )}
                         </div>
@@ -315,29 +303,15 @@ export default function PromptManager() {
                 {showEditDialog ? '编辑规则' : '新建规则'}
               </span>
             </SheetTitle>
-            <SheetDescription className="text-xs text-muted-foreground font-normal">
-              {showEditDialog ? '修改提示词模板配置' : '创建自定义提示词模板'}
-            </SheetDescription>
-          </SheetHeader>
+            </SheetHeader>
           <div className="flex-1 overflow-y-auto p-6 space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label className="text-xs font-bold text-muted-foreground uppercase">模板名称 *</Label>
-                <Input value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} placeholder="如：安全专项审计" className="cyber-input" />
-              </div>
-              <div className="space-y-2">
-                <Label className="text-xs font-bold text-muted-foreground uppercase">模板类型</Label>
-                <Select value={form.template_type} onValueChange={v => setForm({ ...form, template_type: v })}>
-                  <SelectTrigger className="cyber-input"><SelectValue /></SelectTrigger>
-                  <SelectContent className="cyber-dialog border-border">
-                    {TEMPLATE_TYPES.map(t => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-              </div>
+            <div className="space-y-2">
+              <Label className="text-xs font-bold text-muted-foreground uppercase">规则名称 *</Label>
+              <Input value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} placeholder="请填写规则名称" className="cyber-input" />
             </div>
             <div className="space-y-2">
               <Label className="text-xs font-bold text-muted-foreground uppercase">描述</Label>
-              <Input value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} placeholder="模板用途描述" className="cyber-input" />
+              <Input value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} placeholder="请输入规则描述" className="cyber-input" />
             </div>
             <Tabs defaultValue="zh" className="w-full">
               <TabsList className="grid w-full grid-cols-2 bg-muted border border-border p-1 h-auto gap-1 rounded">
@@ -355,11 +329,7 @@ export default function PromptManager() {
                 <Textarea value={form.content_en} onChange={e => setForm({ ...form, content_en: e.target.value })} placeholder="Enter English prompt content..." rows={12} className="cyber-input font-mono text-sm text-primary" />
               </TabsContent>
             </Tabs>
-            <div className="flex items-center gap-2">
-              <Switch checked={form.is_active} onCheckedChange={v => setForm({ ...form, is_active: v })} />
-              <Label className="text-xs font-bold text-muted-foreground uppercase">启用此模板</Label>
-            </div>
-          </div>
+                      </div>
           <div className="flex-shrink-0 flex justify-end gap-3 px-6 py-4 bg-muted border-t border-border">
             <Button variant="outline" onClick={() => { setShowCreateDialog(false); setShowEditDialog(false); }} className="cyber-btn-outline">取消</Button>
             <Button onClick={showEditDialog ? handleUpdate : handleCreate} className="cyber-btn-primary">{showEditDialog ? '保存' : '创建'}</Button>
@@ -542,50 +512,48 @@ export default function PromptManager() {
         </DialogContent>
       </Dialog>
 
-      {/* View Dialog */}
-      <Dialog open={showViewDialog} onOpenChange={setShowViewDialog}>
-        <DialogContent className="!w-[min(90vw,800px)] !max-w-none max-h-[85vh] flex flex-col p-0 gap-0 cyber-dialog border border-border rounded-lg">
-          <DialogHeader className="px-6 py-4 border-b border-border flex-shrink-0 bg-muted">
-            <DialogTitle className="flex items-center gap-3 font-mono text-foreground">
+      {/* View Sheet */}
+      <Sheet open={showViewDialog} onOpenChange={setShowViewDialog}>
+        <SheetContent side="right" className="!w-[min(90vw,700px)] sm:max-w-[700px] !sm:max-w-none flex flex-col p-0 gap-0 border-border overflow-y-auto">
+          <SheetHeader className="px-6 py-4 border-b border-border flex-shrink-0 bg-muted">
+            <SheetTitle className="flex items-center gap-3 font-mono text-foreground">
               <div className="p-2 bg-primary/20 rounded border border-primary/30">
-                <FileText className="w-5 h-5 text-primary" />
+                <Eye className="w-5 h-5 text-primary" />
               </div>
               <span className="text-base font-bold uppercase tracking-wider">
-                {viewTemplate?.name}
+                查看规则
               </span>
-            </DialogTitle>
-          </DialogHeader>
-          <div className="flex-1 overflow-y-auto p-6 space-y-4">
-            <Tabs defaultValue="zh" className="w-full">
-              <TabsList className="grid w-full grid-cols-2 bg-muted border border-border p-1 h-auto gap-1 rounded">
-                <TabsTrigger value="zh" className="data-[state=active]:bg-primary data-[state=active]:text-foreground font-mono font-bold uppercase py-2 text-muted-foreground transition-all rounded-sm text-xs">
-                  中文提示词
-                </TabsTrigger>
-                <TabsTrigger value="en" className="data-[state=active]:bg-primary data-[state=active]:text-foreground font-mono font-bold uppercase py-2 text-muted-foreground transition-all rounded-sm text-xs">
-                  英文提示词
-                </TabsTrigger>
-              </TabsList>
-              <TabsContent value="zh" className="mt-4">
-                <div className="cyber-bg-elevated text-primary p-4 border border-border font-mono text-sm whitespace-pre-wrap max-h-[500px] overflow-y-auto rounded">
-                  {viewTemplate?.content_zh || '(无中文内容)'}
-                </div>
-              </TabsContent>
-              <TabsContent value="en" className="mt-4">
-                <div className="cyber-bg-elevated text-primary p-4 border border-border font-mono text-sm whitespace-pre-wrap max-h-[500px] overflow-y-auto rounded">
-                  {viewTemplate?.content_en || '(No English content)'}
-                </div>
-              </TabsContent>
-            </Tabs>
-          </div>
-          <DialogFooter className="flex-shrink-0 flex justify-end gap-3 px-6 py-4 bg-muted border-t border-border">
-            <Button variant="outline" onClick={() => copyToClipboard(viewTemplate?.content_zh || viewTemplate?.content_en || '')} className="cyber-btn-outline">
-              <Copy className="w-4 h-4 mr-2" />
-              复制内容
-            </Button>
-            <Button variant="outline" onClick={() => { setShowViewDialog(false); if (viewTemplate) openTestDialog(viewTemplate); }} className="cyber-btn-outline">
-              <Play className="w-4 h-4 mr-2" />
-              测试
-            </Button>
+            </SheetTitle>
+          </SheetHeader>
+          {viewTemplate && (
+            <div className="flex-1 overflow-y-auto p-6 space-y-4">
+              <div className="space-y-2">
+                <Label className="text-xs font-bold text-muted-foreground uppercase">规则名称</Label>
+                <Input value={viewTemplate.name} readOnly className="cyber-input bg-muted cursor-default" />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-xs font-bold text-muted-foreground uppercase">描述</Label>
+                <Input value={viewTemplate.description || ''} readOnly className="cyber-input bg-muted cursor-default" />
+              </div>
+              <Tabs defaultValue="zh" className="w-full">
+                <TabsList className="grid w-full grid-cols-2 bg-muted border border-border p-1 h-auto gap-1 rounded">
+                  <TabsTrigger value="zh" className="data-[state=active]:bg-primary data-[state=active]:text-foreground font-mono font-bold uppercase py-2 text-muted-foreground transition-all rounded-sm text-xs">
+                    中文提示词
+                  </TabsTrigger>
+                  <TabsTrigger value="en" className="data-[state=active]:bg-primary data-[state=active]:text-foreground font-mono font-bold uppercase py-2 text-muted-foreground transition-all rounded-sm text-xs">
+                    英文提示词
+                  </TabsTrigger>
+                </TabsList>
+                <TabsContent value="zh" className="mt-4">
+                  <Textarea value={viewTemplate.content_zh || ''} readOnly rows={12} className="cyber-input font-mono text-sm text-primary bg-muted cursor-default" />
+                </TabsContent>
+                <TabsContent value="en" className="mt-4">
+                  <Textarea value={viewTemplate.content_en || ''} readOnly rows={12} className="cyber-input font-mono text-sm text-primary bg-muted cursor-default" />
+                </TabsContent>
+              </Tabs>
+            </div>
+          )}
+          <div className="flex-shrink-0 flex justify-end gap-3 px-6 py-4 bg-muted border-t border-border">
             {!viewTemplate?.is_system && (
               <Button variant="outline" onClick={() => { setShowViewDialog(false); if (viewTemplate) openEditDialog(viewTemplate); }} className="cyber-btn-outline">
                 <Edit className="w-4 h-4 mr-2" />
@@ -593,9 +561,9 @@ export default function PromptManager() {
               </Button>
             )}
             <Button onClick={() => setShowViewDialog(false)} className="cyber-btn-primary">关闭</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          </div>
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }
