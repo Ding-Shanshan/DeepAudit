@@ -12,8 +12,9 @@ import type {
   AgentFinding,
   AgentTreeResponse,
   ConnectionStatus,
+  AuditPhase,
 } from "../types";
-import { createLogItem, filterLogsByAgent, buildAgentTree } from "../utils";
+import { createLogItem, filterLogsByAgent, buildAgentTree, AUDIT_PHASES } from "../utils";
 import type { AgentTreeNode } from "@/shared/api/agentTasks";
 
 // ============ Initial State ============
@@ -30,6 +31,8 @@ const initialState: AgentAuditState = {
   connectionStatus: 'disconnected',
   isAutoScroll: true,
   expandedLogIds: new Set(),
+  currentPhase: 'preparation',
+  completedPhases: [],
 };
 
 // ============ Reducer ============
@@ -62,7 +65,7 @@ function agentAuditReducer(state: AgentAuditState, action: AgentAuditAction): Ag
       const { id: providedId, ...logData } = action.payload;
       const newLog = providedId
         ? { ...createLogItem(logData), id: providedId }
-        : createLogItem(logData);
+        : createLogItem({ ...logData, phase: logData.phase || state.currentPhase });
       return { ...state, logs: [...state.logs, newLog] };
     }
 
@@ -165,6 +168,28 @@ function agentAuditReducer(state: AgentAuditState, action: AgentAuditAction): Ag
       return { ...state, expandedLogIds: newExpanded };
     }
 
+    case 'SET_CURRENT_PHASE': {
+      const newPhase = action.payload;
+      const phaseIndex = AUDIT_PHASES.indexOf(newPhase);
+      // 自动将之前的阶段标记为完成
+      const newCompleted = AUDIT_PHASES.slice(0, phaseIndex).filter(
+        p => !state.completedPhases.includes(p)
+      );
+      return {
+        ...state,
+        currentPhase: newPhase,
+        completedPhases: [...state.completedPhases, ...newCompleted],
+      };
+    }
+
+    case 'COMPLETE_PHASE': {
+      if (state.completedPhases.includes(action.payload)) return state;
+      return {
+        ...state,
+        completedPhases: [...state.completedPhases, action.payload],
+      };
+    }
+
     case 'RESET':
       return { ...initialState };
 
@@ -242,6 +267,14 @@ export function useAgentAuditState() {
     currentAgentName.current = null;
   }, []);
 
+  const setCurrentPhase = useCallback((phase: AuditPhase) => {
+    dispatch({ type: 'SET_CURRENT_PHASE', payload: phase });
+  }, []);
+
+  const completePhase = useCallback((phase: AuditPhase) => {
+    dispatch({ type: 'COMPLETE_PHASE', payload: phase });
+  }, []);
+
   // ============ Thinking State Management ============
 
   const setCurrentAgentName = useCallback((name: string | null) => {
@@ -308,6 +341,8 @@ export function useAgentAuditState() {
     setAutoScroll,
     toggleLogExpanded,
     reset,
+    setCurrentPhase,
+    completePhase,
 
     // Thinking state
     setCurrentAgentName,

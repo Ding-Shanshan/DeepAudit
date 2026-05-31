@@ -541,6 +541,8 @@ export default function ProjectDetail() {
             issuesSummary={issuesSummary}
             loading={loadingIssues}
             latestProblems={latestProblems}
+            latestIssues={latestIssues}
+            latestFindings={latestFindings}
             formatDate={formatDate}
             onStatusChange={handleStatusChange}
           />

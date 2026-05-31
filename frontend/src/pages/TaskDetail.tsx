@@ -33,28 +33,17 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { api } from "@/shared/config/database";
-import type { AuditTask, AuditIssue } from "@/shared/types";
+import type { AuditTask, AuditIssue, AggregatedAuditIssue } from "@/shared/types";
 import { toast } from "sonner";
 import { calculateTaskProgress } from "@/shared/utils/utils";
-
-// AI explanation parser
-function parseAIExplanation(aiExplanation: string) {
-  try {
-    const parsed = JSON.parse(aiExplanation);
-    if (parsed.xai) {
-      return parsed.xai;
-    }
-    if (parsed.what || parsed.why || parsed.how) {
-      return parsed;
-    }
-    return null;
-  } catch (error) {
-    return null;
-  }
-}
+import IssueDetailSheet from "@/components/issues/IssueDetailSheet";
 
 // Issues Table Component
-function IssuesTable({ issues, onStatusChange }: { issues: AuditIssue[]; onStatusChange?: (issue: AuditIssue, newStatus: string) => void }) {
+function IssuesTable({ issues, onStatusChange, onViewDetail }: {
+  issues: AuditIssue[];
+  onStatusChange?: (issue: AuditIssue, newStatus: string) => void;
+  onViewDetail?: (issue: AuditIssue) => void;
+}) {
   const getSeverityBadge = (severity: string) => {
     const baseClass = "font-bold uppercase px-2 py-1 rounded text-xs inline-flex justify-center min-w-[56px] text-center";
     switch (severity) {
@@ -139,17 +128,7 @@ function IssuesTable({ issues, onStatusChange }: { issues: AuditIssue[]; onStatu
                       variant="ghost"
                       size="sm"
                       className="hover:bg-primary/12 hover:text-primary h-7"
-                      onClick={() => {
-                        const detail = [
-                          issue.description && `【问题详情】\n${issue.description}`,
-                          issue.code_snippet && `【代码片段】\n${issue.code_snippet}`,
-                          issue.suggestion && `【修复建议】\n${issue.suggestion}`,
-                          issue.ai_explanation && `【AI解释】\n${issue.ai_explanation}`,
-                        ].filter(Boolean).join('\n\n');
-                        if (detail) {
-                          setExpandedIssue(expandedIssue === issue.id ? null : issue.id);
-                        }
-                      }}
+                      onClick={() => onViewDetail?.(issue)}
                     >
                       <FileText className="w-3.5 h-3.5 mr-1" />
                       查看详情
@@ -163,8 +142,6 @@ function IssuesTable({ issues, onStatusChange }: { issues: AuditIssue[]; onStatu
       </div>
     </div>
   );
-
-  const [expandedIssue, setExpandedIssue] = useState<string | number | null>(null);
 }
 
 export default function TaskDetail() {
@@ -176,7 +153,16 @@ export default function TaskDetail() {
     const [nameFilter, setNameFilter] = useState("");
   const [severityFilter, setSeverityFilter] = useState<string>("all");
   const [statusFilter, setStatusFilter] = useState<string>("all");
-  
+
+  // Issue detail Sheet
+  const [detailOpen, setDetailOpen] = useState(false);
+  const [selectedIssue, setSelectedIssue] = useState<AuditIssue | null>(null);
+
+  const handleViewDetail = (issue: AuditIssue) => {
+    setSelectedIssue(issue);
+    setDetailOpen(true);
+  };
+
   // Zombie task detection
   const [lastProgressTime, setLastProgressTime] = useState<number>(Date.now());
   const [lastProgress, setLastProgress] = useState<number>(0);
@@ -533,8 +519,15 @@ export default function TaskDetail() {
           </Select>
         </div>
 
-        <IssuesTable issues={filteredIssues} onStatusChange={handleIssueStatusChange} />
+        <IssuesTable issues={filteredIssues} onStatusChange={handleIssueStatusChange} onViewDetail={handleViewDetail} />
       </div>
+
+      {/* Issue detail Sheet */}
+      <IssueDetailSheet
+        open={detailOpen}
+        onOpenChange={setDetailOpen}
+        auditIssue={selectedIssue as any}
+      />
 
           </div>
   );

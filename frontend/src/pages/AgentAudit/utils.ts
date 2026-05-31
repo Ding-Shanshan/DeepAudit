@@ -3,7 +3,10 @@
  * Helper functions for the Agent Audit page
  */
 
-import type { AgentTreeNode, LogItem } from "./types";
+import type { AgentTreeNode, LogItem, AuditPhase } from "./types";
+
+export { AUDIT_PHASES } from "./types";
+export type { AuditPhase };
 
 /**
  * Build tree structure from flat node list
@@ -186,6 +189,93 @@ export function filterLogsByAgent(
     log.agentName?.toLowerCase() === selectedAgentName.toLowerCase() ||
     log.agentName?.toLowerCase().includes(selectedAgentName.toLowerCase().split('_')[0])
   );
+}
+
+/**
+ * Infer audit phase from an SSE event
+ * 🔥 核心逻辑：根据事件类型推断当前审计阶段
+ */
+export function inferPhaseFromEvent(
+  eventType: string,
+  phase: string | null,
+  metadata: Record<string, unknown> | null,
+  currentPhase: AuditPhase
+): AuditPhase {
+  // phase_start 事件直接指定阶段
+  if (eventType === 'phase_start' && phase) {
+    const phaseMap: Record<string, AuditPhase> = {
+      'preparation': 'preparation',
+      'planning': 'preparation',
+      'recon': 'recon',
+      'analysis': 'analysis',
+      'verification': 'verification',
+      'reporting': 'reporting',
+      'orchestration': 'analysis',
+    };
+    return phaseMap[phase] || currentPhase;
+  }
+
+  // dispatch 事件推断 - 调度子 Agent 时切换阶段
+  if (eventType === 'dispatch') {
+    const agentName = (metadata?.agent as string) || (metadata?.agent_name as string);
+    if (agentName === 'recon') return 'recon';
+    if (agentName === 'analysis') return 'analysis';
+    if (agentName === 'verification') return 'verification';
+  }
+
+  // dispatch_complete 事件 - Agent 完成时，后续 Agent 还未调度，停留在当前阶段
+  // 但如果 Recon 完成，我们知道接下来是 Analysis
+
+  // task_complete 进入报告阶段
+  if (eventType === 'task_complete') return 'reporting';
+
+  return currentPhase;
+}
+
+/**
+ * Infer initial phase from task status and current_phase field
+ */
+export function inferInitialPhase(
+  taskStatus: string | null | undefined,
+  taskCurrentPhase: string | null | undefined
+): AuditPhase {
+  if (!taskStatus || taskStatus === 'pending') return 'preparation';
+  if (taskStatus === 'completed' || taskStatus === 'failed' || taskStatus === 'cancelled') return 'reporting';
+
+  // 根据 task.current_phase 字段推断
+  if (taskCurrentPhase) {
+    const phaseMap: Record<string, AuditPhase> = {
+      'planning': 'preparation',
+      'analysis': 'analysis',
+      'reporting': 'reporting',
+    };
+    return phaseMap[taskCurrentPhase] || 'preparation';
+  }
+
+  return 'preparation';
+}
+
+/**
+ * Get logs grouped by phase
+ */
+export function getPhaseLogs(
+  logs: LogItem[],
+  currentPhase: AuditPhase
+): Record<AuditPhase, LogItem[]> {
+  const result: Record<string, LogItem[]> = {};
+  for (const phase of AUDIT_PHASES) {
+    result[phase] = [];
+  }
+
+  for (const log of logs) {
+    const phase = log.phase || currentPhase;
+    if (!result[phase]) {
+      result[phase] = [];
+    }
+    result[phase].push(log);
+  }
+
+  return result as Record<AuditPhase, LogItem[]>;
 }
 
 /**

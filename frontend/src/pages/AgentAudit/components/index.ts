@@ -13,3 +13,5 @@ export { Header } from './Header';
 export { AgentErrorBoundary } from './AgentErrorBoundary';
 export { ConnectionStatus } from './ConnectionStatus';
 export { ReportExportDialog } from './ReportExportDialog';
+export { PhaseStepper } from './PhaseStepper';
+export { PhaseDetail } from './PhaseDetail';

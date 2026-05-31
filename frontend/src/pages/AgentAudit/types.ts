@@ -5,6 +5,50 @@
 
 import type { AgentTask, AgentFinding, AgentTreeNode } from "@/shared/api/agentTasks";
 
+// ============ Audit Phase Types ============
+
+export type AuditPhase = 'preparation' | 'recon' | 'analysis' | 'verification' | 'reporting';
+
+export const AUDIT_PHASES: AuditPhase[] = ['preparation', 'recon', 'analysis', 'verification', 'reporting'];
+
+export const AUDIT_PHASE_CONFIG: Record<AuditPhase, {
+  key: AuditPhase;
+  label: string;
+  description: string;
+  icon: string;
+}> = {
+  preparation: {
+    key: 'preparation',
+    label: '准备',
+    description: '克隆仓库、初始化沙箱、构建代码索引',
+    icon: '📦',
+  },
+  recon: {
+    key: 'recon',
+    label: '侦察',
+    description: '项目结构分析、技术栈识别、入口点发现',
+    icon: '🔍',
+  },
+  analysis: {
+    key: 'analysis',
+    label: '分析',
+    description: '深度代码审计、漏洞检测',
+    icon: '🔬',
+  },
+  verification: {
+    key: 'verification',
+    label: '验证',
+    description: '漏洞验证、PoC 生成',
+    icon: '✅',
+  },
+  reporting: {
+    key: 'reporting',
+    label: '报告',
+    description: '结果汇总、评分计算',
+    icon: '📊',
+  },
+};
+
 // ============ Log Types ============
 
 export type LogType =
@@ -35,6 +79,7 @@ export interface LogItem {
   severity?: string;
   agentName?: string;
   progressKey?: string; // 用于标识进度日志的唯一键，如 "index_progress"
+  phase?: AuditPhase;   // 🔥 标记日志所属的审计阶段
 }
 
 // ============ Connection Types ============
@@ -55,6 +100,9 @@ export interface AgentAuditState {
   connectionStatus: ConnectionStatus;
   isAutoScroll: boolean;
   expandedLogIds: Set<string>;
+  // 🔥 阶段追踪
+  currentPhase: AuditPhase;
+  completedPhases: AuditPhase[];
 }
 
 export interface AgentTreeResponse {
@@ -88,6 +136,8 @@ export type AgentAuditAction =
   | { type: 'SET_CONNECTION_STATUS'; payload: ConnectionStatus }
   | { type: 'SET_AUTO_SCROLL'; payload: boolean }
   | { type: 'TOGGLE_LOG_EXPANDED'; payload: string }
+  | { type: 'SET_CURRENT_PHASE'; payload: AuditPhase }
+  | { type: 'COMPLETE_PHASE'; payload: AuditPhase }
   | { type: 'RESET' };
 
 // ============ Component Props ============
