@@ -1,4 +1,4 @@
-import Dashboard from "@/pages/Dashboard";
+import Dashboard from "@/pages/Dashboard/index";
 import Projects from "@/pages/Projects";
 import ProjectDetail from "@/pages/ProjectDetail";
 import RecycleBin from "@/pages/RecycleBin";
