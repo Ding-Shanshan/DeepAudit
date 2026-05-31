@@ -810,9 +810,6 @@ export default function Projects() {
                                 <Eye className="w-3.5 h-3.5" />
                               </Button>
                             </Link>
-                            <Button variant="ghost" size="icon" onClick={() => handleCreateTask(project.id)} className="cyber-btn-ghost h-7 w-7" title="开始执行">
-                              <Play className="w-3.5 h-3.5" />
-                            </Button>
                             <Button variant="ghost" size="icon" onClick={() => handleEditClick(project)} className="cyber-btn-ghost h-7 w-7">
                               <Edit className="w-3.5 h-3.5" />
                             </Button>

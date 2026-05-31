@@ -50,6 +50,17 @@ interface TestResult {
   latency_ms?: number;
 }
 
+// 各服务商默认 API URL（完整端点地址，与官方文档一致）
+const PROVIDER_DEFAULT_URLS: Record<string, string> = {
+  openai: "https://api.openai.com/v1/embeddings",
+  azure: "https://your-resource.openai.azure.com",
+  ollama: "http://localhost:11434/api/embed",
+  cohere: "https://api.cohere.com/v2/embed",
+  huggingface: "https://router.huggingface.co",
+  jina: "https://api.jina.ai/v1/embeddings",
+  qwen: "https://dashscope.aliyuncs.com/api/v1/services/embeddings/text-embedding/text-embedding",
+};
+
 export default function EmbeddingConfigPanel() {
   const [providers, setProviders] = useState<EmbeddingProvider[]>([]);
   const [currentConfig, setCurrentConfig] = useState<EmbeddingConfig | null>(null);
@@ -71,14 +82,16 @@ export default function EmbeddingConfigPanel() {
     loadData();
   }, []);
 
-  // 用户手动切换 provider 时更新为默认模型
+  // 用户手动切换 provider 时重置模型和 URL 为默认值
   const handleProviderChange = (newProvider: string) => {
     setSelectedProvider(newProvider);
-    // 切换 provider 时重置为该 provider 的默认模型
     const provider = providers.find((p) => p.id === newProvider);
     if (provider) {
       setSelectedModel(provider.default_model);
     }
+    setBaseUrl(PROVIDER_DEFAULT_URLS[newProvider] || "");
+    setApiKey("");
+    setTestResult(null);
   };
 
   const loadData = async () => {
@@ -214,28 +227,13 @@ export default function EmbeddingConfigPanel() {
         {selectedProviderInfo && (
           <div className="space-y-2">
             <Label className="text-xs font-bold text-muted-foreground uppercase">模型名称</Label>
-            {selectedProviderInfo.models.length > 0 ? (
-              <Select value={selectedModel} onValueChange={setSelectedModel}>
-                <SelectTrigger className="h-10 cyber-input">
-                  <SelectValue placeholder="请选择模型" />
-                </SelectTrigger>
-                <SelectContent className="cyber-dialog border-border">
-                  {selectedProviderInfo.models.map((model) => (
-                    <SelectItem key={model} value={model} className="font-mono">
-                      {model}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            ) : (
-              <Input
-                type="text"
-                value={selectedModel}
-                onChange={(e) => setSelectedModel(e.target.value)}
-                placeholder="请填写模型名称"
-                className="h-10 cyber-input"
-              />
-            )}
+            <Input
+              type="text"
+              value={selectedModel}
+              onChange={(e) => setSelectedModel(e.target.value)}
+              placeholder={selectedProviderInfo.default_model || "请填写模型名称"}
+              className="h-10 cyber-input"
+            />
           </div>
         )}
 
@@ -246,7 +244,7 @@ export default function EmbeddingConfigPanel() {
             type="url"
             value={baseUrl}
             onChange={(e) => setBaseUrl(e.target.value)}
-            placeholder="请填写API URL"
+            placeholder={PROVIDER_DEFAULT_URLS[selectedProvider] || "请填写API URL"}
             className="h-10 cyber-input"
           />
         </div>
@@ -318,7 +316,11 @@ export default function EmbeddingConfigPanel() {
                 {testResult.success ? "测试成功" : "测试失败"}
               </span>
             </div>
-            <p className="text-sm text-muted-foreground">{testResult.message}</p>
+            {testResult.success ? (
+              <p className="text-sm text-muted-foreground">{testResult.message}</p>
+            ) : (
+              <pre className="text-sm text-destructive/80 whitespace-pre-wrap break-words font-mono leading-relaxed bg-destructive/5 p-3 rounded border border-destructive/15">{testResult.message}</pre>
+            )}
             {testResult.success && (
               <div className="mt-3 pt-3 border-t border-border text-xs text-muted-foreground space-y-1 font-mono">
                 <div>向量维度: <span className="text-foreground">{testResult.dimensions}</span></div>

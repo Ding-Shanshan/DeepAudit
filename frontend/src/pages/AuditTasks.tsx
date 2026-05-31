@@ -340,7 +340,7 @@ export default function AuditTasks() {
                 <tr className="border-b border-border text-muted-foreground">
                   <th className="text-left py-2 px-6 font-medium">任务名称</th>
                   <th className="text-left py-2 px-3 font-medium">扫描进度</th>
-                  <th className="text-left py-2 px-3 font-medium">代码大小</th>
+                  <th className="text-left py-2 px-3 font-medium">文件数</th>
                   <th className="text-left py-2 px-3 font-medium">问题数</th>
                   <th className="text-left py-2 px-3 font-medium">执行结果</th>
                   <th className="text-left py-2 px-3 font-medium">操作</th>
@@ -436,7 +436,7 @@ export default function AuditTasks() {
                 <tr className="border-b border-border text-muted-foreground">
                   <th className="text-left py-2 px-6 font-medium">任务名称</th>
                   <th className="text-left py-2 px-3 font-medium">扫描进度</th>
-                  <th className="text-left py-2 px-3 font-medium">代码大小</th>
+                  <th className="text-left py-2 px-3 font-medium">文件数</th>
                   <th className="text-left py-2 px-3 font-medium">问题数</th>
                   <th className="text-left py-2 px-3 font-medium">执行结果</th>
                   <th className="text-left py-2 px-3 font-medium">操作</th>
@@ -459,7 +459,7 @@ export default function AuditTasks() {
                         {calculateTaskProgress(task.scanned_files, task.total_files)}%
                       </td>
                       <td className="py-2.5 px-3 text-muted-foreground">
-                        {task.total_lines.toLocaleString()} 行
+                        {task.total_files} 文件
                       </td>
                       <td className="py-2.5 px-3">
                         <span className="font-bold text-warning">{task.issues_count}</span>

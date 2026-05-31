@@ -440,7 +440,7 @@ async def test_llm_connection(
             provider=provider,
             api_key=request.apiKey,
             model=model,
-            base_url=request.baseUrl,
+            base_url=base_url,
             timeout=test_timeout,
             temperature=test_temperature,
             max_tokens=test_max_tokens,
@@ -535,6 +535,9 @@ async def test_llm_connection(
         elif "authentication" in error_msg.lower():
             friendly_message = "认证失败，请检查 API Key 是否正确"
             debug_info["error_category"] = "auth_failed"
+        elif "404" in error_msg or "NotFoundError" in error_msg or "not found" in error_msg.lower():
+            friendly_message = f"API 返回 404：模型 '{debug_info.get('model_used', 'unknown')}' 不存在或 API URL 不正确，请检查模型名称和 API 地址"
+            debug_info["error_category"] = "not_found_404"
         elif "timeout" in error_msg.lower():
             friendly_message = "连接超时，请检查网络或 API 地址是否正确"
             debug_info["error_category"] = "timeout"

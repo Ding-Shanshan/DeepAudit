@@ -11,7 +11,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { toast } from 'sonner';
 import {
@@ -26,6 +26,7 @@ import {
   Check,
   Loader2,
   Search,
+  Wand2,
 } from 'lucide-react';
 import {
   getPromptTemplates,
@@ -36,6 +37,7 @@ import {
   type PromptTemplate,
   type PromptTemplateCreate,
 } from '@/shared/api/prompts';
+import { generateAIRule } from '@/shared/api/aiRules';
 import { TEST_CODE_SAMPLES, TEMPLATE_TEST_CODES } from './prompt-manager/testCodeSamples';
 
 const TEMPLATE_TYPES = [
@@ -62,6 +64,10 @@ export default function PromptManager() {
   const [filterName, setFilterName] = useState('');
   const [filterType, setFilterType] = useState('all');
   const [filterEnabled, setFilterEnabled] = useState('all');
+  const [ruleSummaryEn, setRuleSummaryEn] = useState('');
+  const [generating, setGenerating] = useState(false);
+  const [editTab, setEditTab] = useState('zh');
+  const [viewTab, setViewTab] = useState('zh');
 
   useEffect(() => { loadTemplates(); }, []);
 
@@ -133,11 +139,36 @@ export default function PromptManager() {
 
   const resetForm = () => {
     setForm({ name: '', description: '', template_type: 'system', content_zh: '', content_en: '', is_active: true });
+    setRuleSummaryEn('');
+    setEditTab('zh');
+  };
+
+  const handleGenerateRule = async () => {
+    if (!ruleSummaryEn.trim()) return;
+    setGenerating(true);
+    try {
+      const response = await generateAIRule(ruleSummaryEn, 'zh');
+      if (response.success && (response.rule || response.content)) {
+        setForm(prev => ({ ...prev, content_en: response.rule || response.content || '' }));
+        toast.success(`规则生成成功${response.execution_time ? `，耗时 ${response.execution_time}s` : ''}`);
+      } else {
+        toast.error(response.error || '规则生成失败，LLM 返回空结果');
+      }
+    } catch (error: any) {
+      const isTimeout = error.code === 'ECONNABORTED' || error.message?.includes('timeout');
+      toast.error(isTimeout
+        ? '规则生成超时，LLM 响应时间较长，请稍后重试'
+        : error.response?.data?.detail || '规则生成失败');
+    } finally {
+      setGenerating(false);
+    }
   };
 
   const openEditDialog = (template: PromptTemplate) => {
     setSelectedTemplate(template);
     setForm({ name: template.name, description: template.description || '', template_type: template.template_type, content_zh: template.content_zh || '', content_en: template.content_en || '', is_active: template.is_active });
+    setRuleSummaryEn('');
+    setEditTab('zh');
     setShowEditDialog(true);
   };
 
@@ -156,6 +187,7 @@ export default function PromptManager() {
 
   const openViewDialog = (template: PromptTemplate) => {
     setViewTemplate(template);
+    setViewTab('zh');
     setShowViewDialog(true);
   };
 
@@ -313,22 +345,35 @@ export default function PromptManager() {
               <Label className="text-xs font-bold text-muted-foreground uppercase">描述</Label>
               <Input value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} placeholder="请输入规则描述" className="cyber-input" />
             </div>
-            <Tabs defaultValue="zh" className="w-full">
-              <TabsList className="grid w-full grid-cols-2 bg-muted border border-border p-1 h-auto gap-1 rounded">
-                <TabsTrigger value="zh" className="data-[state=active]:bg-primary data-[state=active]:text-foreground font-mono font-bold uppercase py-2 text-muted-foreground transition-all rounded-sm text-xs">
-                  中文提示词
-                </TabsTrigger>
-                <TabsTrigger value="en" className="data-[state=active]:bg-primary data-[state=active]:text-foreground font-mono font-bold uppercase py-2 text-muted-foreground transition-all rounded-sm text-xs">
-                  英文提示词
-                </TabsTrigger>
-              </TabsList>
-              <TabsContent value="zh" className="mt-4">
-                <Textarea value={form.content_zh} onChange={e => setForm({ ...form, content_zh: e.target.value })} placeholder="输入中文提示词内容..." rows={12} className="cyber-input font-mono text-sm text-primary" />
-              </TabsContent>
-              <TabsContent value="en" className="mt-4">
-                <Textarea value={form.content_en} onChange={e => setForm({ ...form, content_en: e.target.value })} placeholder="Enter English prompt content..." rows={12} className="cyber-input font-mono text-sm text-primary" />
-              </TabsContent>
-            </Tabs>
+            <RadioGroup value={editTab} onValueChange={setEditTab} className="flex items-center gap-6">
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="zh" id="edit-zh" />
+                <Label htmlFor="edit-zh" className="text-sm font-bold cursor-pointer">自定义AI规则</Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="en" id="edit-en" />
+                <Label htmlFor="edit-en" className="text-sm font-bold cursor-pointer">AI生成规则</Label>
+              </div>
+            </RadioGroup>
+            {editTab === 'zh' ? (
+              <Textarea value={form.content_zh} onChange={e => setForm({ ...form, content_zh: e.target.value })} placeholder="用自然语言描述检测规则" rows={12} className="cyber-input font-mono text-sm text-primary" />
+            ) : (
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-xs font-bold text-muted-foreground">规则简述</Label>
+                    <Button size="sm" onClick={handleGenerateRule} disabled={generating || !ruleSummaryEn.trim()} className="cyber-btn-primary h-7 text-xs">
+                      {generating ? (<><Loader2 className="w-3 h-3 mr-1 animate-spin" />生成中...</>) : (<><Wand2 className="w-3 h-3 mr-1" />生成规则</>)}
+                    </Button>
+                  </div>
+                  <Textarea value={ruleSummaryEn} onChange={e => setRuleSummaryEn(e.target.value)} placeholder="请用自然语言简述检测逻辑" rows={4} className="cyber-input font-mono text-sm text-primary" />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-xs font-bold text-muted-foreground">生成结果</Label>
+                  <Textarea value={form.content_en} onChange={e => setForm({ ...form, content_en: e.target.value })} placeholder="等待AI生成规则" rows={8} className="cyber-input font-mono text-sm text-primary" />
+                </div>
+              </div>
+            )}
                       </div>
           <div className="flex-shrink-0 flex justify-end gap-3 px-6 py-4 bg-muted border-t border-border">
             <Button variant="outline" onClick={() => { setShowCreateDialog(false); setShowEditDialog(false); }} className="cyber-btn-outline">取消</Button>
@@ -535,22 +580,21 @@ export default function PromptManager() {
                 <Label className="text-xs font-bold text-muted-foreground uppercase">描述</Label>
                 <Input value={viewTemplate.description || ''} readOnly className="cyber-input bg-muted cursor-default" />
               </div>
-              <Tabs defaultValue="zh" className="w-full">
-                <TabsList className="grid w-full grid-cols-2 bg-muted border border-border p-1 h-auto gap-1 rounded">
-                  <TabsTrigger value="zh" className="data-[state=active]:bg-primary data-[state=active]:text-foreground font-mono font-bold uppercase py-2 text-muted-foreground transition-all rounded-sm text-xs">
-                    中文提示词
-                  </TabsTrigger>
-                  <TabsTrigger value="en" className="data-[state=active]:bg-primary data-[state=active]:text-foreground font-mono font-bold uppercase py-2 text-muted-foreground transition-all rounded-sm text-xs">
-                    英文提示词
-                  </TabsTrigger>
-                </TabsList>
-                <TabsContent value="zh" className="mt-4">
-                  <Textarea value={viewTemplate.content_zh || ''} readOnly rows={12} className="cyber-input font-mono text-sm text-primary bg-muted cursor-default" />
-                </TabsContent>
-                <TabsContent value="en" className="mt-4">
-                  <Textarea value={viewTemplate.content_en || ''} readOnly rows={12} className="cyber-input font-mono text-sm text-primary bg-muted cursor-default" />
-                </TabsContent>
-              </Tabs>
+              <RadioGroup value={viewTab} onValueChange={setViewTab} className="flex items-center gap-6">
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="zh" id="view-zh" />
+                  <Label htmlFor="view-zh" className="text-sm font-bold cursor-pointer">自定义AI规则</Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="en" id="view-en" />
+                  <Label htmlFor="view-en" className="text-sm font-bold cursor-pointer">AI生成规则</Label>
+                </div>
+              </RadioGroup>
+              {viewTab === 'zh' ? (
+                <Textarea value={viewTemplate.content_zh || ''} readOnly rows={12} className="cyber-input font-mono text-sm text-primary bg-muted cursor-default" />
+              ) : (
+                <Textarea value={viewTemplate.content_en || ''} readOnly rows={12} className="cyber-input font-mono text-sm text-primary bg-muted cursor-default" />
+              )}
             </div>
           )}
           <div className="flex-shrink-0 flex justify-end gap-3 px-6 py-4 bg-muted border-t border-border">

@@ -32,13 +32,6 @@ services:
   backend:
     build:
       context: ./backend
-      args:
-        - http_proxy=
-        - https_proxy=
-        - HTTP_PROXY=
-        - HTTPS_PROXY=
-        - all_proxy=
-        - ALL_PROXY=
     restart: unless-stopped
     volumes:
       # - ./backend/app:/app/app:ro  # 挂载代码目录，修改后自动生效
@@ -54,12 +47,15 @@ services:
       - AGENT_ENABLED=true
       - SANDBOX_ENABLED=true
       - SANDBOX_IMAGE=deepaudit/sandbox:latest  # 使用本地构建的沙箱镜像
-      # 禁用代理设置，防止容器内无法连接外部 API
-      - HTTP_PROXY=
-      - HTTPS_PROXY=
-      - http_proxy=
-      - https_proxy=
-      - NO_PROXY=*
+      # SSH SOCKS5 代理（用于 git clone / ssh test）
+      - SSH_PROXY_HOST=192.168.66.1:7891
+      # HTTP 代理（用于 LLM API 调用等）
+      - HTTP_PROXY=http://192.168.66.1:7890
+      - HTTPS_PROXY=http://192.168.66.1:7890
+      - http_proxy=http://192.168.66.1:7890
+      - https_proxy=http://192.168.66.1:7890
+      - NO_PROXY=localhost,127.0.0.1,db,redis,deepaudit-backend-1
+      - no_proxy=localhost,127.0.0.1,db,redis
     depends_on:
       db:
         condition: service_healthy

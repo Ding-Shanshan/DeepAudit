@@ -90,7 +90,11 @@ class OpenAIEmbedding(EmbeddingProvider):
             "input": truncated_texts,
         }
         
-        url = f"{self.base_url.rstrip('/')}/embeddings"
+        # 去除 base_url 尾部可能多余的 /embeddings，避免拼接后重复
+        base = self.base_url.rstrip('/')
+        if base.endswith('/embeddings'):
+            base = base[:-len('/embeddings')]
+        url = f"{base}/embeddings"
         
         async with httpx.AsyncClient(timeout=60) as client:
             response = await client.post(url, headers=headers, json=payload)
@@ -225,7 +229,10 @@ class OllamaEmbedding(EmbeddingProvider):
             return []
         
         # 新的 Ollama /api/embed 端点
-        url = f"{self.base_url.rstrip('/')}/api/embed"
+        base = self.base_url.rstrip('/')
+        if base.endswith('/api/embed'):
+            base = base[:-len('/api/embed')]
+        url = f"{base}/api/embed"
         
         payload = {
             "model": self.model,
@@ -306,7 +313,10 @@ class CohereEmbedding(EmbeddingProvider):
             "embedding_types": ["float"],  # v2 需要指定嵌入类型
         }
         
-        url = f"{self.base_url.rstrip('/')}/embed"
+        base = self.base_url.rstrip('/')
+        if base.endswith('/embed'):
+            base = base[:-len('/embed')]
+        url = f"{base}/embed"
         
         async with httpx.AsyncClient(timeout=60) as client:
             response = await client.post(url, headers=headers, json=payload)
@@ -451,7 +461,11 @@ class JinaEmbedding(EmbeddingProvider):
             "input": texts,
         }
         
-        url = f"{self.base_url.rstrip('/')}/embeddings"
+        # 去除 base_url 尾部可能多余的 /embeddings，避免拼接后重复
+        base = self.base_url.rstrip('/')
+        if base.endswith('/embeddings'):
+            base = base[:-len('/embeddings')]
+        url = f"{base}/embeddings"
         
         async with httpx.AsyncClient(timeout=60) as client:
             response = await client.post(url, headers=headers, json=payload)
@@ -470,95 +484,121 @@ class JinaEmbedding(EmbeddingProvider):
 
 
 class QwenEmbedding(EmbeddingProvider):
-    """Qwen 嵌入服务（基于阿里云 DashScope embeddings API）"""
-    
+    """Qwen 嵌入服务（基于阿里云 DashScope 原生 API）
+
+    统一使用 DashScope 原生 API，同时支持 text-embedding-* 和 tongyi-embedding-* 模型。
+    API 文档: https://help.aliyun.com/zh/model-studio/developer-reference/text-embedding-api
+    """
+
     MODELS = {
-        # DashScope Qwen 嵌入模型及其默认维度
-        "text-embedding-v4": 1024,  # 支持维度: 2048, 1536, 1024(默认), 768, 512, 256, 128, 64
-        "text-embedding-v3": 1024,  # 支持维度: 1024(默认), 768, 512, 256, 128, 64
-        "text-embedding-v2": 1536,  # 支持维度: 1536
+        "text-embedding-v4": 1024,
+        "text-embedding-v3": 1024,
+        "text-embedding-v2": 1536,
+        "text-embedding-v1": 1536,
+        "tongyi-embedding-vision-plus": 1024,
     }
-    
+
+    # DashScope 原生 API 端点
+    NATIVE_API_URL = "https://dashscope.aliyuncs.com/api/v1/services/embeddings/text-embedding/text-embedding"
+
+    # 日期后缀正则模式：-YYYY-MM-DD 或 -YYYYMMDD
+    DATE_SUFFIX_PATTERN = __import__("re").compile(r"-\d{4}-\d{2}-\d{2}$|-\d{8}$")
+
     def __init__(
         self,
         api_key: Optional[str] = None,
         base_url: Optional[str] = None,
         model: str = "text-embedding-v4",
+        dimension: Optional[int] = None,
     ):
-        # 优先使用显式传入的 api_key，其次使用 EMBEDDING_API_KEY/QWEN_API_KEY/LLM_API_KEY
         self.api_key = (
             api_key
             or getattr(settings, "EMBEDDING_API_KEY", None)
             or getattr(settings, "QWEN_API_KEY", None)
             or settings.LLM_API_KEY
         )
-        # 🔥 API 密钥验证
         if not self.api_key:
             raise ValueError(
                 "Qwen embedding requires API key. "
                 "Set EMBEDDING_API_KEY, QWEN_API_KEY or LLM_API_KEY environment variable."
             )
-        # DashScope 兼容 OpenAI 的 embeddings 端点
-        self.base_url = base_url or "https://dashscope.aliyuncs.com/compatible-mode/v1"
-        self.model = model
-        self._dimension = self.MODELS.get(model, 1024)
-    
+        self.model = self._normalize_model(model)
+        self.custom_dimension = dimension
+        self._dimension = dimension or self.MODELS.get(self.model, 1024)
+
+    @classmethod
+    def _normalize_model(cls, model: str) -> str:
+        """归一化模型名称：剥离日期后缀
+
+        例如:
+          tongyi-embedding-vision-plus-2026-03-06 → tongyi-embedding-vision-plus
+          tongyi-embedding-vision-plus → tongyi-embedding-vision-plus（不变）
+          text-embedding-v4 → text-embedding-v4（不变）
+        """
+        # 剥离日期后缀（如 -2026-03-06 或 -20260306）
+        return cls.DATE_SUFFIX_PATTERN.sub("", model)
+
     @property
     def dimension(self) -> int:
         return self._dimension
-    
-    async def embed_text(self, text: str) -> EmbeddingResult:
-        results = await self.embed_texts([text])
-        return results[0]
-    
-    async def embed_texts(self, texts: List[str]) -> List[EmbeddingResult]:
-        if not texts:
-            return []
 
-        # 与 OpenAI 接口保持一致的截断策略
-        max_length = 8191
-        truncated_texts = [text[:max_length] for text in texts]
+    async def embed_text(self, text: str) -> EmbeddingResult:
+        if not text or not text.strip():
+            return EmbeddingResult(embedding=[0.0] * self._dimension, tokens_used=0, model=self.model)
 
         headers = {
             "Authorization": f"Bearer {self.api_key}",
             "Content-Type": "application/json",
         }
 
+        # 统一使用 DashScope 原生 API 格式
         payload = {
             "model": self.model,
-            "input": truncated_texts,
-            "encoding_format": "float",
+            "input": {
+                "texts": [text[:8191]],
+            },
         }
-
-        url = f"{self.base_url.rstrip('/')}/embeddings"
+        if self.custom_dimension:
+            payload["parameters"] = {"dimension": self.custom_dimension}
 
         try:
             async with httpx.AsyncClient(timeout=60) as client:
-                response = await client.post(url, headers=headers, json=payload)
+                response = await client.post(self.NATIVE_API_URL, headers=headers, json=payload)
                 response.raise_for_status()
                 data = response.json()
 
-                usage = data.get("usage", {}) or {}
-                total_tokens = usage.get("total_tokens") or usage.get("prompt_tokens") or 0
+                # 原生 API 返回格式: {"output": {"embeddings": [{"embedding": [...], "text_index": 0}]}, "usage": {"total_tokens": N}}
+                output = data.get("output", {})
+                embeddings = output.get("embeddings", [])
+                embedding = embeddings[0].get("embedding", []) if embeddings else []
+                tokens_used = data.get("usage", {}).get("total_tokens", 0)
 
-                results: List[EmbeddingResult] = []
-                for item in data.get("data", []):
-                    results.append(EmbeddingResult(
-                        embedding=item["embedding"],
-                        tokens_used=total_tokens // max(len(texts), 1),
-                        model=self.model,
-                    ))
-
-                return results
+                return EmbeddingResult(
+                    embedding=embedding,
+                    tokens_used=tokens_used,
+                    model=self.model,
+                )
         except httpx.HTTPStatusError as e:
-            logger.error(f"Qwen embedding API error: {e.response.status_code} - {e.response.text}")
-            raise RuntimeError(f"Qwen embedding API failed: {e.response.status_code}") from e
+            error_detail = e.response.text[:500]
+            logger.error(f"Qwen embedding API error: {e.response.status_code} - {error_detail}")
+            raise RuntimeError(f"Qwen embedding API failed: {e.response.status_code} - {error_detail}") from e
         except httpx.RequestError as e:
             logger.error(f"Qwen embedding network error: {e}")
             raise RuntimeError(f"Qwen embedding network error: {e}") from e
         except Exception as e:
             logger.error(f"Qwen embedding unexpected error: {e}")
             raise RuntimeError(f"Qwen embedding failed: {e}") from e
+
+    async def embed_texts(self, texts: List[str]) -> List[EmbeddingResult]:
+        if not texts:
+            return []
+
+        # 批量：逐个调用 embed_text 以确保兼容
+        results = []
+        for text in texts:
+            result = await self.embed_text(text)
+            results.append(result)
+        return results
 
 
 class EmbeddingService:
@@ -643,7 +683,7 @@ class EmbeddingService:
             return JinaEmbedding(api_key=api_key, base_url=base_url, model=model)
 
         elif provider == "qwen":
-            return QwenEmbedding(api_key=api_key, base_url=base_url, model=model)
+            return QwenEmbedding(api_key=api_key, base_url=base_url, model=model, dimension=dimension)
 
         else:
             # 默认使用 OpenAI

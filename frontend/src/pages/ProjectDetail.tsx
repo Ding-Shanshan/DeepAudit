@@ -8,36 +8,24 @@ import { useParams, Link } from "react-router-dom";
 
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   ArrowLeft,
-  Edit,
-  ExternalLink,
-  Shield,
   Activity,
   AlertTriangle,
   CheckCircle,
   Clock,
   XCircle,
-  FileText,
-  Upload,
-  GitBranch,
   Terminal
 } from "lucide-react";
 import { api } from "@/shared/config/database";
-import type { Project, AuditTask, CreateProjectForm, AuditIssue } from "@/shared/types";
+import type { Project, AuditTask, AuditIssue } from "@/shared/types";
 import type { AgentFinding, AgentTask } from "@/shared/api/agentTasks";
 import { getAgentTasks, updateAgentFinding } from "@/shared/api/agentTasks";
 import { apiClient } from "@/shared/api/serverClient";
-import { isRepositoryProject, getSourceTypeLabel, getRepositoryPlatformLabel } from "@/shared/utils/projectUtils";
 import { toast } from "sonner";
 import CreateTaskDialog from "@/components/audit/CreateTaskDialog";
 import TerminalProgressDialog from "@/components/audit/TerminalProgressDialog";
-import { SUPPORTED_LANGUAGES, REPOSITORY_PLATFORMS } from "@/shared/constants";
 import type { AggregatedAgentFinding, AggregatedAuditIssue, IssuesSummary, LatestProblem, UnifiedTask } from "@/shared/types";
 import {
   PROJECT_DETAIL_ISSUES_FETCH_CONCURRENCY as ISSUES_FETCH_CONCURRENCY,
@@ -46,7 +34,6 @@ import {
 } from "@/shared/constants";
 import { ProjectIssuesTab } from "@/pages/project-detail/components/ProjectIssuesTab";
 import { ProjectTasksTab } from "@/pages/project-detail/components/ProjectTasksTab";
-import { ProjectStatsCards, type ProjectCombinedStats } from "@/pages/project-detail/components/ProjectStatsCards";
 
 export default function ProjectDetail() {
   const { id } = useParams<{ id: string }>();
@@ -57,16 +44,7 @@ export default function ProjectDetail() {
   const [showCreateTaskDialog, setShowCreateTaskDialog] = useState(false);
   const [showTerminalDialog, setShowTerminalDialog] = useState(false);
   const [currentTaskId, setCurrentTaskId] = useState<string | null>(null);
-  const [editForm, setEditForm] = useState<CreateProjectForm>({
-    name: "",
-    description: "",
-    source_type: "repository",
-    repository_url: "",
-    repository_type: "github",
-    default_branch: "main",
-    programming_languages: []
-  });
-  const [activeTab, setActiveTab] = useState("overview");
+  const [activeTab, setActiveTab] = useState("tasks");
   const [latestIssues, setLatestIssues] = useState<AggregatedAuditIssue[]>([]);
   const [latestFindings, setLatestFindings] = useState<AggregatedAgentFinding[]>([]);
   const [loadingIssues, setLoadingIssues] = useState(false);
@@ -137,11 +115,12 @@ export default function ProjectDetail() {
   }, [activeTab, auditTasks, agentTasks]);
 
   const loadLatestIssues = async () => {
+    // 包含 completed 和 failed 的任务：failed 的任务也可能有有效问题
     const completedAuditTasks = auditTasks
-      .filter((t: AuditTask) => t.status === 'completed')
+      .filter((t: AuditTask) => t.status === 'completed' || t.status === 'failed')
       .sort((a: AuditTask, b: AuditTask) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
     const completedAgentTasks = agentTasks
-      .filter((t: AgentTask) => t.status === 'completed')
+      .filter((t: AgentTask) => t.status === 'completed' || t.status === 'failed')
       .sort((a: AgentTask, b: AgentTask) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
 
     const limitedAuditTasks = completedAuditTasks.slice(0, ISSUES_MAX_TASKS);
@@ -347,42 +326,6 @@ export default function ProjectDetail() {
     }
   };
 
-  const handleOpenSettings = () => {
-    if (!project) return;
-
-    setEditForm({
-      name: project.name,
-      description: project.description || "",
-      source_type: project.source_type || "repository",
-      repository_url: project.repository_url || "",
-      repository_type: project.repository_type || "github",
-      default_branch: project.default_branch || "main",
-      programming_languages: project.programming_languages ? JSON.parse(project.programming_languages) : []
-    });
-
-    setActiveTab("settings");
-  };
-
-  const formatLanguageName = (lang: string): string => {
-    const nameMap: Record<string, string> = {
-      'javascript': 'JavaScript',
-      'typescript': 'TypeScript',
-      'python': 'Python',
-      'java': 'Java',
-      'go': 'Go',
-      'rust': 'Rust',
-      'cpp': 'C++',
-      'csharp': 'C#',
-      'php': 'PHP',
-      'ruby': 'Ruby',
-      'swift': 'Swift',
-      'kotlin': 'Kotlin'
-    };
-    return nameMap[lang] || lang.charAt(0).toUpperCase() + lang.slice(1);
-  };
-
-  const supportedLanguages = SUPPORTED_LANGUAGES.map(formatLanguageName);
-
   useEffect(() => {
     if (id) {
       loadProjectData();
@@ -439,52 +382,8 @@ export default function ProjectDetail() {
     return merged;
   }, [auditTasks, agentTasks]);
 
-  const combinedStats: ProjectCombinedStats = useMemo(() => {
-    const totalTasks = auditTasks.length + agentTasks.length;
-    const completedTasks =
-      auditTasks.filter((t) => t.status === 'completed').length +
-      agentTasks.filter((t) => t.status === 'completed').length;
-    const totalIssues =
-      auditTasks.reduce((sum, t) => sum + (t.issues_count || 0), 0) +
-      agentTasks.reduce((sum, t) => sum + (t.findings_count || 0), 0);
-    const avgQualityScore = totalTasks > 0
-      ? (
-        (auditTasks.reduce((sum, t) => sum + (t.quality_score || 0), 0) +
-          agentTasks.reduce((sum, t) => sum + (t.quality_score || 0), 0)) / totalTasks
-      )
-      : 0;
-    return { totalTasks, completedTasks, totalIssues, avgQualityScore };
-  }, [auditTasks, agentTasks]);
-
   const handleRunAudit = () => {
     setShowCreateTaskDialog(true);
-  };
-
-  const handleSaveSettings = async () => {
-    if (!id) return;
-
-    if (!editForm.name.trim()) {
-      toast.error("项目名称不能为空");
-      return;
-    }
-
-    try {
-      await api.updateProject(id, editForm);
-      toast.success("项目信息已保存");
-      loadProjectData();
-    } catch (error) {
-      console.error('Failed to update project:', error);
-      toast.error("保存失败");
-    }
-  };
-
-  const handleToggleLanguage = (lang: string) => {
-    const currentLanguages = editForm.programming_languages || [];
-    const newLanguages = currentLanguages.includes(lang)
-      ? currentLanguages.filter(l => l !== lang)
-      : [...currentLanguages, lang];
-
-    setEditForm({ ...editForm, programming_languages: newLanguages });
   };
 
   const getStatusBadge = (status: string) => {
@@ -581,167 +480,52 @@ export default function ProjectDetail() {
               <ArrowLeft className="w-5 h-5" />
             </Button>
           </Link>
-          <div className="flex items-center gap-3">
-            <h1 className="text-2xl font-bold text-foreground uppercase tracking-wider">{project.name}</h1>
-            <Badge className={`${project.is_active ? 'cyber-badge-success' : 'cyber-badge-muted'}`}>
-              {project.is_active ? '活跃' : '暂停'}
-            </Badge>
-          </div>
+          <h1 className="text-2xl font-bold text-foreground uppercase tracking-wider">{project.name}</h1>
         </div>
 
-        <div className="flex items-center space-x-3">
-          <Button onClick={handleRunAudit} className="cyber-btn-primary">
-            <Shield className="w-4 h-4 mr-2" />
-            启动审计
-          </Button>
-          <Button variant="outline" onClick={handleOpenSettings} className="cyber-btn-outline">
-            <Edit className="w-4 h-4 mr-2" />
-            编辑
-          </Button>
+              </div>
+
+      {/* 项目信息 */}
+      <div className="cyber-card p-4 relative z-10">
+        <div className="space-y-3 font-mono">
+          <div className="flex items-center justify-between">
+            <span className="text-sm text-muted-foreground uppercase">项目描述</span>
+            <span className="text-sm text-foreground">{project.description || '暂无描述'}</span>
+          </div>
+
+          <div className="flex items-center justify-between">
+            <span className="text-sm text-muted-foreground uppercase">创建时间</span>
+            <span className="text-sm text-foreground">{formatDate(project.created_at)}</span>
+          </div>
+
+          <div className="flex items-center justify-between">
+            <span className="text-sm text-muted-foreground uppercase">项目负责人</span>
+            <span className="text-sm text-foreground">{project.owner?.full_name || project.owner?.phone || '未知'}</span>
+          </div>
+
+          {project.programming_languages && (
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-muted-foreground uppercase">项目语言</span>
+              <div className="flex flex-wrap gap-2">
+                {JSON.parse(project.programming_languages).map((lang: string) => (
+                  <Badge key={lang} className="cyber-badge-primary">
+                    {lang}
+                  </Badge>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
-      {/* 统计卡片 */}
-      <ProjectStatsCards stats={combinedStats} />
-
       {/* 主要内容 */}
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full relative z-10">
-        <TabsList className="grid w-full grid-cols-4 bg-muted border border-border p-1 h-auto gap-1 rounded">
-          <TabsTrigger value="overview" className="data-[state=active]:bg-primary data-[state=active]:text-foreground font-mono font-bold uppercase py-2 text-muted-foreground transition-all rounded-sm">项目概览</TabsTrigger>
-          <TabsTrigger value="tasks" className="data-[state=active]:bg-primary data-[state=active]:text-foreground font-mono font-bold uppercase py-2 text-muted-foreground transition-all rounded-sm">审计任务</TabsTrigger>
-          <TabsTrigger value="issues" className="data-[state=active]:bg-primary data-[state=active]:text-foreground font-mono font-bold uppercase py-2 text-muted-foreground transition-all rounded-sm">问题管理</TabsTrigger>
-          <TabsTrigger value="settings" className="data-[state=active]:bg-primary data-[state=active]:text-foreground font-mono font-bold uppercase py-2 text-muted-foreground transition-all rounded-sm">项目设置</TabsTrigger>
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full relative z-10 gap-0">
+        <TabsList className="grid w-full grid-cols-2 bg-muted border border-border p-1 h-auto gap-1 rounded">
+          <TabsTrigger value="tasks" className="data-[state=active]:bg-primary data-[state=active]:text-foreground font-mono font-bold uppercase py-2 text-muted-foreground transition-all rounded-sm">任务列表</TabsTrigger>
+          <TabsTrigger value="issues" className="data-[state=active]:bg-primary data-[state=active]:text-foreground font-mono font-bold uppercase py-2 text-muted-foreground transition-all rounded-sm">问题列表</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="overview" className="flex flex-col gap-6 mt-6">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* 项目信息 */}
-            <div className="cyber-card p-4">
-              <div className="section-header">
-                <Terminal className="w-5 h-5 text-primary" />
-                <h3 className="section-title">项目信息</h3>
-              </div>
-              <div className="space-y-4 font-mono">
-                <div className="space-y-3">
-                  {project.repository_url && (
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-muted-foreground uppercase">仓库地址</span>
-                      <a
-                        href={project.repository_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-sm text-primary hover:underline flex items-center font-bold"
-                      >
-                        查看仓库
-                        <ExternalLink className="w-3 h-3 ml-1" />
-                      </a>
-                    </div>
-                  )}
-
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-muted-foreground uppercase">项目类型</span>
-                    <Badge className={`${isRepositoryProject(project) ? 'cyber-badge-info' : 'cyber-badge-warning'}`}>
-                      {getSourceTypeLabel(project.source_type)}
-                    </Badge>
-                  </div>
-
-                  {isRepositoryProject(project) && (
-                    <>
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm text-muted-foreground uppercase">仓库平台</span>
-                        <Badge className="cyber-badge-muted">
-                          {getRepositoryPlatformLabel(project.repository_type)}
-                        </Badge>
-                      </div>
-
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm text-muted-foreground uppercase">默认分支</span>
-                        <span className="text-sm font-bold text-foreground bg-muted px-2 py-0.5 rounded border border-border">{project.default_branch}</span>
-                      </div>
-                    </>
-                  )}
-
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-muted-foreground uppercase">创建时间</span>
-                    <span className="text-sm text-foreground">{formatDate(project.created_at)}</span>
-                  </div>
-
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-muted-foreground uppercase">所有者</span>
-                    <span className="text-sm text-foreground">{project.owner?.full_name || project.owner?.phone || '未知'}</span>
-                  </div>
-                </div>
-
-                {project.programming_languages && (
-                  <div className="pt-4 border-t border-border">
-                    <h4 className="text-sm font-bold mb-2 uppercase text-muted-foreground">支持的编程语言</h4>
-                    <div className="flex flex-wrap gap-2">
-                      {JSON.parse(project.programming_languages).map((lang: string) => (
-                        <Badge key={lang} className="cyber-badge-primary">
-                          {lang}
-                        </Badge>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* 最近活动 */}
-            <div className="cyber-card p-4">
-              <div className="section-header">
-                <Clock className="w-5 h-5 text-primary" />
-                <h3 className="section-title">最近活动</h3>
-              </div>
-              <div>
-                {unifiedTasks.length > 0 ? (
-                  <div className="space-y-2">
-                    {unifiedTasks.slice(0, 5).map((t) => (
-                      <Link
-                        key={`${t.kind}:${t.task.id}`}
-                        to={t.kind === 'audit' ? `/tasks/${t.task.id}` : `/agent-audit/${t.task.id}`}
-                        className="flex items-center justify-between p-3 bg-muted/50 rounded-lg hover:bg-muted transition-all group"
-                      >
-                        <div className="flex items-center space-x-3">
-                          <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${t.task.status === 'completed' ? 'bg-primary/20' :
-                            t.task.status === 'running' ? 'bg-secondary/15' :
-                              t.task.status === 'failed' ? 'bg-destructive/12' :
-                                'bg-muted'
-                            }`}>
-                            {getStatusIcon(t.task.status)}
-                          </div>
-                          <div>
-                            <p className="text-sm font-bold text-foreground group-hover:text-primary transition-colors uppercase">
-                              {t.kind === 'audit'
-                                ? ((t.task as AuditTask).task_type === 'repository' ? '审计任务' : '即时分析')
-                                : '深度审计'}
-                            </p>
-                            <p className="text-xs text-muted-foreground font-mono">
-                              {formatDate(t.task.created_at)}
-                            </p>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Badge className={t.kind === 'agent' ? 'cyber-badge-info' : 'cyber-badge-muted'}>
-                            {t.kind === 'agent' ? 'AGENT' : 'AUDIT'}
-                          </Badge>
-                          {getStatusBadge(t.task.status)}
-                        </div>
-                      </Link>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="empty-state">
-                    <Activity className="empty-state-icon" />
-                    <p className="empty-state-description">暂无活动记录</p>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-        </TabsContent>
-
-        <TabsContent value="tasks" className="flex flex-col gap-6 mt-6">
+        <TabsContent value="tasks" className="flex flex-col gap-4 mt-2">
           <ProjectTasksTab
             unifiedTasks={unifiedTasks}
             onCreateTask={handleCreateTask}
@@ -751,7 +535,7 @@ export default function ProjectDetail() {
           />
         </TabsContent>
 
-        <TabsContent value="issues" className="flex flex-col gap-6 mt-6">
+        <TabsContent value="issues" className="flex flex-col gap-4 mt-2">
           <ProjectIssuesTab
             hasAnyTasks={auditTasks.length > 0 || agentTasks.length > 0}
             issuesSummary={issuesSummary}
@@ -762,149 +546,7 @@ export default function ProjectDetail() {
           />
         </TabsContent>
 
-        <TabsContent value="settings" className="flex flex-col gap-6 mt-6">
-          <div className="cyber-card p-6">
-            <div className="section-header">
-              <Edit className="w-5 h-5 text-primary" />
-              <h3 className="section-title">编辑项目配置</h3>
-            </div>
-
-            <div className="flex flex-col gap-6">
-              {/* 基本信息 */}
-              <div className="space-y-4">
-                <div>
-                  <Label htmlFor="edit-name" className="font-mono font-bold uppercase text-xs text-muted-foreground">项目名称 *</Label>
-                  <Input
-                    id="edit-name"
-                    value={editForm.name}
-                    onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
-                    placeholder="输入项目名称"
-                    className="cyber-input mt-1"
-                  />
-                </div>
-
-                <div>
-                  <Label htmlFor="edit-description" className="font-mono font-bold uppercase text-xs text-muted-foreground">项目描述</Label>
-                  <Textarea
-                    id="edit-description"
-                    value={editForm.description}
-                    onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
-                    placeholder="输入项目描述"
-                    rows={3}
-                    className="cyber-input mt-1 min-h-[80px]"
-                  />
-                </div>
-              </div>
-
-              {/* 仓库信息 - 仅远程仓库类型显示 */}
-              {editForm.source_type === 'repository' && (
-                <div className="space-y-4 border-t border-border pt-4">
-                  <h3 className="font-mono font-bold uppercase text-sm text-muted-foreground flex items-center gap-2">
-                    <GitBranch className="w-4 h-4" />
-                    仓库信息
-                  </h3>
-
-                  <div>
-                    <Label htmlFor="edit-repo-url" className="font-mono font-bold uppercase text-xs text-muted-foreground">仓库地址</Label>
-                    <Input
-                      id="edit-repo-url"
-                      value={editForm.repository_url}
-                      onChange={(e) => setEditForm({ ...editForm, repository_url: e.target.value })}
-                      placeholder="https://github.com/username/repo"
-                      className="cyber-input mt-1"
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <Label htmlFor="edit-repo-type" className="font-mono font-bold uppercase text-xs text-muted-foreground">仓库平台</Label>
-                      <Select
-                        value={editForm.repository_type}
-                        onValueChange={(value: any) => setEditForm({ ...editForm, repository_type: value })}
-                      >
-                        <SelectTrigger id="edit-repo-type" className="cyber-input mt-1">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent className="cyber-dialog border-border">
-                          {REPOSITORY_PLATFORMS.map((platform) => (
-                            <SelectItem key={platform.value} value={platform.value}>
-                              {platform.label}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    <div>
-                      <Label htmlFor="edit-branch" className="font-mono font-bold uppercase text-xs text-muted-foreground">默认分支</Label>
-                      <Input
-                        id="edit-branch"
-                        value={editForm.default_branch}
-                        onChange={(e) => setEditForm({ ...editForm, default_branch: e.target.value })}
-                        placeholder="main"
-                        className="cyber-input mt-1"
-                      />
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* 归档项目提示 */}
-              {editForm.source_type === 'zip' && (
-                <div className="border-t border-border pt-4">
-                  <div className="bg-warning/8 border border-warning/25 p-4 rounded">
-                    <div className="flex items-start space-x-3">
-                      <Upload className="w-5 h-5 text-warning mt-0.5" />
-                      <div className="text-sm font-mono">
-                        <p className="font-bold text-warning mb-1 uppercase">归档上传项目</p>
-                        <p className="text-warning/80 text-xs">
-                          此项目通过本地归档上传创建。每次进行代码审计时，可以复用已存储归档，也可以重新上传新的源码归档。
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* 编程语言 */}
-              <div className="space-y-4 border-t border-border pt-4">
-                <h3 className="font-mono font-bold uppercase text-sm text-muted-foreground">编程语言</h3>
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                  {supportedLanguages.map((lang) => (
-                    <div
-                      key={lang}
-                      className={`flex items-center space-x-2 p-3 border cursor-pointer transition-all rounded ${editForm.programming_languages?.includes(lang)
-                        ? 'border-primary bg-primary/10 text-primary'
-                        : 'border-border hover:border-border text-muted-foreground'
-                        }`}
-                      onClick={() => handleToggleLanguage(lang)}
-                    >
-                      <div
-                        className={`w-4 h-4 border-2 rounded-sm flex items-center justify-center ${editForm.programming_languages?.includes(lang)
-                          ? 'bg-primary border-primary'
-                          : 'border-border'
-                          }`}
-                      >
-                        {editForm.programming_languages?.includes(lang) && (
-                          <CheckCircle className="w-3 h-3 text-foreground" />
-                        )}
-                      </div>
-                      <span className="text-sm font-bold font-mono">{lang}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              <div className="flex justify-end space-x-3 pt-6 border-t border-border">
-                <Button onClick={handleSaveSettings} className="cyber-btn-primary">
-                  <Edit className="w-4 h-4 mr-2" />
-                  保存修改
-                </Button>
-              </div>
-            </div>
-          </div>
-        </TabsContent>
-      </Tabs>
+        </Tabs>
 
       {/* 创建任务对话框 */}
       <CreateTaskDialog

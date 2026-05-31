@@ -279,12 +279,22 @@ def collect_source_files(
         if stat.st_size > max_size:
             return
 
+        # 计算行数
+        line_count = 0
+        try:
+            with open(file_path, "r", encoding="utf-8", errors="ignore") as f:
+                for _ in f:
+                    line_count += 1
+        except (OSError, UnicodeDecodeError):
+            line_count = 0
+
         files.append(
             {
                 "path": relative_path,
                 "absolute_path": str(file_path),
                 "language": get_language_from_path(file_path),
                 "size": stat.st_size,
+                "line_count": line_count,
             }
         )
 

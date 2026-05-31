@@ -17,7 +17,7 @@ from uuid import uuid4
 from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks, Query
 from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import case
+from sqlalchemy import case, func
 from sqlalchemy.future import select
 from sqlalchemy.orm import selectinload
 from pydantic import BaseModel, Field
@@ -96,6 +96,7 @@ class AgentTaskResponse(BaseModel):
     
     # 进度统计
     total_files: int = 0
+    total_lines: int = 0
     indexed_files: int = 0
     analyzed_files: int = 0
     total_chunks: int = 0
@@ -483,6 +484,7 @@ async def _execute_agent_task(task_id: str):
             
             # 更新任务文件统计
             task.total_files = project_info.get("file_count", 0)
+            task.total_lines = project_info.get("line_count", 0)
             await db.commit()
             
             # 构建输入数据
@@ -1060,6 +1062,7 @@ async def _collect_project_info(
         "root": project_root,
         "languages": [],
         "file_count": 0,
+        "line_count": 0,
         "structure": {},
     }
     
@@ -1113,6 +1116,14 @@ async def _collect_project_info(
                 
                 info["file_count"] += 1
                 filtered_files.append(relative_path)
+
+                # 计算行数
+                try:
+                    with open(os.path.join(root, f), "r", encoding="utf-8", errors="ignore") as fh:
+                        for _ in fh:
+                            info["line_count"] += 1
+                except (OSError, UnicodeDecodeError):
+                    pass
                 
                 # 🔥 收集文件所在的目录
                 dir_path = os.path.dirname(relative_path)
@@ -1575,6 +1586,31 @@ async def create_agent_task(
     return task
 
 
+async def _fix_stale_findings_count(db: AsyncSession, tasks: list[AgentTask]) -> None:
+    """校正 stale 的 findings_count：从 agent_findings 表重新计数并更新任务对象"""
+    if not tasks:
+        return
+    task_ids = [t.id for t in tasks]
+    # 批量查询每个 task 的实际 finding 数量
+    counts_result = await db.execute(
+        select(AgentFinding.task_id, func.count(AgentFinding.id))
+        .where(AgentFinding.task_id.in_(task_ids))
+        .group_by(AgentFinding.task_id)
+    )
+    counts_map = dict(counts_result.all())
+
+    needs_commit = False
+    for task in tasks:
+        actual_count = counts_map.get(task.id, 0)
+        if task.findings_count != actual_count:
+            task.findings_count = actual_count
+            needs_commit = True
+
+    # 持久化修正后的数据，避免下次再需重新计算
+    if needs_commit:
+        await db.commit()
+
+
 @router.get("/", response_model=List[AgentTaskResponse])
 async def list_agent_tasks(
     project_id: Optional[str] = None,
@@ -1614,7 +1650,8 @@ async def list_agent_tasks(
     
     result = await db.execute(query)
     tasks = result.scalars().all()
-    
+    # 校正 stale 的 findings_count
+    await _fix_stale_findings_count(db, tasks)
     return tasks
 
 
@@ -1635,7 +1672,10 @@ async def get_agent_task(
     project = await db.get(Project, task.project_id)
     if not project or project.owner_id != current_user.id:
         raise HTTPException(status_code=403, detail="无权访问此任务")
-    
+
+    # 校正 stale 的 findings_count
+    await _fix_stale_findings_count(db, [task])
+
     # 构建响应，确保所有字段都包含
     try:
         # 计算进度百分比
@@ -1680,6 +1720,7 @@ async def get_agent_task(
             "current_phase": task.current_phase,
             "current_step": task.current_step,
             "total_files": task.total_files or 0,
+            "total_lines": task.total_lines or 0,
             "indexed_files": task.indexed_files or 0,
             "analyzed_files": task.analyzed_files or 0,
             "total_chunks": task.total_chunks or 0,

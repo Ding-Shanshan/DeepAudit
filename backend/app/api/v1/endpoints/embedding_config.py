@@ -158,11 +158,13 @@ EMBEDDING_PROVIDERS: List[EmbeddingProvider] = [
     EmbeddingProvider(
         id="qwen",
         name="Qwen (DashScope)",
-        description="阿里云 DashScope Qwen 嵌入模型，兼容 OpenAI embeddings 接口",
+        description="阿里云 DashScope 嵌入模型，使用原生 API",
         models=[
             "text-embedding-v4",
             "text-embedding-v3",
             "text-embedding-v2",
+            "text-embedding-v1",
+            "tongyi-embedding-vision-plus",
         ],
         requires_api_key=True,
         default_model="text-embedding-v4",
@@ -361,9 +363,21 @@ async def test_embedding(
         if elapsed < FIXED_DURATION:
             await asyncio.sleep(FIXED_DURATION - elapsed)
 
+        # 构造请求详情，便于前端排查
+        mask_key = (request.api_key[:8] + "..." + request.api_key[-4:]) if request.api_key and len(request.api_key) > 12 else "***"
+        debug_info = (
+            f"服务商: {request.provider}\n"
+            f"模型: {request.model}\n"
+            f"API URL: {request.base_url or '(使用默认)'}\n"
+            f"API密钥: {mask_key}\n"
+            f"维度: {request.dimension or '(自动)'}\n"
+            f"────────────────\n"
+            f"错误: {str(e)}"
+        )
+
         return TestEmbeddingResponse(
             success=False,
-            message=f"嵌入失败: {str(e)}",
+            message=debug_info,
         )
 
 
@@ -425,10 +439,12 @@ def _get_model_dimensions(provider: str, model: str) -> int:
         "jina-embeddings-v2-base-zh": 768,
         "jina-embeddings-v2-small-en": 512,
 
-        # Qwen (DashScope)
-        "text-embedding-v4": 1024,  # 支持维度: 2048, 1536, 1024(默认), 768, 512, 256, 128, 64
-        "text-embedding-v3": 1024,  # 支持维度: 1024(默认), 768, 512, 256, 128, 64
-        "text-embedding-v2": 1536,  # 支持维度: 1536
+        # Qwen (DashScope 原生 API)
+        "text-embedding-v4": 1024,
+        "text-embedding-v3": 1024,
+        "text-embedding-v2": 1536,
+        "text-embedding-v1": 1536,
+        "tongyi-embedding-vision-plus": 1024,
     }
 
     return dimensions_map.get(model, 768)

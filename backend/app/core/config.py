@@ -104,6 +104,7 @@ class Settings(BaseSettings):
     SSH_CLONE_TIMEOUT: int = 300  # SSH克隆超时时间（秒）
     SSH_TEST_TIMEOUT: int = 15  # SSH测试连接超时时间（秒）
     SSH_CONNECT_TIMEOUT: int = 10  # SSH连接超时时间（秒）
+    SSH_PROXY_HOST: str = ""  # SSH代理地址（SOCKS5），如 192.168.66.1:7891
     
     # Agent 配置
     AGENT_MAX_ITERATIONS: int = 50  # Agent 最大迭代次数

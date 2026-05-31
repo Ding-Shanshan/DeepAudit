@@ -21,17 +21,17 @@ import { generateSSHKey, getSSHKey, deleteSSHKey, testSSHKey, clearKnownHosts } 
 
 // LLM Providers - 2025
 const LLM_PROVIDERS = [
-  { value: 'openai', label: 'OpenAI GPT', icon: '🟢', category: 'litellm', hint: 'gpt-5, gpt-5-mini, o3 等' },
-  { value: 'claude', label: 'Anthropic Claude', icon: '🟣', category: 'litellm', hint: 'claude-sonnet-4.5, claude-opus-4 等' },
-  { value: 'gemini', label: 'Google Gemini', icon: '🔵', category: 'litellm', hint: 'gemini-3-pro, gemini-3-flash 等' },
-  { value: 'deepseek', label: 'DeepSeek', icon: '🔷', category: 'litellm', hint: 'deepseek-v3.1-terminus, deepseek-v3 等' },
-  { value: 'qwen', label: '通义千问', icon: '🟠', category: 'litellm', hint: 'qwen3-max-instruct, qwen3-plus 等' },
-  { value: 'zhipu', label: '智谱AI', icon: '🔴', category: 'litellm', hint: 'glm-4.6, glm-4.5-flash 等' },
-  { value: 'moonshot', label: 'Moonshot', icon: '🌙', category: 'litellm', hint: 'kimi-k2, kimi-k1.5 等' },
-  { value: 'ollama', label: 'Ollama 本地', icon: '🖥️', category: 'litellm', hint: 'llama3.3-70b, qwen3-8b 等' },
-  { value: 'baidu', label: '百度文心', icon: '📘', category: 'native', hint: 'ernie-4.5 (需要 API_KEY:SECRET_KEY)' },
-  { value: 'minimax', label: 'MiniMax', icon: '⚡', category: 'native', hint: 'minimax-m2, minimax-m1 等' },
-  { value: 'doubao', label: '字节豆包', icon: '🎯', category: 'native', hint: 'doubao-1.6-pro, doubao-1.5-pro 等' },
+  { value: 'openai', label: 'OpenAI GPT', icon: '🟢', category: 'litellm', hint: 'gpt-5, gpt-5-mini, o3 等', defaultBaseUrl: 'https://api.openai.com/v1' },
+  { value: 'claude', label: 'Anthropic Claude', icon: '🟣', category: 'litellm', hint: 'claude-sonnet-4.5, claude-opus-4 等', defaultBaseUrl: 'https://api.anthropic.com' },
+  { value: 'gemini', label: 'Google Gemini', icon: '🔵', category: 'litellm', hint: 'gemini-3-pro, gemini-3-flash 等', defaultBaseUrl: 'https://generativelanguage.googleapis.com/v1beta' },
+  { value: 'deepseek', label: 'DeepSeek', icon: '🔷', category: 'litellm', hint: 'deepseek-v3.1-terminus, deepseek-v3 等', defaultBaseUrl: 'https://api.deepseek.com' },
+  { value: 'qwen', label: '通义千问', icon: '🟠', category: 'litellm', hint: 'qwen3-max-instruct, qwen3-plus 等', defaultBaseUrl: 'https://dashscope.aliyuncs.com/compatible-mode/v1' },
+  { value: 'zhipu', label: '智谱AI', icon: '🔴', category: 'litellm', hint: 'glm-4.6, glm-4.5-flash 等', defaultBaseUrl: 'https://open.bigmodel.cn/api/paas/v4' },
+  { value: 'moonshot', label: 'Moonshot', icon: '🌙', category: 'litellm', hint: 'kimi-k2, kimi-k1.5 等', defaultBaseUrl: 'https://api.moonshot.cn/v1' },
+  { value: 'ollama', label: 'Ollama 本地', icon: '🖥️', category: 'litellm', hint: 'llama3.3-70b, qwen3-8b 等', defaultBaseUrl: 'http://localhost:11434' },
+  { value: 'baidu', label: '百度文心', icon: '📘', category: 'native', hint: 'ernie-4.5 (需要 API_KEY:SECRET_KEY)', defaultBaseUrl: 'https://aip.baidubce.com' },
+  { value: 'minimax', label: 'MiniMax', icon: '⚡', category: 'native', hint: 'minimax-m2, minimax-m1 等', defaultBaseUrl: 'https://api.minimax.chat/v1' },
+  { value: 'doubao', label: '字节豆包', icon: '🎯', category: 'native', hint: 'doubao-1.6-pro, doubao-1.5-pro 等', defaultBaseUrl: 'https://ark.cn-beijing.volces.com/api/v3' },
 ];
 
 const DEFAULT_MODELS: Record<string, string> = {
@@ -88,8 +88,8 @@ export function SystemConfig() {
         const newConfig = {
           llmProvider: llmConfig.llmProvider || '',
           llmApiKey: llmConfig.llmApiKey || '',
-          llmModel: llmConfig.llmModel || '',
-          llmBaseUrl: llmConfig.llmBaseUrl || '',
+          llmModel: llmConfig.llmModel || (llmConfig.llmProvider ? DEFAULT_MODELS[llmConfig.llmProvider] || '' : ''),
+          llmBaseUrl: llmConfig.llmBaseUrl || (llmConfig.llmProvider ? LLM_PROVIDERS.find(p => p.value === llmConfig.llmProvider)?.defaultBaseUrl || '' : ''),
           llmTimeout: llmConfig.llmTimeout || 150000,
           llmTemperature: llmConfig.llmTemperature ?? 0.1,
           llmMaxTokens: llmConfig.llmMaxTokens || 4096,
@@ -196,8 +196,8 @@ export function SystemConfig() {
         }
       } else {
         toast.error(result.message || "SSH连接测试失败", {
-          description: result.output ? `详情: ${result.output.substring(0, 100)}...` : undefined,
-          duration: 5000,
+          description: result.output || undefined,
+          duration: 8000,
         });
         if (result.output) {
           console.error("SSH测试失败:", result.output);
@@ -365,7 +365,13 @@ export function SystemConfig() {
           {/* 1. 服务商 */}
           <div className="space-y-2">
             <Label className="text-xs font-bold text-muted-foreground uppercase">服务商</Label>
-            <Select value={config.llmProvider} onValueChange={(v) => updateConfig('llmProvider', v)}>
+            <Select value={config.llmProvider} onValueChange={(v) => {
+	              const provider = LLM_PROVIDERS.find(p => p.value === v);
+	              // 切换服务商时自动填充默认 Base URL 和默认模型
+	              updateConfig('llmProvider', v);
+	              if (provider?.defaultBaseUrl) updateConfig('llmBaseUrl', provider.defaultBaseUrl);
+	              if (DEFAULT_MODELS[v]) updateConfig('llmModel', DEFAULT_MODELS[v]);
+	            }}>
               <SelectTrigger className="h-10 cyber-input">
                 <SelectValue placeholder="请选择服务商" />
               </SelectTrigger>
@@ -385,7 +391,7 @@ export function SystemConfig() {
             <Input
               value={config.llmModel}
               onChange={(e) => updateConfig('llmModel', e.target.value)}
-              placeholder="请填写模型名称"
+              placeholder={DEFAULT_MODELS[config.llmProvider] || '请填写模型名称'}
               className="h-10 cyber-input"
             />
           </div>
@@ -396,7 +402,7 @@ export function SystemConfig() {
             <Input
               value={config.llmBaseUrl}
               onChange={(e) => updateConfig('llmBaseUrl', e.target.value)}
-              placeholder="请填写API URL"
+              placeholder={LLM_PROVIDERS.find(p => p.value === config.llmProvider)?.defaultBaseUrl || '请填写API URL'}
               className="h-10 cyber-input"
             />
           </div>

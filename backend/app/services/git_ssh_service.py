@@ -162,6 +162,37 @@ def set_secure_file_permissions(file_path: str):
         os.chmod(file_path, 0o600)
 
 
+def _get_ssh_proxy_args() -> list:
+    """
+    获取 SSH 代理参数
+
+    根据配置返回 SSH ProxyCommand 参数列表。
+    支持 SOCKS5 代理（使用 nc）和 HTTP CONNECT 代理（使用 connect-proxy）。
+
+    Returns:
+        SSH 代理参数列表，如 ['-o', 'ProxyCommand=nc -X 5 -x host:port %h %p']
+        如果未配置代理，返回空列表
+    """
+    from app.core.config import settings
+
+    proxy_host = getattr(settings, 'SSH_PROXY_HOST', '')
+    if not proxy_host:
+        return []
+
+    # 检测代理类型并构建 ProxyCommand
+    # 优先使用 nc (SOCKS5)，回退到 connect-proxy (HTTP CONNECT)
+    import shutil
+    if shutil.which('nc'):
+        # SOCKS5 代理: nc -X 5 -x proxy_host:port %h %p
+        return ['-o', f'ProxyCommand=nc -X 5 -x {shlex.quote(proxy_host)} %h %p']
+    elif shutil.which('connect-proxy'):
+        # HTTP CONNECT 代理: connect-proxy -H proxy_host:port %h %p
+        return ['-o', f'ProxyCommand=connect-proxy -H {shlex.quote(proxy_host)} %h %p']
+
+    logger.warning(f"SSH proxy configured ({proxy_host}) but no proxy tool (nc/connect-proxy) found")
+    return []
+
+
 class SSHKeyService:
     """SSH密钥服务"""
 
@@ -379,12 +410,19 @@ class GitSSHOperations:
             env = os.environ.copy()
 
             # 构建SSH命令（使用 shlex.quote 转义路径防止命令注入）
+            proxy_args = _get_ssh_proxy_args()
+            proxy_cmd = ""
+            if proxy_args:
+                # proxy_args 格式: ['-o', 'ProxyCommand=...']
+                proxy_cmd = f" -o {shlex.quote(proxy_args[1])}"
+
             ssh_cmd = (
                 f"ssh -i {shlex.quote(key_file)} "
                 f"-o StrictHostKeyChecking=accept-new "
                 f"-o UserKnownHostsFile={shlex.quote(known_hosts_file)} "
                 f"-o PreferredAuthentications=publickey "
                 f"-o IdentitiesOnly=yes"
+                f"{proxy_cmd}"
             )
 
             env['GIT_SSH_COMMAND'] = ssh_cmd
@@ -548,6 +586,7 @@ class GitSSHOperations:
             known_hosts_file = get_known_hosts_file()
 
             # 构建SSH命令（使用列表形式避免shell注入）
+            proxy_args = _get_ssh_proxy_args()
             cmd = [
                 'ssh',
                 '-i', key_file,
@@ -556,6 +595,7 @@ class GitSSHOperations:
                 '-o', f'ConnectTimeout={settings.SSH_CONNECT_TIMEOUT}',
                 '-o', 'PreferredAuthentications=publickey',
                 '-o', 'IdentitiesOnly=yes',
+                *proxy_args,
                 '-v',
                 '-T', f'git@{host_part}'
             ]
@@ -572,6 +612,26 @@ class GitSSHOperations:
             # GitHub/GitLab/CodeUp的SSH测试通常返回非0状态码，但会在输出中显示认证成功
             output = result.stdout + result.stderr
             output_lower = output.lower()
+
+            # 从 verbose 输出中提取关键行（过滤 debug 噪音，保留错误和认证信息）
+            def extract_key_lines(full_output: str) -> str:
+                """从 SSH -v 输出中提取关键信息行"""
+                key_patterns = [
+                    'authenticated', 'authentication', 'permission denied',
+                    'connection refused', 'no route', 'timed out',
+                    'hi ', 'welcome to gitlab', 'welcome to codeup',
+                    'offering', 'accepted', 'will attempt key',
+                    'trying private key', 'debug1: identity file',
+                    'anonymous', 'who are you', 'deploy key',
+                    'error', 'failed', 'rejected',
+                ]
+                lines = full_output.split('\n')
+                key_lines = []
+                for line in lines:
+                    line_lower = line.lower()
+                    if any(p in line_lower for p in key_patterns):
+                        key_lines.append(line.strip())
+                return '\n'.join(key_lines) if key_lines else full_output[-500:]
 
             # 特别检查Anonymous（表示公钥未添加或未关联用户账户）
             if 'anonymous' in output_lower:
@@ -596,11 +656,14 @@ class GitSSHOperations:
                         is_success = True
                         break
 
+            # 提取关键信息，过滤 debug 噪音
+            key_output = extract_key_lines(output)
+
             if is_success:
                 return {
                     'success': True,
                     'message': 'SSH密钥验证成功',
-                    'output': output
+                    'output': key_output
                 }
             else:
                 # 提供更详细的错误信息
@@ -617,7 +680,7 @@ class GitSSHOperations:
                 return {
                     'success': False,
                     'message': error_msg,
-                    'output': output if output.strip() else '未收到任何响应'
+                    'output': key_output if key_output.strip() else '未收到任何响应'
                 }
 
         except subprocess.TimeoutExpired:

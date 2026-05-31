@@ -3,6 +3,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy.orm import selectinload
+from sqlalchemy import func
 from pydantic import BaseModel
 from datetime import datetime, timezone
 
@@ -12,8 +13,40 @@ from app.models.audit import AuditTask, AuditIssue
 from app.models.project import Project
 from app.models.user import User
 from app.services.scanner import task_control
+from app.services.quick_scan import calculate_quality_score
 
 router = APIRouter()
+
+
+async def _fix_stale_issues_count(db: AsyncSession, tasks: list[AuditTask]) -> None:
+    """校正 stale 的 issues_count：从 audit_issues 表重新计数并更新任务对象"""
+    if not tasks:
+        return
+    task_ids = [t.id for t in tasks]
+    # 批量查询每个 task 的实际 issue 数量
+    counts_result = await db.execute(
+        select(AuditIssue.task_id, func.count(AuditIssue.id))
+        .where(AuditIssue.task_id.in_(task_ids))
+        .group_by(AuditIssue.task_id)
+    )
+    counts_map = dict(counts_result.all())
+
+    needs_commit = False
+    for task in tasks:
+        actual_count = counts_map.get(task.id, 0)
+        if task.issues_count != actual_count:
+            task.issues_count = actual_count
+            needs_commit = True
+        # 修正 quality_score（scanned_files=0 时用 total_files 代替）
+        file_count = task.scanned_files or task.total_files or 0
+        expected_score = calculate_quality_score(file_count, actual_count)
+        if task.quality_score != expected_score and file_count > 0:
+            task.quality_score = expected_score
+            needs_commit = True
+
+    # 持久化修正后的数据，避免下次再需重新计算
+    if needs_commit:
+        await db.commit()
 
 
 # Schemas
@@ -107,7 +140,10 @@ async def list_tasks(
         query = query.where(AuditTask.project_id == project_id)
     query = query.order_by(AuditTask.created_at.desc())
     result = await db.execute(query)
-    return result.scalars().all()
+    tasks = result.scalars().all()
+    # 校正 stale 的 issues_count
+    await _fix_stale_issues_count(db, tasks)
+    return tasks
 
 
 @router.get("/{id}", response_model=AuditTaskSchema)
@@ -127,11 +163,14 @@ async def read_task(
     task = result.scalars().first()
     if not task:
         raise HTTPException(status_code=404, detail="任务不存在")
-    
+
     # 检查权限：只有任务创建者可以查看
     if task.created_by != current_user.id:
         raise HTTPException(status_code=403, detail="无权查看此任务")
-    
+
+    # 校正 stale 的 issues_count
+    await _fix_stale_issues_count(db, [task])
+
     return task
 
 
