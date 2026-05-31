@@ -87,29 +87,29 @@ export const RiskMatrixTable = memo(function RiskMatrixTable({
       </div>
 
       <div className="overflow-x-auto">
-        <table className="cyber-table">
+        <table className="w-full">
           <thead>
-            <tr>
-              <th className="text-left">项目</th>
+            <tr className="bg-muted/30 border-b border-border">
+              <th className="text-left py-2 px-3 text-xs font-semibold text-muted-foreground w-[40%]">项目</th>
               {SEVERITY_COLUMNS.map((col) => (
-                <th key={col.key} className="text-center">{col.label}</th>
+                <th key={col.key} className="text-center py-2 px-2 text-xs font-semibold text-muted-foreground w-[12%]">{col.label}</th>
               ))}
-              <th className="text-center">总计</th>
+              <th className="text-center py-2 px-2 text-xs font-semibold text-muted-foreground w-[12%]">总计</th>
             </tr>
           </thead>
           <tbody>
             {data.map((row) => (
-              <tr key={row.projectId}>
-                <td>
+              <tr key={row.projectId} className="border-b border-border/50 hover:bg-muted/30 transition-colors">
+                <td className="py-2 px-3">
                   <Link
                     to={`/projects/${row.projectId}`}
-                    className="font-medium text-foreground hover:text-primary transition-colors"
+                    className="font-medium text-sm text-foreground hover:text-primary transition-colors"
                   >
                     {row.projectName}
                   </Link>
                 </td>
                 {SEVERITY_COLUMNS.map((col) => (
-                  <td key={col.key} className="text-center">
+                  <td key={col.key} className="text-center py-2 px-2">
                     <SeverityCell
                       count={row[col.key]}
                       severity={col.key}
@@ -117,8 +117,8 @@ export const RiskMatrixTable = memo(function RiskMatrixTable({
                     />
                   </td>
                 ))}
-                <td className="text-center font-bold text-foreground">
-                  <span className="inline-block min-w-[32px]">{row.total}</span>
+                <td className="text-center py-2 px-2 font-bold text-sm text-foreground">
+                  {row.total}
                 </td>
               </tr>
             ))}
