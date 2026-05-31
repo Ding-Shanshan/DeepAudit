@@ -26,7 +26,7 @@ import CreateTaskDialog from "@/components/audit/CreateTaskDialog";
 import TerminalProgressDialog from "@/components/audit/TerminalProgressDialog";
 import { calculateTaskProgress } from "@/shared/utils/utils";
 import { getAgentTasks, cancelAgentTask, type AgentTask } from "@/shared/api/agentTasks";
-import { AGENT_AUDIT_ROUTE } from "@/shared/constants/branding";
+import CreateAgentTaskDialog from "@/components/agent/CreateAgentTaskDialog";
 
 // Zombie task detection config
 const ZOMBIE_TIMEOUT = 180000; // 3 minutes without progress is potentially stuck
@@ -53,6 +53,7 @@ export default function AuditTasks() {
   const [agentTasks, setAgentTasks] = useState<AgentTask[]>([]);
   const [agentLoading, setAgentLoading] = useState(true);
   const [cancellingAgentTaskId, setCancellingAgentTaskId] = useState<string | null>(null);
+  const [showCreateAgentDialog, setShowCreateAgentDialog] = useState(false);
 
   // Zombie task detection: track progress and time for each task
   const taskProgressRef = useRef<Map<string, { progress: number; time: number }>>(new Map());
@@ -284,7 +285,7 @@ export default function AuditTasks() {
               </SelectContent>
             </Select>
             <div className="ml-auto flex gap-2">
-              <Button className="cyber-btn-primary h-8" onClick={() => navigate(AGENT_AUDIT_ROUTE)}>
+              <Button className="cyber-btn-primary h-8" onClick={() => setShowCreateAgentDialog(true)}>
                 <Bot className="w-4 h-4 mr-2" />
                 新建深度审计
               </Button>
@@ -447,6 +448,12 @@ export default function AuditTasks() {
         onOpenChange={setShowCreateDialog}
         onTaskCreated={loadTasks}
         onFastScanStarted={handleFastScanStarted}
+      />
+
+      {/* Create Agent Task Dialog */}
+      <CreateAgentTaskDialog
+        open={showCreateAgentDialog}
+        onOpenChange={setShowCreateAgentDialog}
       />
 
       {/* Terminal Progress Dialog for Fast Scan */}
