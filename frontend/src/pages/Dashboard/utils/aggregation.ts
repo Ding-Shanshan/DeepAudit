@@ -61,11 +61,12 @@ function getMaxSeverity(
 /** 将 AuditIssue 转换为 UnifiedIssue */
 function auditIssueToUnified(
   issue: AuditIssue,
+  projectId: string,
   projectName: string
 ): UnifiedIssue {
   return {
     id: issue.id,
-    projectId: issue.task_id, // 注意: AuditIssue 的 task_id 实际是 project_id 关联
+    projectId: projectId,
     projectName: projectName,
     taskId: issue.task_id,
     taskKind: 'audit',
@@ -393,18 +394,28 @@ export function aggregateDashboardData(
     }
   }
 
+  // 创建 taskId -> projectId 映射（关键！用于正确关联 AuditIssue 到项目）
+  const taskIdToProjectIdMap = new Map<string, string>();
+  for (const task of auditTasks) {
+    taskIdToProjectIdMap.set(task.id, task.project_id);
+  }
+  for (const task of agentTasks) {
+    taskIdToProjectIdMap.set(task.id, task.project_id);
+  }
+
   // 转换 AuditIssue
   for (const issue of auditIssues) {
-    const projectName = projectNameMap.get(issue.task_id) || '未知项目';
-    unifiedIssues.push(auditIssueToUnified(issue, projectName));
+    // 通过 task_id 找到对应的 project_id
+    const projectId = taskIdToProjectIdMap.get(issue.task_id) || issue.task_id;
+    const projectName = projectNameMap.get(projectId) || '未知项目';
+    unifiedIssues.push(auditIssueToUnified(issue, projectId, projectName));
   }
 
   // 转换 AgentFinding
   for (const finding of agentFindings) {
     // 找到对应的 task 获取 projectId
-    const task = agentTasks.find(t => t.id === finding.task_id);
-    const projectId = task?.project_id || finding.task_id;
-    const projectName = projectNameMap.get(projectId) || task?.name || '未知项目';
+    const projectId = taskIdToProjectIdMap.get(finding.task_id) || finding.task_id;
+    const projectName = projectNameMap.get(projectId) || '未知项目';
     unifiedIssues.push(agentFindingToUnified(finding, projectId, projectName, finding.task_id));
   }
 
