@@ -65,7 +65,7 @@ export const RiskOverviewCards = memo(function RiskOverviewCards({
         {CARD_CONFIG.map((config) => (
           <div
             key={config.key}
-            className="cyber-card p-4 h-24 flex items-center justify-center"
+            className="cyber-card p-3 h-20 flex items-center justify-center"
           >
             <div className="loading-spinner" />
           </div>
@@ -83,18 +83,18 @@ export const RiskOverviewCards = memo(function RiskOverviewCards({
         return (
           <div
             key={config.key}
-            className={`cyber-card p-4 h-24 border ${config.borderColor} ${config.animate && value > 0 ? 'animate-pulse' : ''}`}
+            className={`cyber-card p-3 h-20 border ${config.borderColor} ${config.animate && value > 0 ? 'animate-pulse' : ''}`}
             style={{ borderWidth: '2px' }}
           >
             <div className="flex items-center justify-between h-full">
               <div className="flex flex-col">
-                <p className="stat-label text-xs">{config.label}</p>
-                <p className={`stat-value text-2xl font-bold ${config.textColor}`}>
+                <p className="text-xs text-muted-foreground font-medium">{config.label}</p>
+                <p className={`text-lg font-bold ${config.textColor}`}>
                   {value}
                 </p>
               </div>
-              <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${config.iconBg}`}>
-                <Icon className={`w-5 h-5 ${config.textColor}`} />
+              <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${config.iconBg}`}>
+                <Icon className={`w-4 h-4 ${config.textColor}`} />
               </div>
             </div>
           </div>

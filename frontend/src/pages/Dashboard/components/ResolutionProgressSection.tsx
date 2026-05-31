@@ -19,8 +19,8 @@ import type { ResolutionProgressSectionProps } from "../types";
 // SVG 环形进度图组件
 function CircularProgress({
   percentage,
-  size = 120,
-  strokeWidth = 12,
+  size = 100,
+  strokeWidth = 10,
 }: {
   percentage: number;
   size?: number;
@@ -59,7 +59,7 @@ function CircularProgress({
       </svg>
       {/* 中心文字 */}
       <div className="absolute inset-0 flex flex-col items-center justify-center">
-        <span className="text-2xl font-bold text-foreground">{percentage}%</span>
+        <span className="text-lg font-bold text-foreground">{percentage}%</span>
         <span className="text-xs text-muted-foreground">已解决</span>
       </div>
     </div>
@@ -91,7 +91,7 @@ export const ResolutionProgressSection = memo(function ResolutionProgressSection
       <div className="section-header">
         <CheckCircle2 className="w-5 h-5 text-primary" />
         <h3 className="section-title">解决进度追踪</h3>
-        <div className="ml-auto flex items-center gap-3 text-sm">
+        <div className="ml-auto flex items-center gap-3 text-xs">
           <span className="text-muted-foreground">
             发现 <span className="font-semibold text-foreground">{data.total}</span>
           </span>
@@ -117,7 +117,7 @@ export const ResolutionProgressSection = memo(function ResolutionProgressSection
         {/* 右侧：解决趋势面积图 */}
         <div className="md:col-span-3">
           {hasData && data.trend.length > 0 ? (
-            <div className="h-[180px]">
+            <div className="h-[150px]">
               <ResponsiveContainer width="100%" height="100%">
                 <AreaChart data={data.trend}>
                   <defs>

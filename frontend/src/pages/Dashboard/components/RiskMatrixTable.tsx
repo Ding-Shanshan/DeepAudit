@@ -28,7 +28,7 @@ function SeverityCell({
   projectId: string;
 }) {
   if (count === 0) {
-    return <span className="text-muted-foreground text-center">0</span>;
+    return <span className="text-muted-foreground block text-center">0</span>;
   }
 
   const colors = SEVERITY_COLORS[severity];
@@ -36,7 +36,7 @@ function SeverityCell({
   return (
     <Link
       to={`/projects/${projectId}?severity=${severity}`}
-      className={`inline-flex items-center justify-center px-2 py-1 rounded-md ${colors.bg} ${colors.text} ${colors.border} font-semibold text-sm hover:opacity-80 transition-opacity`}
+      className={`inline-flex items-center justify-center min-w-[32px] px-2 py-0.5 rounded-md ${colors.bg} ${colors.text} ${colors.border} font-semibold text-xs hover:opacity-80 transition-opacity`}
     >
       {count}
     </Link>
@@ -118,7 +118,7 @@ export const RiskMatrixTable = memo(function RiskMatrixTable({
                   </td>
                 ))}
                 <td className="text-center font-bold text-foreground">
-                  {row.total}
+                  <span className="inline-block min-w-[32px]">{row.total}</span>
                 </td>
               </tr>
             ))}

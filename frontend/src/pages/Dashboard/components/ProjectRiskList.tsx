@@ -81,29 +81,29 @@ export const ProjectRiskList = memo(function ProjectRiskList({
             <Link
               key={project.projectId}
               to={`/projects/${project.projectId}`}
-              className={`block p-4 rounded-lg transition-all group border-l-4 ${colors.border}`}
+              className={`block p-3 rounded-lg transition-all group border-l-4 ${colors.border}`}
               style={{
                 background: 'var(--cyber-bg-elevated)',
                 borderLeftWidth: '4px',
               }}
             >
-              <div className="flex items-start justify-between mb-2">
-                <h4 className="font-semibold text-foreground group-hover:text-primary transition-colors truncate flex-1">
+              <div className="flex items-start justify-between mb-1">
+                <h4 className="font-medium text-sm text-foreground group-hover:text-primary transition-colors truncate flex-1">
                   {project.projectName}
                 </h4>
-                <Badge className={riskConfig.className}>
+                <Badge className={`${riskConfig.className} text-xs`}>
                   {riskConfig.label}
                 </Badge>
               </div>
 
               {project.projectDescription && (
-                <p className="text-sm text-muted-foreground line-clamp-1 mb-2">
+                <p className="text-xs text-muted-foreground line-clamp-1 mb-1">
                   {project.projectDescription}
                 </p>
               )}
 
               {/* 问题统计 */}
-              <div className="flex items-center gap-2 mb-2 flex-wrap">
+              <div className="flex items-center gap-1.5 mb-1 flex-wrap">
                 {project.criticalCount > 0 && (
                   <span className="text-xs px-1.5 py-0.5 rounded bg-rose-50 text-rose-600 border border-rose-200">
                     严重 {project.criticalCount}
