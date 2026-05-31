@@ -44,6 +44,8 @@ import {
   FolderOpen,
   CalendarClock,
   X,
+  CheckCircle2,
+  FileText,
 } from "lucide-react";
 import { toast } from "sonner";
 import { api } from "@/shared/config/database";
@@ -78,6 +80,7 @@ export default function CreateAgentTaskDialog({
   const [projects, setProjects] = useState<Project[]>([]);
   const [loadingProjects, setLoadingProjects] = useState(true);
   const [selectedProjectId, setSelectedProjectId] = useState<string>("");
+  const [taskName, setTaskName] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
   const [branch, setBranch] = useState("main");
   const [branches, setBranches] = useState<string[]>([]);
@@ -116,6 +119,7 @@ export default function CreateAgentTaskDialog({
 
       // 重置状态
       setSelectedProjectId("");
+      setTaskName("");
       setSearchTerm("");
       setBranch("main");
       setExcludePatterns(DEFAULT_EXCLUDES);
@@ -197,15 +201,20 @@ export default function CreateAgentTaskDialog({
   // 是否可以开始
   const canStart = useMemo(() => {
     if (!selectedProject) return false;
+    if (!taskName.trim()) return false;
     if (isZipProject(selectedProject)) {
       return (useStoredZip && storedZipInfo?.has_file) || !!zipFile;
     }
     return !!selectedProject.repository_url && !!branch.trim();
-  }, [selectedProject, useStoredZip, storedZipInfo, zipFile, branch]);
+  }, [selectedProject, taskName, useStoredZip, storedZipInfo, zipFile, branch]);
 
   // 创建任务
   const handleCreate = async () => {
     if (!selectedProject) return;
+    if (!taskName.trim()) {
+      toast.error("请输入任务名称");
+      return;
+    }
     if (scheduleEnabled) {
       const intervalMinutes = Number(scheduleIntervalMinutes);
       if (!Number.isFinite(intervalMinutes) || intervalMinutes < 1) {
@@ -222,7 +231,7 @@ export default function CreateAgentTaskDialog({
     try {
       const agentTask = await createAgentTask({
         project_id: selectedProject.id,
-        name: `Agent审计-${selectedProject.name}`,
+        name: taskName.trim(),
         branch_name: isRepositoryProject(selectedProject) ? branch : undefined,
         exclude_patterns: excludePatterns,
         target_files: selectedFiles,
@@ -234,7 +243,7 @@ export default function CreateAgentTaskDialog({
         try {
           await apiClient.post("/schedules", {
             project_id: selectedProject.id,
-            name: `定时Agent审计-${selectedProject.name}`,
+            name: `定时审计-${taskName.trim()}`,
             scan_mode: "agent",
             branch_name: isRepositoryProject(selectedProject) ? branch : null,
             interval_minutes: Number(scheduleIntervalMinutes),
@@ -252,11 +261,11 @@ export default function CreateAgentTaskDialog({
 
       onOpenChange(false);
       if (scheduleError) {
-        toast.warning(`Agent 审计任务已创建，但定时计划创建失败: ${scheduleError}`);
+        toast.warning(`审计任务已创建，但定时计划创建失败: ${scheduleError}`);
       } else if (scheduleEnabled) {
-        toast.success("Agent 审计任务已创建，定时计划已创建");
+        toast.success("审计任务已创建，定时计划已创建");
       } else {
-        toast.success("Agent 审计任务已创建");
+        toast.success("审计任务已创建");
       }
       navigate(`/agent-audit/${agentTask.id}`);
     } catch (err) {
@@ -302,8 +311,24 @@ export default function CreateAgentTaskDialog({
         </SheetHeader>
 
         <div className="flex-1 overflow-y-auto p-5 space-y-5">
+          {/* 任务名称 */}
+          <div className="space-y-2">
+            <span className="text-xs font-semibold text-muted-foreground">
+              任务名称
+            </span>
+            <div className="relative">
+              <FileText className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <Input
+                placeholder="输入审计任务名称..."
+                value={taskName}
+                onChange={(e) => setTaskName(e.target.value)}
+                className="!pl-9 h-10"
+              />
+            </div>
+          </div>
+
           {/* 项目选择 */}
-          <div className="space-y-3">
+          <div className="space-y-2">
             <div className="flex items-center justify-between">
               <span className="text-xs font-semibold text-muted-foreground">
                 选择项目
@@ -325,18 +350,18 @@ export default function CreateAgentTaskDialog({
             </div>
 
             {/* 项目列表 */}
-            <ScrollArea className="h-[200px] border border-border rounded bg-muted/30">
+            <ScrollArea className="h-[180px] border border-border rounded-lg">
               {loadingProjects ? (
                 <div className="flex items-center justify-center h-full">
                   <Loader2 className="w-5 h-5 animate-spin text-primary" />
                 </div>
               ) : filteredProjects.length === 0 ? (
-                <div className="flex flex-col items-center justify-center h-full text-muted-foreground">
+                <div className="flex flex-col items-center justify-center h-full text-muted-foreground py-8">
                   <Package className="w-8 h-8 mb-2 opacity-50" />
                   <span className="text-sm">{searchTerm ? "无匹配项目" : "暂无项目"}</span>
                 </div>
               ) : (
-                <div className="p-1">
+                <div className="p-2 space-y-1">
                   {filteredProjects.map((project) => (
                     <ProjectItem
                       key={project.id}
@@ -630,34 +655,29 @@ function ProjectItem({
   const isRepo = isRepositoryProject(project);
 
   return (
-    <div
-      className={`flex items-center gap-3 p-3 cursor-pointer rounded transition-all ${selected
-          ? "bg-primary/10 border border-primary/50"
-          : "hover:bg-muted border border-transparent"
-        }`}
+    <button
+      className={`w-full flex items-center gap-3 p-3 cursor-pointer rounded-lg transition-all text-left ${
+        selected
+          ? "bg-primary/10 border-2 border-primary ring-2 ring-primary/20"
+          : "bg-muted/30 border border-border hover:bg-muted/50 hover:border-primary/30"
+      }`}
       onClick={onSelect}
     >
-      <div className={`p-1.5 rounded ${isRepo ? "bg-blue-100" : "bg-amber-100"}`}>
+      {/* 图标 */}
+      <div className={`p-2 rounded-lg ${isRepo ? "bg-blue-100" : "bg-amber-100"}`}>
         {isRepo ? (
-          <Globe className="w-4 h-4 text-blue-500" />
+          <Globe className="w-4 h-4 text-blue-600" />
         ) : (
-          <Package className="w-4 h-4 text-amber-500" />
+          <Package className="w-4 h-4 text-amber-600" />
         )}
       </div>
 
+      {/* 内容 */}
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2">
           <span className={`text-sm truncate ${selected ? 'text-foreground font-semibold' : 'text-foreground'}`}>
             {project.name}
           </span>
-          <Badge
-            className={`text-xs px-1 py-0 ${isRepo
-                ? "bg-blue-100 text-blue-600 border-blue-200"
-                : "bg-amber-100 text-amber-600 border-amber-200"
-              }`}
-          >
-            {isRepo ? "仓库" : "ZIP"}
-          </Badge>
         </div>
         {project.description && (
           <p className="text-xs text-muted-foreground mt-0.5 truncate">
@@ -666,9 +686,22 @@ function ProjectItem({
         )}
       </div>
 
+      {/* 类型标签 */}
+      <Badge
+        variant="outline"
+        className={`text-xs ${
+          isRepo
+            ? "text-blue-600 border-blue-200 bg-blue-50"
+            : "text-amber-600 border-amber-200 bg-amber-50"
+        }`}
+      >
+        {isRepo ? "Git" : "ZIP"}
+      </Badge>
+
+      {/* 选中指示 */}
       {selected && (
-        <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
+        <CheckCircle2 className="w-5 h-5 text-primary" />
       )}
-    </div>
+    </button>
   );
 }
