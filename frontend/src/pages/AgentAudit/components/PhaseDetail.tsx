@@ -21,7 +21,6 @@ import {
   Scan,
   FileSearch,
   ShieldCheck,
-  HelpCircle,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { AUDIT_PHASES, AUDIT_PHASE_CONFIG } from "../types";
@@ -105,60 +104,6 @@ const SEVERITY_LABEL: Record<string, string> = {
   medium: "中危",
   low: "低危",
 };
-
-// ============ Phase Guide Card ============
-
-interface PhaseGuideCardProps {
-  isExpanded: boolean;
-  onToggle: () => void;
-}
-
-function PhaseGuideCard({ isExpanded, onToggle }: PhaseGuideCardProps) {
-  return (
-    <div className="border border-border rounded-lg bg-muted/50 mb-4 overflow-hidden flex-shrink-0">
-      {/* Header - clickable to toggle */}
-      <button
-        className="w-full flex items-center justify-between px-4 py-2.5 hover:bg-muted/80 transition-colors"
-        onClick={onToggle}
-      >
-        <div className="flex items-center gap-2">
-          <HelpCircle className="w-4 h-4 text-primary" />
-          {isExpanded ? (
-            <ChevronDown className="w-4 h-4 text-muted-foreground" />
-          ) : (
-            <ChevronRight className="w-4 h-4 text-muted-foreground" />
-          )}
-          <span className="text-sm font-semibold text-foreground">任务执行指南</span>
-        </div>
-        <span className="text-xs text-muted-foreground">
-          {isExpanded ? "折叠" : "展开"}
-        </span>
-      </button>
-
-      {/* Content - expandable */}
-      {isExpanded && (
-        <div className="px-4 pb-3 border-t border-border/50">
-          <p className="text-xs text-muted-foreground mb-3">
-            审计任务将自动依次执行以下5个阶段，您可以观察实时进度：
-          </p>
-          <div className="space-y-1.5">
-            {AUDIT_PHASES.map((phase) => {
-              const config = AUDIT_PHASE_CONFIG[phase];
-              return (
-                <div key={phase} className="flex items-center gap-2 text-xs">
-                  <span className="w-5 text-center">{config.icon}</span>
-                  <span className="font-medium text-foreground">{config.label}</span>
-                  <span className="text-muted-foreground">-</span>
-                  <span className="text-muted-foreground">{config.description}</span>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
 
 // ============ Single Log Row ============
 
@@ -399,7 +344,6 @@ export const PhaseDetail = memo(function PhaseDetail({
   onToggleLogExpanded,
 }: PhaseDetailProps) {
   const [expandedPhases, setExpandedPhases] = useState<Set<AuditPhase>>(new Set());
-  const [guideExpanded, setGuideExpanded] = useState(true);
   const scrollRef = useRef<HTMLDivElement>(null);
   const [isAutoScroll, setIsAutoScroll] = useState(true);
 
@@ -435,57 +379,29 @@ export const PhaseDetail = memo(function PhaseDetail({
     });
   };
 
-  const currentConfig = AUDIT_PHASE_CONFIG[currentPhase];
-
   return (
-    <div className="flex flex-col h-full overflow-hidden">
-      {/* 阶段引导卡片 */}
-      <PhaseGuideCard
-        isExpanded={guideExpanded}
-        onToggle={() => setGuideExpanded(!guideExpanded)}
-      />
-
-      {/* 当前阶段标题 */}
-      <div className="flex-shrink-0 px-5 py-3 border-b border-border bg-white/80 backdrop-blur-sm">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-primary/10 border border-primary/25 flex items-center justify-center">
-              <span className="text-base">{currentConfig.icon}</span>
-            </div>
-            <div>
-              <h3 className="text-sm font-semibold text-foreground">
-                {currentConfig.label}阶段
-                {isRunning && (
-                  <span className="ml-2 text-xs font-normal text-primary animate-pulse">
-                    进行中...
-                  </span>
-                )}
-              </h3>
-              <p className="text-xs text-muted-foreground">{currentConfig.description}</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => setIsAutoScroll(!isAutoScroll)}
-              className={`
-                text-xs px-2 py-1 rounded-md font-medium transition-colors
-                ${isAutoScroll
-                  ? "bg-primary/10 text-primary border border-primary/30"
-                  : "text-muted-foreground border border-border hover:bg-muted"
-                }
-              `}
-            >
-              自动滚动
-            </button>
-            <Badge variant="outline" className="text-xs h-6 px-2 font-mono">
-              {currentPhaseLogs.length} 条记录
-            </Badge>
-          </div>
-        </div>
+    <div className="flex flex-col">
+      {/* Compact toolbar */}
+      <div className="flex items-center justify-between flex-shrink-0 py-2">
+        <Badge variant="outline" className="text-xs h-6 px-2 font-mono">
+          {currentPhaseLogs.length} 条记录
+        </Badge>
+        <button
+          onClick={() => setIsAutoScroll(!isAutoScroll)}
+          className={`
+            text-xs px-2 py-1 rounded-md font-medium transition-colors
+            ${isAutoScroll
+              ? "bg-primary/10 text-primary border border-primary/30"
+              : "text-muted-foreground border border-border hover:bg-muted"
+            }
+          `}
+        >
+          自动滚动
+        </button>
       </div>
 
-      {/* 日志区域 */}
-      <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 space-y-3 custom-scrollbar">
+      {/* Log scroll area */}
+      <div ref={scrollRef} className="flex-1 overflow-y-auto space-y-3 custom-scrollbar">
         {/* 已完成阶段（折叠摘要） */}
         {AUDIT_PHASES.filter(
           (p) => completedPhases.includes(p) && p !== currentPhase

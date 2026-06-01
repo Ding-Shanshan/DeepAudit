@@ -61,7 +61,7 @@ export function BranchSelector({
           aria-expanded={open}
           disabled={disabled}
           className={cn(
-            "h-9 justify-between cyber-input font-mono text-sm",
+            "h-9 justify-between text-xs",
             !value && "text-muted-foreground",
             className
           )}
@@ -73,7 +73,7 @@ export function BranchSelector({
         </Button>
       </PopoverTrigger>
       <PopoverContent
-        className="w-[--radix-popover-trigger-width] p-0 cyber-dialog border-border"
+        className="w-[--radix-popover-trigger-width] p-0 border-border"
         align="start"
         onWheel={handleWheel}
       >
@@ -84,7 +84,7 @@ export function BranchSelector({
             placeholder="搜索分支..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="flex h-10 w-full rounded-md bg-transparent py-3 text-sm outline-none ring-0 border-none focus:outline-none focus:ring-0 placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-50 font-mono"
+            className="flex h-9 w-full rounded-md bg-transparent py-3 text-xs outline-none ring-0 border-none focus:outline-none focus:ring-0 placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-50"
           />
         </div>
 
@@ -94,7 +94,7 @@ export function BranchSelector({
           className="max-h-[300px] overflow-y-auto overscroll-contain"
         >
           {filteredBranches.length === 0 ? (
-            <div className="py-6 text-center text-sm font-mono text-muted-foreground">
+            <div className="py-6 text-center text-xs text-muted-foreground">
               未找到匹配的分支
             </div>
           ) : (
@@ -108,7 +108,7 @@ export function BranchSelector({
                     setSearchQuery("");
                   }}
                   className={cn(
-                    "flex items-center gap-2 px-2 py-1.5 text-sm font-mono rounded-sm cursor-pointer",
+                    "flex items-center gap-2 px-2 py-1.5 text-xs rounded-sm cursor-pointer",
                     "hover:bg-accent hover:text-accent-foreground",
                     value === branch && "bg-accent"
                   )}
@@ -129,7 +129,7 @@ export function BranchSelector({
 
         {/* 底部统计 */}
         {branches.length > 0 && (
-          <div className="border-t px-3 py-2 text-xs text-muted-foreground font-mono">
+          <div className="border-t px-3 py-2 text-xs text-muted-foreground">
             共 {branches.length} 个分支
             {searchQuery && filteredBranches.length !== branches.length && (
               <span>，匹配 {filteredBranches.length} 个</span>

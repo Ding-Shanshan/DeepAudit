@@ -1,37 +1,19 @@
 /**
  * Agent Detail Panel Component
- * Professional agent information panel with cassette futurism aesthetic
- * Features: Detailed metrics, task info, visual hierarchy
+ * 终端日志风格，与 PhaseStepper 视觉一致
  */
 
 import { memo } from "react";
-import { X, Cpu, Scan, FileSearch, ShieldCheck, Bot, Repeat, Zap, Bug, FileCode, Clock, Network } from "lucide-react";
+import { X } from "lucide-react";
 import { AGENT_STATUS_CONFIG } from "../constants";
 import { findAgentInTree } from "../utils";
 import type { AgentDetailPanelProps } from "../types";
 
-// Agent type configurations
-const AGENT_TYPE_CONFIG: Record<string, { icon: React.ReactNode; label: string; color: string }> = {
-  orchestrator: {
-    icon: <Cpu className="w-4 h-4" />,
-    label: "Orchestrator",
-    color: "purple"
-  },
-  recon: {
-    icon: <Scan className="w-4 h-4" />,
-    label: "Reconnaissance",
-    color: "cyan"
-  },
-  analysis: {
-    icon: <FileSearch className="w-4 h-4" />,
-    label: "Analysis",
-    color: "amber"
-  },
-  verification: {
-    icon: <ShieldCheck className="w-4 h-4" />,
-    label: "Verification",
-    color: "green"
-  },
+const AGENT_TYPE_LABEL: Record<string, string> = {
+  orchestrator: "编排器",
+  recon: "侦察",
+  analysis: "分析",
+  verification: "验证",
 };
 
 export const AgentDetailPanel = memo(function AgentDetailPanel({ agentId, treeNodes, onClose }: AgentDetailPanelProps) {
@@ -39,152 +21,51 @@ export const AgentDetailPanel = memo(function AgentDetailPanel({ agentId, treeNo
   if (!agent) return null;
 
   const statusConfig = AGENT_STATUS_CONFIG[agent.status] || AGENT_STATUS_CONFIG.created;
-  const typeConfig = AGENT_TYPE_CONFIG[agent.agent_type] || {
-    icon: <Bot className="w-4 h-4" />,
-    label: "Agent",
-    color: "gray"
-  };
-
-  const isRunning = agent.status === 'running';
+  const typeLabel = AGENT_TYPE_LABEL[agent.agent_type] || "Agent";
 
   return (
-    <div className="relative rounded border border-primary/30 bg-gradient-to-br from-primary/5 to-transparent overflow-hidden">
-      {/* Top accent line */}
-      <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-primary/50 to-transparent" />
-
-      {/* Header */}
-      <div className="flex items-center justify-between p-3 border-b border-border">
-        <div className="flex items-center gap-2.5">
-          {/* Agent type icon with color */}
-          <div className={`text-${typeConfig.color}-400`}>
-            {typeConfig.icon}
-          </div>
-
-          {/* Agent name */}
-          <div>
-            <span className="text-sm font-medium text-foreground block">{agent.agent_name}</span>
-            <span className="text-xs text-muted-foreground uppercase tracking-wider">{typeConfig.label}</span>
-          </div>
-        </div>
-
-        {/* Close button */}
+    <div className="font-mono text-xs space-y-1.5 rounded border border-slate-200 p-3">
+      {/* Close button */}
+      <div className="flex items-center justify-between py-1">
+        <span className="text-slate-800 font-semibold">{agent.agent_name}</span>
         <button
           onClick={onClose}
-          className="w-6 h-6 flex items-center justify-center rounded hover:bg-white/10 transition-colors text-muted-foreground hover:text-foreground"
+          className="text-slate-400 hover:text-slate-600 transition-colors"
         >
-          <X className="w-4 h-4" />
+          [关闭]
         </button>
       </div>
 
-      {/* Status indicator */}
-      <div className="px-3 py-2 border-b border-border bg-muted/30">
-        <div className="flex items-center gap-2">
-          <div className="relative">
-            <div className={`
-              w-2.5 h-2.5 rounded-full
-              ${isRunning ? 'bg-green-400 animate-pulse' : ''}
-              ${agent.status === 'completed' ? 'bg-green-500' : ''}
-              ${agent.status === 'failed' ? 'bg-red-400' : ''}
-              ${agent.status === 'waiting' ? 'bg-yellow-400' : ''}
-              ${agent.status === 'created' ? 'bg-background0' : ''}
-            `} />
-            {isRunning && (
-              <div className="absolute inset-0 w-2.5 h-2.5 rounded-full bg-green-400 animate-ping opacity-30" />
-            )}
-          </div>
-          <span className={`text-xs font-mono uppercase tracking-wider ${statusConfig.color}`}>
-            {statusConfig.text}
-          </span>
-        </div>
+      {/* 类型 + 状态 */}
+      <div className="text-slate-500">
+        [{typeLabel}] [{statusConfig.text}]
       </div>
 
-      {/* Metrics grid */}
-      <div className="p-3 grid grid-cols-2 gap-2">
-        {/* Iterations */}
-        <div className="flex items-center gap-2 p-2 rounded bg-muted/50 border border-border">
-          <Repeat className="w-3.5 h-3.5 text-secondary/70" />
-          <div>
-            <div className="text-xs text-muted-foreground uppercase">Iterations</div>
-            <div className="text-sm text-foreground font-mono">{agent.iterations || 0}</div>
-          </div>
-        </div>
-
-        {/* Tool Calls */}
-        <div className="flex items-center gap-2 p-2 rounded bg-muted/50 border border-border">
-          <Zap className="w-3.5 h-3.5 text-warning/70" />
-          <div>
-            <div className="text-xs text-muted-foreground uppercase">Tool Calls</div>
-            <div className="text-sm text-foreground font-mono">{agent.tool_calls || 0}</div>
-          </div>
-        </div>
-
-        {/* Findings - Only show for Orchestrator (root agent with no parent) */}
-        {!agent.parent_agent_id && (
-          <div className="flex items-center gap-2 p-2 rounded bg-muted/50 border border-border">
-            <Bug className={`w-3.5 h-3.5 ${agent.findings_count > 0 ? 'text-red-400/70' : 'text-muted-foreground/70'}`} />
-            <div>
-              <div className="text-xs text-muted-foreground uppercase">Findings</div>
-              <div className={`text-sm font-mono ${agent.findings_count > 0 ? 'text-red-400' : 'text-foreground'}`}>
-                {agent.findings_count}
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Duration/Status - Show for sub-agents instead of Findings */}
-        {agent.parent_agent_id && (
-          <div className="flex items-center gap-2 p-2 rounded bg-muted/50 border border-border">
-            <Clock className="w-3.5 h-3.5 text-muted-foreground/70" />
-            <div>
-              <div className="text-xs text-muted-foreground uppercase">
-                {agent.duration_ms ? "Duration" : "Status"}
-              </div>
-              <div className="text-sm text-foreground font-mono">
-                {agent.duration_ms
-                  ? `${(agent.duration_ms / 1000).toFixed(1)}s`
-                  : (AGENT_STATUS_CONFIG[agent.status]?.text || agent.status)
-                }
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Tokens */}
-        <div className="flex items-center gap-2 p-2 rounded bg-muted/50 border border-border">
-          <FileCode className="w-3.5 h-3.5 text-purple-400/70" />
-          <div>
-            <div className="text-xs text-muted-foreground uppercase">Tokens</div>
-            <div className="text-sm text-foreground font-mono">
-              {((agent.tokens_used || 0) / 1000).toFixed(1)}k
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Task description */}
-      {agent.task_description && (
-        <div className="px-3 pb-3">
-          <div className="p-2.5 rounded bg-muted/50 border border-border">
-            <div className="flex items-center gap-1.5 mb-1.5">
-              <Clock className="w-3 h-3 text-muted-foreground" />
-              <span className="text-xs text-muted-foreground uppercase tracking-wider">Current Task</span>
-            </div>
-            <p className="text-xs text-muted-foreground leading-relaxed line-clamp-3">
-              {agent.task_description}
-            </p>
-          </div>
+      {/* 漏洞数 - 仅根 Agent */}
+      {!agent.parent_agent_id && (
+        <div className={agent.findings_count > 0 ? "text-slate-700" : "text-slate-500"}>
+          [漏洞] {agent.findings_count}
         </div>
       )}
 
-      {/* Sub-agents indicator */}
+      {/* 时长 - 仅子 Agent */}
+      {agent.parent_agent_id && agent.duration_ms && (
+        <div className="text-slate-500">
+          [时长] {(agent.duration_ms / 1000).toFixed(1)}s
+        </div>
+      )}
+
+      {/* 任务描述 */}
+      {agent.task_description && (
+        <div className="text-slate-500">
+          [任务] {agent.task_description.length > 120 ? agent.task_description.slice(0, 120) + "..." : agent.task_description}
+        </div>
+      )}
+
+      {/* 子 Agent */}
       {agent.children && agent.children.length > 0 && (
-        <div className="px-3 pb-3">
-          <div className="flex items-center gap-2 text-xs text-muted-foreground">
-            <Network className="w-3 h-3" />
-            <span className="uppercase tracking-wider">
-              {agent.children.length} Sub-agent{agent.children.length > 1 ? 's' : ''}
-            </span>
-          </div>
+        <div className="text-slate-400">
+          {agent.children.length} 个子 Agent
         </div>
       )}
     </div>

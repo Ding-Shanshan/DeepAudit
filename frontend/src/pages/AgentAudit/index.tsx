@@ -29,13 +29,13 @@ import {
   StatsPanel,
   AgentErrorBoundary,
   PhaseStepper,
-  PhaseDetail,
 } from "./components";
 import ReportExportDialog from "./components/ReportExportDialog";
 import { useAgentAuditState } from "./hooks";
 import { ACTION_VERBS, POLLING_INTERVALS } from "./constants";
 import { cleanThinkingContent, truncateOutput, inferPhaseFromEvent, inferInitialPhase } from "./utils";
 import type { AuditPhase } from "./types";
+import { AUDIT_PHASES } from "./types";
 
 function AgentAuditPageContent() {
   const { taskId } = useParams<{ taskId: string }>();
@@ -58,8 +58,10 @@ function AgentAuditPageContent() {
   const [isCancelling, setIsCancelling] = useState(false);
   const [statusVerb, setStatusVerb] = useState(ACTION_VERBS[0]);
   const [statusDots, setStatusDots] = useState(0);
+  const [expandedPhases, setExpandedPhases] = useState<Set<AuditPhase>>(new Set());
 
   const logEndRef = useRef<HTMLDivElement>(null);
+  const phaseScrollRef = useRef<HTMLDivElement>(null);
   const agentTreeRefreshTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastAgentTreeRefreshTime = useRef<number>(0);
   const previousTaskIdRef = useRef<string | undefined>(undefined);
@@ -87,6 +89,38 @@ function AgentAuditPageContent() {
     }
     previousTaskIdRef.current = taskId;
   }, [taskId, reset]);
+
+  // ============ Phase Log Grouping ============
+
+  const phaseLogMap: Record<string, typeof logs[0][]> = {};
+  for (const phase of AUDIT_PHASES) {
+    phaseLogMap[phase] = [];
+  }
+  for (const log of logs) {
+    const phase = log.phase || currentPhase;
+    if (!phaseLogMap[phase]) phaseLogMap[phase] = [];
+    phaseLogMap[phase].push(log);
+  }
+  const currentPhaseLogs = phaseLogMap[currentPhase] || [];
+
+  // Auto scroll to bottom when new logs arrive
+  useEffect(() => {
+    if (isAutoScroll && phaseScrollRef.current) {
+      phaseScrollRef.current.scrollTop = phaseScrollRef.current.scrollHeight;
+    }
+  }, [currentPhaseLogs.length, isAutoScroll]);
+
+  const togglePhaseExpanded = (phase: AuditPhase) => {
+    setExpandedPhases((prev) => {
+      const next = new Set(prev);
+      if (next.has(phase)) {
+        next.delete(phase);
+      } else {
+        next.add(phase);
+      }
+      return next;
+    });
+  };
 
   // ============ Data Loading ============
 
@@ -701,19 +735,21 @@ function AgentAuditPageContent() {
 
   if (isLoading && !task) {
     return (
-      <div className="h-screen bg-background flex items-center justify-center relative overflow-hidden">
-        <div className="absolute inset-0 cyber-grid opacity-30" />
-        <div className="absolute inset-0 vignette pointer-events-none" />
-        <div className="flex items-center gap-3 text-muted-foreground relative z-10">
-          <Loader2 className="w-5 h-5 animate-spin text-primary" />
-          <span className="font-mono text-sm tracking-wide">加载审计任务...</span>
+      <div className="h-screen bg-background flex items-center justify-center font-mono relative">
+        <div className="cyber-card p-4">
+          <div className="flex items-center justify-center h-[60vh]">
+            <div className="flex items-center gap-3 text-muted-foreground">
+              <div className="loading-spinner" />
+              <span className="font-mono text-sm tracking-wide">加载审计任务...</span>
+            </div>
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="h-screen bg-background flex flex-col overflow-hidden relative">
+    <div className="h-screen bg-background flex flex-col overflow-hidden px-6 pt-1 pb-4 font-mono relative gap-4">
 
       {/* Header */}
       <Header
@@ -721,155 +757,102 @@ function AgentAuditPageContent() {
         isRunning={isRunning}
         isCancelling={isCancelling}
         onCancel={handleCancel}
-        onExport={handleExportReport}
-        onNewAudit={() => setShowCreateDialog(true)}
       />
 
-      {/* 🔥 Phase Stepper */}
-      <PhaseStepper
-        currentPhase={currentPhase}
-        completedPhases={completedPhases}
-        isRunning={isRunning}
-        isComplete={isComplete}
-      />
+      {/* Stats Panel - at top */}
+      {task && (
+        <StatsPanel task={task} findings={findings} />
+      )}
 
-      {/* Main content */}
-      <div className="flex-1 flex overflow-hidden relative">
-        {/* Left Panel - Phase Detail */}
-        <div className="w-[63%] flex flex-col border-r border-border bg-muted/20">
-          <PhaseDetail
-            logs={logs}
-            currentPhase={currentPhase}
-            completedPhases={completedPhases}
-            isRunning={isRunning}
-            expandedLogIds={expandedLogIds}
-            onToggleLogExpanded={toggleLogExpanded}
-          />
-        </div>
+      {/* 🔥 Phase Stepper (vertical) + Agent Tree grid — flex-[9] takes 90% of remaining space (10% height reduction) */}
+      {/* Phase Stepper + Agent Tree grid — flex-[4] takes 80% of remaining space (20% height reduction) */}
+      <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-2 gap-4">
+        {/* Left: Vertical Phase Stepper with live logs */}
+        <PhaseStepper
+          currentPhase={currentPhase}
+          completedPhases={completedPhases}
+          isRunning={isRunning}
+          isComplete={isComplete}
+          phaseLogMap={phaseLogMap}
+          expandedPhases={expandedPhases}
+          onTogglePhaseExpanded={togglePhaseExpanded}
+          currentPhaseLogs={currentPhaseLogs}
+          expandedLogIds={expandedLogIds}
+          onToggleLogExpanded={toggleLogExpanded}
+          isAutoScroll={isAutoScroll}
+          onToggleAutoScroll={() => setAutoScroll(!isAutoScroll)}
+          scrollRef={phaseScrollRef}
+        />
 
-        {/* Right Panel - Agent Tree + Stats */}
-        <div className="w-[37%] flex flex-col bg-background overflow-hidden">
-          {/* Agent Tree section */}
-          <div className="flex-1 flex flex-col overflow-hidden">
-            {/* Tree header */}
-            <div className="flex-shrink-0 h-11 border-b border-border flex items-center justify-between px-4 bg-white/90 backdrop-blur-sm">
-              <div className="flex items-center gap-2.5 text-xs text-muted-foreground">
-                <Radio className="w-4 h-4 text-violet-600" />
-                <span className="uppercase font-bold tracking-wider text-foreground text-sm">
-                  {selectedAgentId && !showAllLogs ? 'Agent 详情' : 'Agent 概览'}
-                </span>
-                {!selectedAgentId && agentTree && (
-                  <Badge variant="outline" className="h-5 px-2 text-xs border-violet-500/30 text-violet-600 bg-violet-500/10 font-mono">
-                    {agentTree.total_agents}
-                  </Badge>
-                )}
-                {isConnected && (
-                  <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-primary/10 border border-primary/25">
-                    <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
-                    <span className="text-xs font-mono text-primary font-semibold">LIVE</span>
-                  </div>
-                )}
+        {/* Right: Agent Tree */}
+        <div className="bg-white border border-slate-200 rounded-lg shadow-sm px-5 py-4 overflow-hidden flex flex-col min-h-0">
+          <div className="section-header !mb-1 !pb-1 !gap-2 !border-b-0">
+            <Radio className="w-4 h-4 text-primary" />
+            <h3 className="section-title text-sm">
+              {selectedAgentId && !showAllLogs ? 'Agent 详情' : 'Agent 概览'}
+            </h3>
+            {!selectedAgentId && agentTree && (
+              <Badge variant="outline" className="ml-2 h-5 px-2 text-xs border-primary/30 text-primary bg-primary/10 font-mono">
+                {agentTree.total_agents}
+              </Badge>
+            )}
+            {isConnected && (
+              <div className="ml-auto flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-primary/10 border border-primary/25">
+                <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
+                <span className="text-xs font-mono text-primary font-semibold">LIVE</span>
               </div>
-              <div className="flex items-center gap-2">
-                {selectedAgentId && !showAllLogs && (
-                  <button
-                    onClick={() => selectAgent(null)}
-                    className="text-xs text-primary hover:text-primary/80 font-mono uppercase px-2 py-1 rounded hover:bg-primary/10"
-                  >
-                    返回
-                  </button>
-                )}
-              </div>
-            </div>
-
-            {/* Tree content or Agent Detail */}
-            <div className="flex-1 overflow-y-auto p-3 custom-scrollbar">
-              {selectedAgentId && !showAllLogs ? (
-                <AgentDetailPanel
-                  agentId={selectedAgentId}
-                  treeNodes={treeNodes}
-                  onClose={() => selectAgent(null)}
-                />
-              ) : treeNodes.length > 0 ? (
-                <div className="space-y-0.5">
-                  {treeNodes.map(node => (
-                    <AgentTreeNodeItem
-                      key={node.agent_id}
-                      node={node}
-                      selectedId={selectedAgentId}
-                      onSelect={handleAgentSelect}
-                    />
-                  ))}
-                </div>
-              ) : (
-                <div className="h-full flex items-center justify-center text-muted-foreground text-xs">
-                  {isRunning ? (
-                    <div className="flex flex-col items-center gap-3 p-6">
-                      <Loader2 className="w-6 h-6 animate-spin text-violet-600" />
-                      <span className="font-mono text-center">初始化 Agent...</span>
-                    </div>
-                  ) : (
-                    <div className="flex flex-col items-center gap-2 p-6 text-center">
-                      <Radio className="w-8 h-8 text-muted-foreground/50" />
-                      <span className="font-mono">暂无 Agent</span>
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
+            )}
           </div>
 
-          {/* Stats section */}
-          <div className="flex-shrink-0 border-t border-border overflow-y-auto custom-scrollbar max-h-[45vh]">
-            <div className="p-3">
-              <StatsPanel task={task} findings={findings} />
-            </div>
+          {/* Agent tree content or detail panel */}
+          <div className="flex-1 overflow-y-auto custom-scrollbar">
+            {selectedAgentId && !showAllLogs ? (
+              <AgentDetailPanel
+                agentId={selectedAgentId}
+                treeNodes={treeNodes}
+                onClose={() => selectAgent(null)}
+              />
+            ) : treeNodes.length > 0 ? (
+              <div className="space-y-0.5">
+                {treeNodes.map(node => (
+                  <AgentTreeNodeItem
+                    key={node.agent_id}
+                    node={node}
+                    selectedId={selectedAgentId}
+                    onSelect={handleAgentSelect}
+                  />
+                ))}
+              </div>
+            ) : (
+              <div className="empty-state h-auto py-4">
+                {isRunning ? (
+                  <>
+                    <Loader2 className="w-6 h-6 animate-spin text-primary" />
+                    <p className="empty-state-description">初始化 Agent...</p>
+                  </>
+                ) : (
+                  <>
+                    <Radio className="empty-state-icon w-8 h-8 text-muted-foreground/50" />
+                    <p className="empty-state-description">暂无 Agent</p>
+                  </>
+                )}
+              </div>
+            )}
           </div>
+
+          {/* Back button for agent detail */}
+          {selectedAgentId && !showAllLogs && (
+            <div className="flex-shrink-0 pt-2 border-t border-border mt-2">
+              <button
+                onClick={() => selectAgent(null)}
+                className="text-xs text-primary hover:text-primary/80 font-mono uppercase px-2 py-1 rounded hover:bg-primary/10"
+              >
+                返回概览
+              </button>
+            </div>
+          )}
         </div>
       </div>
-
-      {/* Status bar */}
-      {task && (
-        <div className="flex-shrink-0 h-9 border-t border-border flex items-center justify-between px-5 text-xs bg-white/90 backdrop-blur-sm relative overflow-hidden">
-          <div
-            className="absolute inset-0 bg-primary/8"
-            style={{ width: `${task.progress_percentage || 0}%` }}
-          />
-
-          <span className="relative z-10">
-            {isRunning ? (
-              <span className="flex items-center gap-2.5 text-primary">
-                <span className="w-2 h-2 rounded-full bg-primary animate-pulse" />
-                <span className="font-mono font-semibold">{statusVerb}{'.'.repeat(statusDots)}</span>
-              </span>
-            ) : isComplete ? (
-              <span className="flex items-center gap-2 text-muted-foreground font-mono">
-                <span className={`w-2 h-2 rounded-full ${task.status === 'completed' ? 'bg-emerald-500' : task.status === 'failed' ? 'bg-rose-500' : 'bg-amber-500'}`} />
-                审计 {task.status === 'completed' ? '已完成' : task.status === 'failed' ? '失败' : '已取消'}
-              </span>
-            ) : (
-              <span className="text-muted-foreground font-mono">就绪</span>
-            )}
-          </span>
-          <div className="flex items-center gap-4 font-mono text-muted-foreground relative z-10">
-            <div className="flex items-center gap-1.5">
-              <span className="text-primary font-bold">{task.progress_percentage?.toFixed(0) || 0}</span>
-              <span className="text-xs">%</span>
-            </div>
-            <div className="w-px h-3.5 bg-border" />
-            <div className="flex items-center gap-1.5">
-              <span className="font-semibold text-foreground">{task.analyzed_files}</span>
-              <span className="text-muted-foreground">/ {task.total_files}</span>
-              <span className="text-xs">文件</span>
-            </div>
-            <div className="w-px h-3.5 bg-border" />
-            <div className="flex items-center gap-1.5">
-              <span className="font-semibold text-foreground">{task.tool_calls_count || 0}</span>
-              <span className="text-xs">工具</span>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Create dialog */}
       <CreateAgentTaskDialog open={showCreateDialog} onOpenChange={setShowCreateDialog} />

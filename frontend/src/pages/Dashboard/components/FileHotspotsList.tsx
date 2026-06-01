@@ -78,7 +78,7 @@ export const FileHotspotsList = memo(function FileHotspotsList({
               </span>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center justify-between mb-1">
-                  <span className="text-sm text-foreground truncate group-hover:text-primary transition-colors">
+                  <span className="text-xs text-foreground truncate group-hover:text-primary transition-colors">
                     {item.shortPath}
                   </span>
                   <span className={`text-sm font-semibold ${SEVERITY_COLORS[item.maxSeverity].text}`}>

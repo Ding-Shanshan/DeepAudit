@@ -1,119 +1,132 @@
 /**
- * Phase Stepper Component
- * Horizontal progress bar showing audit execution phases
- * 让用户一眼看出任务执行到了哪个阶段
+ * PhaseStepper Component - Terminal-style log stream
+ * 所有阶段日志在同一个展示框内以终端日志风格输出，
+ * 阶段开始/结束时打印阶段名称，日志纯文本无图标无边框
  */
 
 import { memo } from "react";
-import { CheckCircle2, Loader2, Circle } from "lucide-react";
+import { Terminal } from "lucide-react";
 import { AUDIT_PHASE_CONFIG, AUDIT_PHASES } from "../types";
-import type { AuditPhase } from "../types";
+import type { AuditPhase, LogItem } from "../types";
+
+// ============ Log type display config ============
+
+const LOG_LABELS: Record<string, { text: string; color: string }> = {
+  thinking: { text: "思考", color: "text-slate-500" },
+  tool: { text: "工具", color: "text-slate-500" },
+  finding: { text: "漏洞", color: "text-slate-600" },
+  dispatch: { text: "调度", color: "text-slate-500" },
+  info: { text: "信息", color: "text-slate-400" },
+  error: { text: "错误", color: "text-slate-700" },
+  progress: { text: "进度", color: "text-slate-500" },
+};
+
+const SEVERITY_COLOR: Record<string, string> = {
+  critical: "text-slate-700",
+  high: "text-slate-600",
+  medium: "text-slate-600",
+  low: "text-slate-500",
+};
+
+const SEVERITY_LABEL: Record<string, string> = {
+  critical: "严重",
+  high: "高危",
+  medium: "中危",
+  low: "低危",
+};
+
+function cleanTitle(title: string): string {
+  return title
+    .replace(/[\u{1F300}-\u{1F9FF}]/gu, "")
+    .replace(/[✅🔗🛑✕⚠️❌⚡🔄🔍💡📁📄🐛🛡️🔧📤📊📦🔬]/g, "")
+    .replace(/^[:\-–—•·\s]+/, "")
+    .trim() || title;
+}
+
+// ============ Log row (pure text, no border, no icon) ============
+
+function LogRow({
+  item,
+  isExpanded,
+  onToggle,
+}: {
+  item: LogItem;
+  isExpanded: boolean;
+  onToggle: () => void;
+}) {
+  const typeInfo = LOG_LABELS[item.type] || LOG_LABELS.info;
+  const title = cleanTitle(item.title);
+  const isCollapsible = !!(item.content && item.type !== "thinking");
+  const isThinking = item.type === "thinking";
+
+  return (
+    <div className="font-mono text-xs leading-4">
+      <div className="flex items-center gap-2" onClick={isCollapsible ? onToggle : undefined}>
+        <span className={`${typeInfo.color} flex-shrink-0`}>[{typeInfo.text}]</span>
+        {item.time && (
+          <span className="text-slate-400 tabular-nums flex-shrink-0">{item.time}</span>
+        )}
+        <span className={`truncate flex-1 text-slate-700`}>
+          {isThinking && item.isStreaming ? (
+            <>
+              {title || "正在思考..."}
+              <span className="inline-block w-1 h-3 bg-slate-400 rounded-sm ml-0.5 animate-pulse" />
+            </>
+          ) : title}
+        </span>
+        {item.isStreaming && !isThinking && (
+          <span className="w-1 h-3 bg-slate-400 rounded-sm animate-pulse flex-shrink-0" />
+        )}
+        {item.tool?.status === "running" && (
+          <span className="text-slate-500 flex-shrink-0">运行中</span>
+        )}
+        {item.tool?.status === "completed" && (
+          <span className="text-slate-600 flex-shrink-0">
+            完成{item.tool.duration ? ` ${item.tool.duration}ms` : ""}
+          </span>
+        )}
+        {item.severity && (
+          <span className={`flex-shrink-0 ${SEVERITY_COLOR[item.severity] || SEVERITY_COLOR.medium}`}>
+            [{SEVERITY_LABEL[item.severity] || item.severity}]
+          </span>
+        )}
+        {item.agentName && (
+          <span className="text-slate-400 flex-shrink-0">@{item.agentName}</span>
+        )}
+        {isCollapsible && (
+          <span className="text-slate-400 flex-shrink-0">{isExpanded ? "▼" : "▶"}</span>
+        )}
+      </div>
+      {isThinking && item.content && (
+        <div className="pl-4 text-slate-600 whitespace-pre-wrap break-words">
+          {item.content}
+        </div>
+      )}
+      {isCollapsible && isExpanded && item.content && (
+        <div className="pl-4 py-0.5 text-slate-600 whitespace-pre-wrap break-words max-h-48 overflow-y-auto">
+          {item.content}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ============ Main Component ============
 
 interface PhaseStepperProps {
   currentPhase: AuditPhase;
   completedPhases: AuditPhase[];
   isRunning: boolean;
   isComplete: boolean;
-}
-
-function PhaseStep({
-  phase,
-  status,
-  isLast,
-  isFirst,
-}: {
-  phase: AuditPhase;
-  status: "completed" | "active" | "pending";
-  isLast: boolean;
-  isFirst: boolean;
-}) {
-  const config = AUDIT_PHASE_CONFIG[phase];
-
-  return (
-    <div className="flex flex-col items-center relative flex-1 min-w-0">
-      {/* 上层：连接线 + 图标 */}
-      <div className="flex items-center justify-center w-full h-10 relative">
-        {/* 左侧连接线 - 到上一个阶段 */}
-        {!isFirst && (
-          <div
-            className={`
-              absolute left-0 right-1/2 h-0.5 transition-all duration-500
-              ${status === "completed" || status === "active"
-                ? "bg-emerald-500"
-                : "bg-border"
-              }
-            `}
-          />
-        )}
-
-        {/* 右侧连接线 - 到下一个阶段 */}
-        {!isLast && (
-          <div
-            className={`
-              absolute left-1/2 right-0 h-0.5 transition-all duration-500
-              ${status === "completed"
-                ? "bg-emerald-500"
-                : status === "active"
-                  ? "bg-primary/50"
-                  : "bg-border"
-              }
-            `}
-          />
-        )}
-
-        {/* Icon circle - 居中 */}
-        <div
-          className={`
-            w-10 h-10 rounded-full flex items-center justify-center border-2 transition-all duration-500 z-10
-            ${status === "completed"
-              ? "border-emerald-500 bg-emerald-500 text-white shadow-md shadow-emerald-500/25"
-              : status === "active"
-                ? "border-primary bg-primary/10 text-primary shadow-md shadow-primary/25"
-                : "border-border bg-muted text-muted-foreground"
-            }
-          `}
-        >
-          {status === "completed" ? (
-            <CheckCircle2 className="w-5 h-5" />
-          ) : status === "active" ? (
-            <Loader2 className="w-5 h-5 animate-spin" />
-          ) : (
-            <Circle className="w-4 h-4" />
-          )}
-        </div>
-      </div>
-
-      {/* 下层：标签和描述 - 与图标纵向对齐居中 */}
-      <div className="mt-2 text-center min-w-0 px-2 max-w-[160px]">
-        <span
-          className={`
-            text-sm font-semibold block truncate
-            ${status === "completed"
-              ? "text-emerald-600"
-              : status === "active"
-                ? "text-primary"
-                : "text-muted-foreground"
-            }
-          `}
-        >
-          {config.icon} {config.label}
-        </span>
-        <span
-          className={`
-            text-xs block mt-0.5 line-clamp-2
-            ${status === "completed"
-              ? "text-emerald-600/70"
-              : status === "active"
-                ? "text-primary/70"
-                : "text-muted-foreground/50"
-            }
-          `}
-        >
-          {config.description}
-        </span>
-      </div>
-    </div>
-  );
+  phaseLogMap: Record<string, LogItem[]>;
+  expandedPhases: Set<AuditPhase>;
+  onTogglePhaseExpanded: (phase: AuditPhase) => void;
+  currentPhaseLogs: LogItem[];
+  expandedLogIds: Set<string>;
+  onToggleLogExpanded: (id: string) => void;
+  isAutoScroll: boolean;
+  onToggleAutoScroll: () => void;
+  scrollRef: React.RefObject<HTMLDivElement | null>;
 }
 
 export const PhaseStepper = memo(function PhaseStepper({
@@ -121,35 +134,99 @@ export const PhaseStepper = memo(function PhaseStepper({
   completedPhases,
   isRunning,
   isComplete,
+  phaseLogMap,
+  expandedPhases,
+  onTogglePhaseExpanded,
+  currentPhaseLogs,
+  expandedLogIds,
+  onToggleLogExpanded,
+  isAutoScroll,
+  onToggleAutoScroll,
+  scrollRef,
 }: PhaseStepperProps) {
-  const currentIndex = AUDIT_PHASES.indexOf(currentPhase);
+  const startedPhases = AUDIT_PHASES.filter((phase) => {
+    if (completedPhases.includes(phase)) return true;
+    if (phase === currentPhase) return true;
+    if (isComplete) return true;
+    return false;
+  });
+
+  const totalLogs = Object.values(phaseLogMap).reduce((sum, logs) => sum + logs.length, 0);
 
   return (
-    <div className="flex-shrink-0 border-b border-border bg-white/90 backdrop-blur-sm px-6 py-4">
-      <div className="flex items-stretch justify-center max-w-3xl mx-auto">
-        {AUDIT_PHASES.map((phase, index) => {
-          let status: "completed" | "active" | "pending";
+    <div className="bg-white border border-slate-200 rounded-lg shadow-sm px-5 py-4 overflow-hidden flex flex-col min-h-0">
+      {/* Section header */}
+      <div className="section-header !mb-1 !pb-1 !gap-2 !border-b-0">
+        <Terminal className="w-4 h-4 text-primary" />
+        <h3 className="section-title text-sm">日志详情</h3>
+      </div>
 
-          if (isComplete) {
-            status = "completed";
-          } else if (completedPhases.includes(phase)) {
-            status = "completed";
-          } else if (phase === currentPhase && isRunning) {
-            status = "active";
-          } else if (index < currentIndex) {
-            status = "completed";
-          } else {
-            status = "pending";
-          }
+      {/* Toolbar */}
+      <div className="flex items-center justify-between flex-shrink-0 py-1">
+        <span className="text-xs font-mono text-muted-foreground">{totalLogs} 条记录</span>
+        <button
+          onClick={onToggleAutoScroll}
+          className={`
+            text-xs px-2 py-1 rounded-md font-mono transition-colors
+            ${isAutoScroll
+              ? "bg-primary/10 text-primary border border-primary/30"
+              : "text-muted-foreground border border-border hover:bg-muted"
+            }
+          `}
+        >
+          自动滚动
+        </button>
+      </div>
+
+      {/* Terminal-style log stream */}
+      <div ref={scrollRef} className="flex-1 overflow-y-auto custom-scrollbar">
+        {startedPhases.length === 0 && (
+          <div className="py-8 text-center font-mono text-xs text-muted-foreground">
+            {isRunning ? "等待活动..." : "暂无活动记录"}
+          </div>
+        )}
+
+        {startedPhases.map((phase) => {
+          const isCompleted = completedPhases.includes(phase) || (isComplete && phase === currentPhase);
+          const isActive = phase === currentPhase && !isCompleted;
+          const logs = phaseLogMap[phase] || [];
+          const config = AUDIT_PHASE_CONFIG[phase];
 
           return (
-            <PhaseStep
-              key={phase}
-              phase={phase}
-              status={status}
-              isFirst={index === 0}
-              isLast={index === AUDIT_PHASES.length - 1}
-            />
+            <div key={phase}>
+              {/* Phase start line */}
+              <div className="font-mono text-xs leading-4 text-slate-800 font-semibold">
+                --- {config.label}阶段开始 ---
+              </div>
+
+              {/* Phase logs */}
+              {logs.length > 0 && (
+                <div className="pl-2">
+                  {logs.map((item) => (
+                    <LogRow
+                      key={item.id}
+                      item={item}
+                      isExpanded={expandedLogIds.has(item.id)}
+                      onToggle={() => onToggleLogExpanded(item.id)}
+                    />
+                  ))}
+                </div>
+              )}
+
+              {/* Active phase with no logs yet */}
+              {isActive && logs.length === 0 && (
+                <div className="pl-2 font-mono text-xs text-muted-foreground">
+                  等待活动...
+                </div>
+              )}
+
+              {/* Phase end line (only for completed phases) */}
+              {isCompleted && (
+                <div className="font-mono text-xs leading-4 text-slate-600 font-semibold">
+                  --- {config.label}阶段结束 ---
+                </div>
+              )}
+            </div>
           );
         })}
       </div>

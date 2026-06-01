@@ -1,6 +1,6 @@
 /**
  * File Selection Dialog
- * Cyberpunk Terminal Aesthetic
+ * Simplified list-style display
  */
 
 import React, { useState, useEffect, useMemo, useCallback } from "react";
@@ -9,30 +9,14 @@ import {
     DialogContent,
     DialogHeader,
     DialogTitle,
-    DialogFooter,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Badge } from "@/components/ui/badge";
 import {
     Search,
-    FileText,
-    CheckSquare,
-    Square,
-    FolderOpen,
-    Folder,
-    ChevronRight,
-    ChevronDown,
-    FileCode,
-    FileJson,
     File,
-    Filter,
-    RotateCcw,
-    RefreshCw,
-    Terminal,
-    ChevronsUpDown,
-    ChevronsDownUp,
+    Loader2,
 } from "lucide-react";
 import { api } from "@/shared/config/database";
 import { toast } from "sonner";
@@ -46,81 +30,6 @@ interface FileSelectionDialogProps {
     onConfirm: (selectedFiles: string[]) => void;
 }
 
-interface FileNode {
-    path: string;
-    size: number;
-}
-
-interface FolderNode {
-    name: string;
-    path: string;
-    files: FileNode[];
-    subfolders: Map<string, FolderNode>;
-    expanded: boolean;
-}
-
-// 文件类型图标映射
-const getFileIcon = (path: string) => {
-    const ext = path.split(".").pop()?.toLowerCase() || "";
-    const codeExts = [
-        "js", "ts", "tsx", "jsx", "py", "java", "go", "rs", "cpp", "c", "h",
-        "cs", "php", "rb", "swift", "kt", "sh",
-    ];
-    const configExts = ["json", "yml", "yaml", "toml", "xml", "ini"];
-
-    if (codeExts.includes(ext)) {
-        return <FileCode className="w-4 h-4 text-secondary" />;
-    }
-    if (configExts.includes(ext)) {
-        return <FileJson className="w-4 h-4 text-warning" />;
-    }
-    return <File className="w-4 h-4 text-muted-foreground" />;
-};
-
-// 获取文件扩展名
-const getExtension = (path: string): string => {
-    const ext = path.split(".").pop()?.toLowerCase() || "";
-    return ext;
-};
-
-// 构建文件夹树结构
-const buildFolderTree = (files: FileNode[]): FolderNode => {
-    const root: FolderNode = {
-        name: "",
-        path: "",
-        files: [],
-        subfolders: new Map(),
-        expanded: true,
-    };
-
-    files.forEach((file) => {
-        const parts = file.path.split("/");
-        let current = root;
-
-        // 遍历路径的每个部分（除了文件名）
-        for (let i = 0; i < parts.length - 1; i++) {
-            const folderName = parts[i];
-            const folderPath = parts.slice(0, i + 1).join("/");
-
-            if (!current.subfolders.has(folderName)) {
-                current.subfolders.set(folderName, {
-                    name: folderName,
-                    path: folderPath,
-                    files: [],
-                    subfolders: new Map(),
-                    expanded: true,
-                });
-            }
-            current = current.subfolders.get(folderName)!;
-        }
-
-        // 添加文件到当前文件夹
-        current.files.push(file);
-    });
-
-    return root;
-};
-
 export default function FileSelectionDialog({
     open,
     onOpenChange,
@@ -129,13 +38,10 @@ export default function FileSelectionDialog({
     excludePatterns,
     onConfirm,
 }: FileSelectionDialogProps) {
-    const [files, setFiles] = useState<FileNode[]>([]);
+    const [files, setFiles] = useState<string[]>([]);
     const [loading, setLoading] = useState(false);
     const [selectedFiles, setSelectedFiles] = useState<Set<string>>(new Set());
     const [searchTerm, setSearchTerm] = useState("");
-    const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set());
-    const [viewMode, setViewMode] = useState<"tree" | "flat">("tree");
-    const [filterType, setFilterType] = useState<string>("");
 
     useEffect(() => {
         if (open && projectId) {
@@ -144,8 +50,6 @@ export default function FileSelectionDialog({
             setFiles([]);
             setSelectedFiles(new Set());
             setSearchTerm("");
-            setExpandedFolders(new Set());
-            setFilterType("");
         }
     }, [open, projectId, branch, excludePatterns]);
 
@@ -153,17 +57,9 @@ export default function FileSelectionDialog({
         try {
             setLoading(true);
             const data = await api.getProjectFiles(projectId, branch, excludePatterns);
-            setFiles(data);
-            setSelectedFiles(new Set(data.map((f) => f.path)));
-            // 默认展开所有文件夹
-            const folders = new Set<string>();
-            data.forEach((f) => {
-                const parts = f.path.split("/");
-                for (let i = 1; i < parts.length; i++) {
-                    folders.add(parts.slice(0, i).join("/"));
-                }
-            });
-            setExpandedFolders(folders);
+            const paths = data.map((f: { path: string }) => f.path);
+            setFiles(paths);
+            setSelectedFiles(new Set(paths));
         } catch (error) {
             console.error("Failed to load files:", error);
             toast.error("加载文件列表失败");
@@ -172,38 +68,11 @@ export default function FileSelectionDialog({
         }
     };
 
-    // 获取所有文件类型
-    const fileTypes = useMemo(() => {
-        const types = new Map<string, number>();
-        files.forEach((f) => {
-            const ext = getExtension(f.path);
-            if (ext) {
-                types.set(ext, (types.get(ext) || 0) + 1);
-            }
-        });
-        return Array.from(types.entries()).sort((a, b) => b[1] - a[1]);
-    }, [files]);
-
-    // 过滤后的文件
     const filteredFiles = useMemo(() => {
-        let result = files;
-
-        // 按搜索词过滤
-        if (searchTerm) {
-            const term = searchTerm.toLowerCase();
-            result = result.filter((f) => f.path.toLowerCase().includes(term));
-        }
-
-        // 按文件类型过滤
-        if (filterType) {
-            result = result.filter((f) => getExtension(f.path) === filterType);
-        }
-
-        return result;
-    }, [files, searchTerm, filterType]);
-
-    // 构建文件夹树
-    const folderTree = useMemo(() => buildFolderTree(filteredFiles), [filteredFiles]);
+        if (!searchTerm) return files;
+        const term = searchTerm.toLowerCase();
+        return files.filter((f) => f.toLowerCase().includes(term));
+    }, [files, searchTerm]);
 
     const handleToggleFile = useCallback((path: string) => {
         setSelectedFiles((prev) => {
@@ -217,83 +86,12 @@ export default function FileSelectionDialog({
         });
     }, []);
 
-    const handleToggleFolder = useCallback(
-        (folderPath: string) => {
-            // 获取该文件夹下的所有文件
-            const folderFiles = filteredFiles.filter(
-                (f) => f.path.startsWith(folderPath + "/") || f.path === folderPath
-            );
-
-            setSelectedFiles((prev) => {
-                const newSelected = new Set(prev);
-                const allSelected = folderFiles.every((f) => newSelected.has(f.path));
-
-                if (allSelected) {
-                    // 取消选择该文件夹下的所有文件
-                    folderFiles.forEach((f) => newSelected.delete(f.path));
-                } else {
-                    // 选择该文件夹下的所有文件
-                    folderFiles.forEach((f) => newSelected.add(f.path));
-                }
-                return newSelected;
-            });
-        },
-        [filteredFiles]
-    );
-
-    const handleExpandFolder = useCallback((folderPath: string) => {
-        setExpandedFolders((prev) => {
-            const newExpanded = new Set(prev);
-            if (newExpanded.has(folderPath)) {
-                newExpanded.delete(folderPath);
-            } else {
-                newExpanded.add(folderPath);
-            }
-            return newExpanded;
-        });
-    }, []);
-
-    const handleExpandAll = useCallback(() => {
-        const folders = new Set<string>();
-        filteredFiles.forEach((f) => {
-            const parts = f.path.split("/");
-            for (let i = 1; i < parts.length; i++) {
-                folders.add(parts.slice(0, i).join("/"));
-            }
-        });
-        setExpandedFolders(folders);
-    }, [filteredFiles]);
-
-    const handleCollapseAll = useCallback(() => {
-        setExpandedFolders(new Set());
-    }, []);
-
     const handleSelectAll = () => {
-        setSelectedFiles(new Set(filteredFiles.map((f) => f.path)));
+        setSelectedFiles(new Set(filteredFiles));
     };
 
     const handleDeselectAll = () => {
-        const filteredPaths = new Set(filteredFiles.map((f) => f.path));
-        setSelectedFiles((prev) => {
-            const newSelected = new Set(prev);
-            filteredPaths.forEach((p) => newSelected.delete(p));
-            return newSelected;
-        });
-    };
-
-    const handleInvertSelection = () => {
-        const filteredPaths = new Set(filteredFiles.map((f) => f.path));
-        setSelectedFiles((prev) => {
-            const newSelected = new Set(prev);
-            filteredPaths.forEach((p) => {
-                if (newSelected.has(p)) {
-                    newSelected.delete(p);
-                } else {
-                    newSelected.add(p);
-                }
-            });
-            return newSelected;
-        });
+        setSelectedFiles(new Set());
     };
 
     const handleConfirm = () => {
@@ -305,364 +103,97 @@ export default function FileSelectionDialog({
         onOpenChange(false);
     };
 
-    const formatSize = (bytes: number) => {
-        if (bytes === 0) return "";
-        if (bytes < 1024) return `${bytes} B`;
-        if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-        return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
-    };
-
-    // 检查文件夹的选中状态
-    const getFolderSelectionState = (
-        folderPath: string
-    ): "all" | "some" | "none" => {
-        const folderFiles = filteredFiles.filter((f) =>
-            f.path.startsWith(folderPath + "/")
-        );
-        if (folderFiles.length === 0) return "none";
-
-        const selectedCount = folderFiles.filter((f) =>
-            selectedFiles.has(f.path)
-        ).length;
-        if (selectedCount === 0) return "none";
-        if (selectedCount === folderFiles.length) return "all";
-        return "some";
-    };
-
-    // 渲染文件夹树
-    const renderFolderTree = (node: FolderNode, depth: number = 0) => {
-        const items: React.ReactNode[] = [];
-
-        // 渲染子文件夹
-        Array.from(node.subfolders.values())
-            .sort((a, b) => a.name.localeCompare(b.name))
-            .forEach((folder) => {
-                const isExpanded = expandedFolders.has(folder.path);
-                const selectionState = getFolderSelectionState(folder.path);
-
-                items.push(
-                    <div key={`folder-${folder.path}`}>
-                        <div
-                            className="flex items-center space-x-2 p-2 hover:bg-muted border border-transparent hover:border-border cursor-pointer transition-colors rounded"
-                            style={{ paddingLeft: `${depth * 16 + 8}px` }}
-                        >
-                            <button
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleExpandFolder(folder.path);
-                                }}
-                                className="p-0.5 hover:bg-muted rounded"
-                            >
-                                {isExpanded ? (
-                                    <ChevronDown className="w-4 h-4 text-muted-foreground" />
-                                ) : (
-                                    <ChevronRight className="w-4 h-4 text-muted-foreground" />
-                                )}
-                            </button>
-                            <div onClick={(e) => e.stopPropagation()}>
-                                <Checkbox
-                                    checked={selectionState === "all"}
-                                    ref={(el) => {
-                                        if (el) {
-                                            (el as HTMLButtonElement).dataset.state =
-                                                selectionState === "some" ? "indeterminate" : selectionState === "all" ? "checked" : "unchecked";
-                                        }
-                                    }}
-                                    onCheckedChange={() => handleToggleFolder(folder.path)}
-                                    className="border-border data-[state=checked]:bg-primary data-[state=checked]:border-primary data-[state=indeterminate]:bg-background0"
-                                />
-                            </div>
-                            {isExpanded ? (
-                                <FolderOpen className="w-4 h-4 text-warning" />
-                            ) : (
-                                <Folder className="w-4 h-4 text-warning" />
-                            )}
-                            <span
-                                className="text-sm font-mono font-medium flex-1 text-foreground"
-                                onClick={() => handleExpandFolder(folder.path)}
-                            >
-                                {folder.name}
-                            </span>
-                            <Badge className="cyber-badge-muted font-mono text-xs">
-                                {
-                                    filteredFiles.filter((f) =>
-                                        f.path.startsWith(folder.path + "/")
-                                    ).length
-                                }
-                            </Badge>
-                        </div>
-                        {isExpanded && renderFolderTree(folder, depth + 1)}
-                    </div>
-                );
-            });
-
-        // 渲染文件
-        node.files
-            .sort((a, b) => a.path.localeCompare(b.path))
-            .forEach((file) => {
-                const fileName = file.path.split("/").pop() || file.path;
-                items.push(
-                    <div
-                        key={`file-${file.path}`}
-                        className="flex items-center space-x-3 p-2 hover:bg-muted border border-transparent hover:border-border cursor-pointer transition-colors rounded"
-                        style={{ paddingLeft: `${depth * 16 + 32}px` }}
-                        onClick={() => handleToggleFile(file.path)}
-                    >
-                        <div onClick={(e) => e.stopPropagation()}>
-                            <Checkbox
-                                checked={selectedFiles.has(file.path)}
-                                onCheckedChange={() => handleToggleFile(file.path)}
-                                className="border-border data-[state=checked]:bg-primary data-[state=checked]:border-primary"
-                            />
-                        </div>
-                        {getFileIcon(file.path)}
-                        <span
-                            className="text-sm font-mono flex-1 min-w-0 truncate text-foreground"
-                            title={file.path}
-                        >
-                            {fileName}
-                        </span>
-                        {file.size > 0 && (
-                            <Badge className="cyber-badge-muted font-mono text-xs flex-shrink-0">
-                                {formatSize(file.size)}
-                            </Badge>
-                        )}
-                    </div>
-                );
-            });
-
-        return items;
-    };
-
-    // 渲染扁平列表
-    const renderFlatList = () => {
-        return filteredFiles.map((file) => (
-            <div
-                key={file.path}
-                className="flex items-center space-x-3 p-2 hover:bg-muted border border-transparent hover:border-border cursor-pointer transition-colors rounded"
-                onClick={() => handleToggleFile(file.path)}
-            >
-                <div onClick={(e) => e.stopPropagation()}>
-                    <Checkbox
-                        checked={selectedFiles.has(file.path)}
-                        onCheckedChange={() => handleToggleFile(file.path)}
-                        className="border-border data-[state=checked]:bg-primary data-[state=checked]:border-primary"
-                    />
-                </div>
-                {getFileIcon(file.path)}
-                <div className="flex-1 min-w-0">
-                    <p className="text-sm font-mono truncate text-foreground" title={file.path}>
-                        {file.path}
-                    </p>
-                </div>
-                {file.size > 0 && (
-                    <Badge className="cyber-badge-muted font-mono text-xs flex-shrink-0">
-                        {formatSize(file.size)}
-                    </Badge>
-                )}
-            </div>
-        ));
-    };
-
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="!max-w-[1000px] !w-[95vw] max-h-[85vh] z-[60] flex flex-col p-0 cyber-dialog">
-                <DialogHeader className="cyber-card-header flex-shrink-0">
-                    <div className="flex items-center gap-3">
-                        <FolderOpen className="w-5 h-5 text-primary" />
-                        <DialogTitle className="text-lg font-bold uppercase tracking-wider text-foreground">
-                            选择要审计的文件
-                        </DialogTitle>
-                    </div>
-                    {excludePatterns && excludePatterns.length > 0 && (
-                        <Badge className="cyber-badge-muted font-mono text-xs ml-auto">
-                            已排除 {excludePatterns.length} 种模式
-                        </Badge>
-                    )}
+            <DialogContent className="!max-w-[480px] !w-[95vw] max-h-[80vh] z-[60] flex flex-col p-0 rounded-sm">
+                <DialogHeader className="px-4 py-3 flex-shrink-0 border-b border-border">
+                    <DialogTitle className="text-sm">选择文件</DialogTitle>
                 </DialogHeader>
 
-                <div className="p-5 flex-1 flex flex-col min-h-0 space-y-3 overflow-y-auto">
-                    {/* 工具栏 */}
-                    <div className="flex items-center gap-2 flex-wrap">
-                        {/* 搜索框 */}
-                        <div className="relative flex-1 min-w-[200px]">
-                            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
+                <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
+                    {/* 搜索 + 全选/清空 */}
+                    <div className="px-4 py-2 flex items-center gap-2 border-b border-border">
+                        <div className="relative flex-1">
+                            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
                             <Input
                                 placeholder="搜索文件..."
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
-                                className="!pl-10 h-9 cyber-input"
+                                className="pl-8 h-8 text-xs rounded-sm"
                             />
                         </div>
-
-                        {/* 文件类型筛选 */}
-                        {fileTypes.length > 0 && (
-                            <div className="flex items-center gap-1">
-                                <Filter className="w-4 h-4 text-muted-foreground" />
-                                <select
-                                    value={filterType}
-                                    onChange={(e) => setFilterType(e.target.value)}
-                                    className="h-9 px-2 py-1 border border-border rounded font-mono text-xs cyber-bg-elevated text-foreground"
-                                >
-                                    <option value="">全部类型</option>
-                                    {fileTypes.slice(0, 10).map(([ext, count]) => (
-                                        <option key={ext} value={ext}>
-                                            .{ext} ({count})
-                                        </option>
-                                    ))}
-                                </select>
-                            </div>
-                        )}
-
-                        {/* 视图切换 */}
-                        <div className="flex border border-border rounded overflow-hidden">
-                            <button
-                                onClick={() => setViewMode("tree")}
-                                className={`px-3 py-1.5 text-xs font-mono uppercase ${viewMode === "tree" ? "bg-primary text-foreground" : "bg-muted text-muted-foreground hover:bg-muted"}`}
-                            >
-                                树形
-                            </button>
-                            <button
-                                onClick={() => setViewMode("flat")}
-                                className={`px-3 py-1.5 text-xs font-mono uppercase border-l border-border ${viewMode === "flat" ? "bg-primary text-foreground" : "bg-muted text-muted-foreground hover:bg-muted"}`}
-                            >
-                                列表
-                            </button>
-                        </div>
-
-                    </div>
-
-                    {/* 操作按钮 */}
-                    <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                            <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={handleSelectAll}
-                                className="h-8 px-3 cyber-btn-outline font-mono text-xs"
-                            >
-                                <CheckSquare className="w-3 h-3 mr-1" />
-                                全选
-                            </Button>
-                            <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={handleDeselectAll}
-                                className="h-8 px-3 cyber-btn-outline font-mono text-xs"
-                            >
-                                <Square className="w-3 h-3 mr-1" />
-                                清空
-                            </Button>
-                            <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={handleInvertSelection}
-                                className="h-8 px-3 cyber-btn-outline font-mono text-xs"
-                            >
-                                <RefreshCw className="w-3 h-3 mr-1" />
-                                反选
-                            </Button>
-                            {viewMode === "tree" && (
-                                <>
-                                    <Button
-                                        variant="outline"
-                                        size="sm"
-                                        onClick={handleExpandAll}
-                                        className="h-8 px-3 cyber-btn-outline font-mono text-xs"
-                                    >
-                                        <ChevronDown className="w-3 h-3 mr-1" />
-                                        展开
-                                    </Button>
-                                    <Button
-                                        variant="outline"
-                                        size="sm"
-                                        onClick={handleCollapseAll}
-                                        className="h-8 px-3 cyber-btn-outline font-mono text-xs"
-                                    >
-                                        <ChevronRight className="w-3 h-3 mr-1" />
-                                        折叠
-                                    </Button>
-                                </>
-                            )}
-                            {(searchTerm || filterType) && (
-                                <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => {
-                                        setSearchTerm("");
-                                        setFilterType("");
-                                    }}
-                                    className="h-8 px-3 cyber-btn-outline font-mono text-xs text-muted-foreground"
-                                >
-                                    <RotateCcw className="w-3 h-3 mr-1" />
-                                    重置筛选
-                                </Button>
-                            )}
-                        </div>
-                        <div className="text-sm font-mono text-muted-foreground">
-                            {searchTerm || filterType ? (
-                                <span>
-                                    筛选: {filteredFiles.length}/{files.length} 个文件，
-                                    已选 <span className="text-primary font-bold">{selectedFiles.size}</span> 个
-                                </span>
-                            ) : (
-                                <span>
-                                    共 {files.length} 个文件，已选 <span className="text-primary font-bold">{selectedFiles.size}</span> 个
-                                </span>
-                            )}
-                        </div>
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={handleSelectAll}
+                            className="h-8 text-xs rounded-sm"
+                        >
+                            全选
+                        </Button>
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={handleDeselectAll}
+                            className="h-8 text-xs rounded-sm"
+                        >
+                            清空
+                        </Button>
                     </div>
 
                     {/* 文件列表 */}
-                    <div className="border border-border cyber-bg-elevated relative h-[450px] overflow-hidden rounded">
+                    <div className="flex-1 overflow-y-auto px-2 py-1">
                         {loading ? (
-                            <div className="absolute inset-0 flex items-center justify-center">
-                                <div className="loading-spinner" />
+                            <div className="flex items-center justify-center h-full">
+                                <Loader2 className="w-4 h-4 animate-spin text-primary" />
                             </div>
                         ) : filteredFiles.length > 0 ? (
-                            <div className="h-full overflow-auto custom-scrollbar">
-                                <div className="p-2">
-                                    {viewMode === "tree"
-                                        ? renderFolderTree(folderTree)
-                                        : renderFlatList()}
+                            filteredFiles.map((path) => (
+                                <div
+                                    key={path}
+                                    className="flex items-center gap-2 px-2 py-1.5 hover:bg-muted/50 cursor-pointer rounded-sm transition-colors"
+                                    onClick={() => handleToggleFile(path)}
+                                >
+                                    <Checkbox
+                                        checked={selectedFiles.has(path)}
+                                        onCheckedChange={() => handleToggleFile(path)}
+                                        className="h-3.5 w-3.5 border-border data-[state=checked]:bg-primary data-[state=checked]:border-primary"
+                                    />
+                                    <File className="w-3.5 h-3.5 text-muted-foreground" />
+                                    <span className="text-xs truncate flex-1 min-w-0" title={path}>
+                                        {path}
+                                    </span>
                                 </div>
-                            </div>
+                            ))
                         ) : (
-                            <div className="absolute inset-0 flex flex-col items-center justify-center text-muted-foreground">
-                                <FileText className="w-12 h-12 mb-2 opacity-20" />
-                                <p className="font-mono text-sm">
-                                    {searchTerm || filterType
-                                        ? "没有匹配的文件"
-                                        : "没有找到文件"}
-                                </p>
+                            <div className="flex items-center justify-center h-full text-muted-foreground text-xs">
+                                {searchTerm ? "没有匹配的文件" : "没有找到文件"}
                             </div>
                         )}
                     </div>
                 </div>
 
-                <DialogFooter className="p-5 border-t border-border bg-muted flex-shrink-0 flex justify-between">
-                    <div className="text-xs font-mono text-muted-foreground flex items-center gap-2">
-                        <Terminal className="w-3 h-3" />
-                        提示：点击文件夹可展开/折叠，点击文件夹复选框可批量选择
-                    </div>
-                    <div className="flex gap-3">
+                {/* 底部：已选数量 + 确认/取消 */}
+                <div className="px-4 py-3 border-t border-border flex items-center justify-between flex-shrink-0">
+                    <span className="text-xs text-muted-foreground">
+                        已选 <strong className="text-foreground">{selectedFiles.size}</strong> / {files.length} 个文件
+                    </span>
+                    <div className="flex gap-2">
                         <Button
                             variant="outline"
                             onClick={() => onOpenChange(false)}
-                            className="px-4 h-10 cyber-btn-outline font-mono"
+                            className="h-8 text-xs rounded-sm"
                         >
                             取消
                         </Button>
                         <Button
                             onClick={handleConfirm}
                             disabled={selectedFiles.size === 0}
-                            className="px-5 h-10 cyber-btn-primary font-mono font-bold uppercase"
+                            className="h-8 text-xs rounded-sm"
                         >
-                            <FileText className="w-4 h-4 mr-2" />
                             确认选择 ({selectedFiles.size})
                         </Button>
                     </div>
-                </DialogFooter>
+                </div>
             </DialogContent>
         </Dialog>
     );

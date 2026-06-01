@@ -29,7 +29,7 @@
     --ring: 239 84% 67%;
     --radius: 8px;
 
-    --font-ui: "Plus Jakarta Sans", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans SC", system-ui, sans-serif;
+    --font-ui: "Noto Sans SC", "Source Han Sans SC", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, sans-serif;
     --font-code: "SFMono-Regular", "JetBrains Mono", "Roboto Mono", "Menlo", monospace;
 
     --shadow-sm: 0 1px 2px rgba(99, 102, 241, 0.04);
