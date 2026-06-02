@@ -205,7 +205,11 @@ code_asset_map = Column(JSON, nullable=True)  # 代码资产图谱数据
 
 ### 3.5 SSE 事件
 
-**新增事件类型**: `AgentEventType.CODE_ASSET_MAPPED = "code_asset_mapped"`
+**新增事件类型**: `AgentEventType.CODE_ASSET_MAPPED = "code_asset_mapped"` (在 `backend/app/models/agent_task.py` 第174行的 `AgentEventType` 类中)
+
+**事件发射位置**: `CodeAssetMappingTool._execute()` 完成后通过 `event_emitter.emit_event()` 发射
+
+**事件流转**: `EventManager.add_event()` → persist to DB + push to asyncio.Queue → SSE endpoint `/agent-tasks/{id}/stream` 从 `_running_event_managers[task_id]` 获取 EventManager → `stream_events()` 推送到前端
 
 **事件内容**:
 ```json
@@ -234,7 +238,17 @@ code_asset_map = Column(JSON, nullable=True)  # 代码资产图谱数据
 - 这些图谱可以帮助 AnalysisAgent 更精准地定位漏洞
 ```
 
-在 `_execute_agent_task()` 中为 ReconAgent 注册 CodeAssetMappingTool。
+在 `backend/app/api/v1/endpoints/agent_tasks.py` 的 `_initialize_tools()` 函数（lines 958-974）中，将 CodeAssetMappingTool 加入 `recon_tools` 字典：
+
+```python
+recon_tools = {
+    **base_tools,
+    ...existing tools...,
+    "code_asset_mapping": CodeAssetMappingTool(project_root, exclude_patterns, target_files),
+}
+```
+
+ReconAgent 会在侦察阶段通过 LLM 决策自动调用此工具。
 
 ### 3.7 API 端点变更
 
@@ -451,7 +465,7 @@ codeAssetPanelCollapsed: boolean;     // 面板折叠状态
 |------|------|
 | `backend/app/models/agent_task.py` | AgentTask 新增 `code_asset_map` JSON 列 |
 | `backend/app/services/agent/agents/recon.py` | 系统提示词新增 code_asset_mapping 工具说明 |
-| `backend/app/services/agent/core/executor.py` 或 `_execute_agent_task()` | 注册 CodeAssetMappingTool 到 ReconAgent |
+| `backend/app/api/v1/endpoints/agent_tasks.py` (lines 958-974) | 在 `_initialize_tools()` 中将 CodeAssetMappingTool 加入 recon_tools 字典 |
 | `backend/app/schemas/agent_task.py` | AgentTaskResponse 新增 `code_asset_map` 字段 |
 | `backend/app/api/v1/endpoints/agent_tasks.py` | 返回 code_asset_map 数据 |
 
