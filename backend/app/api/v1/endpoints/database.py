@@ -302,7 +302,7 @@ async def import_database(
                             suggestion=i_data.get("suggestion"),
                             code_snippet=i_data.get("code_snippet"),
                             ai_explanation=i_data.get("ai_explanation"),
-                            status=i_data.get("status", "open"),
+                            status=i_data.get("status", "not_fixed"),
                         )
                         db.add(issue)
                         imported_count["issues"] += 1
@@ -531,8 +531,8 @@ async def get_database_stats(
             )
             issues = issues_result.scalars().all()
             total_issues = len(issues)
-            open_issues = len([i for i in issues if i.status == "open"])
-            resolved_issues = len([i for i in issues if i.status == "resolved"])
+            open_issues = len([i for i in issues if i.status in ("not_fixed", "suspicious")])
+            resolved_issues = len([i for i in issues if i.status == "fixed"])
             critical_issues = len([i for i in issues if i.severity == "critical"])
             high_issues = len([i for i in issues if i.severity == "high"])
             medium_issues = len([i for i in issues if i.severity == "medium"])

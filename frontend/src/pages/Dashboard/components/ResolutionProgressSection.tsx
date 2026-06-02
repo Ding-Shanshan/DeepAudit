@@ -60,7 +60,7 @@ function CircularProgress({
       {/* 中心文字 */}
       <div className="absolute inset-0 flex flex-col items-center justify-center">
         <span className="text-lg font-semibold text-foreground">{percentage}%</span>
-        <span className="text-xs text-muted-foreground">已解决</span>
+        <span className="text-xs text-muted-foreground">已修复</span>
       </div>
     </div>
   );
@@ -96,7 +96,7 @@ export const ResolutionProgressSection = memo(function ResolutionProgressSection
             发现 <span className="font-semibold text-foreground">{data.total}</span>
           </span>
           <span className="text-muted-foreground">
-            已解决 <span className="font-semibold text-primary">{data.resolved}</span>
+            已修复 <span className="font-semibold text-primary">{data.resolved}</span>
           </span>
         </div>
       </div>
@@ -147,7 +147,7 @@ export const ResolutionProgressSection = memo(function ResolutionProgressSection
                       fontSize: '12px',
                       color: 'var(--cyber-text)',
                     }}
-                    formatter={(value: number) => [`${value} 个`, '已解决']}
+                    formatter={(value: number) => [`${value} 个`, '已修复']}
                   />
                   <Area
                     type="monotone"

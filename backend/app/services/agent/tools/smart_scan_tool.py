@@ -224,14 +224,45 @@ class SmartScanTool(AgentTool):
         
         # 支持的代码文件扩展名
         code_extensions = {
-            '.py', '.js', '.ts', '.jsx', '.tsx', '.java', '.php',
-            '.go', '.rb', '.cs', '.c', '.cpp', '.h', '.hpp',
-            '.swift', '.m', '.mm', '.kt', '.rs', '.sh', '.bat',
-            '.vue', '.html', '.htm', '.xml', '.gradle', '.properties'
+            '.py', '.pyi', '.pyw',
+            '.js', '.jsx', '.mjs', '.cjs',
+            '.ts', '.tsx', '.mts', '.cts',
+            '.java', '.kt', '.kts', '.scala', '.groovy',
+            '.php', '.phtml',
+            '.go',
+            '.rb', '.erb', '.haml',
+            '.cs',
+            '.c', '.cpp', '.cc', '.cxx', '.h', '.hpp', '.hh', '.hxx', '.cu', '.cuh',
+            '.swift', '.m', '.mm',
+            '.rs',
+            '.sh', '.bash', '.zsh', '.fish', '.ps1', '.bat', '.cmd',
+            '.vue', '.svelte', '.astro',
+            '.html', '.htm', '.xhtml',
+            '.css', '.scss', '.sass', '.less', '.styl',
+            '.sql',
+            '.dart', '.lua', '.pl', '.pm',
+            '.ex', '.exs', '.erl', '.hs', '.zig', '.nim',
+            '.r', '.R',
+            '.jsp', '.jspx', '.asp', '.aspx',
+            '.gradle', '.properties',
+            '.xml', '.svg',
+            '.proto', '.graphql', '.gql',
+            '.sol',
         }
-        
+
         # 配置文件扩展名
-        config_extensions = {'.json', '.yaml', '.yml', '.env', '.ini', '.cfg', '.plist', '.conf'}
+        config_extensions = {
+            '.json', '.json5', '.jsonc',
+            '.yaml', '.yml', '.toml',
+            '.env', '.ini', '.cfg', '.conf',
+            '.cmake', '.make', '.mk',
+            '.dockerfile',
+            '.tf', '.tfvars',
+            '.lock', '.pip',
+            '.csv',
+            '.md', '.mdx', '.txt', '.rst',
+            '.editorconfig',
+        }
         
         all_extensions = code_extensions | config_extensions
         

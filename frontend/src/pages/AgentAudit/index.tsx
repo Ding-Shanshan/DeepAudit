@@ -1,11 +1,12 @@
 /**
- * Agent Audit Page - Phase-driven Layout
- * 让用户直观看出任务如何执行：阶段流程条 + 阶段详情 + Agent/统计概览
+ * Agent 审计页 - 仪表盘布局
+ * 左侧：阶段时间线 + 统计摘要
+ * 右侧：日志流 + Agent面板
  */
 
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useParams } from "react-router-dom";
-import { Loader2, Radio } from "lucide-react";
+import { Loader2, Radio, ArrowLeft, Download } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { useAgentStream } from "@/hooks/useAgentStream";
@@ -20,7 +21,7 @@ import {
 } from "@/shared/api/agentTasks";
 import CreateAgentTaskDialog from "@/components/agent/CreateAgentTaskDialog";
 
-// Local imports
+// 本地组件
 import {
   SplashScreen,
   Header,
@@ -28,7 +29,8 @@ import {
   AgentDetailPanel,
   StatsPanel,
   AgentErrorBoundary,
-  PhaseStepper,
+  PhaseTimeline,
+  LogStream,
 } from "./components";
 import ReportExportDialog from "./components/ReportExportDialog";
 import { useAgentAuditState } from "./hooks";
@@ -51,7 +53,7 @@ function AgentAuditPageContent() {
     dispatch, reset,
   } = useAgentAuditState();
 
-  // Local state
+  // 本地状态
   const [showSplash, setShowSplash] = useState(!taskId);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [showExportDialog, setShowExportDialog] = useState(false);
@@ -72,7 +74,7 @@ function AgentAuditPageContent() {
   const [afterSequence, setAfterSequence] = useState<number>(0);
   const [historicalEventsLoaded, setHistoricalEventsLoaded] = useState<boolean>(false);
 
-  // 🔥 当 taskId 变化时立即重置状态
+  // 🔥 taskId 变化时重置
   useEffect(() => {
     if (taskId !== previousTaskIdRef.current) {
       if (disconnectStreamRef.current) {
@@ -90,7 +92,7 @@ function AgentAuditPageContent() {
     previousTaskIdRef.current = taskId;
   }, [taskId, reset]);
 
-  // ============ Phase Log Grouping ============
+  // ============ 阶段日志分组 ============
 
   const phaseLogMap: Record<string, typeof logs[0][]> = {};
   for (const phase of AUDIT_PHASES) {
@@ -103,7 +105,7 @@ function AgentAuditPageContent() {
   }
   const currentPhaseLogs = phaseLogMap[currentPhase] || [];
 
-  // Auto scroll to bottom when new logs arrive
+  // 自动滚动
   useEffect(() => {
     if (isAutoScroll && phaseScrollRef.current) {
       phaseScrollRef.current.scrollTop = phaseScrollRef.current.scrollHeight;
@@ -113,27 +115,23 @@ function AgentAuditPageContent() {
   const togglePhaseExpanded = (phase: AuditPhase) => {
     setExpandedPhases((prev) => {
       const next = new Set(prev);
-      if (next.has(phase)) {
-        next.delete(phase);
-      } else {
-        next.add(phase);
-      }
+      if (next.has(phase)) next.delete(phase);
+      else next.add(phase);
       return next;
     });
   };
 
-  // ============ Data Loading ============
+  // ============ 数据加载 ============
 
   const loadTask = useCallback(async () => {
     if (!taskId) return;
     try {
       const data = await getAgentTask(taskId);
       setTask(data);
-      // 🔥 从 task 数据推断初始阶段
       const initialPhase = inferInitialPhase(data.status, data.current_phase);
       setCurrentPhase(initialPhase);
     } catch {
-      toast.error("Failed to load task");
+      toast.error("加载任务失败");
     }
   }, [taskId, setTask, setCurrentPhase]);
 
@@ -184,20 +182,14 @@ function AgentAuditPageContent() {
     if (!taskId) return 0;
 
     if (hasLoadedHistoricalEventsRef.current) {
-      console.log('[AgentAudit] Historical events already loaded, skipping');
       return 0;
     }
     hasLoadedHistoricalEventsRef.current = true;
 
     try {
-      console.log(`[AgentAudit] Fetching historical events for task ${taskId}...`);
       const events = await getAgentEvents(taskId, { limit: 500 });
-      console.log(`[AgentAudit] Received ${events.length} events from API`);
 
-      if (events.length === 0) {
-        console.log('[AgentAudit] No historical events found');
-        return 0;
-      }
+      if (events.length === 0) return 0;
 
       events.sort((a: AgentEvent, b: AgentEvent) => a.sequence - b.sequence);
 
@@ -209,7 +201,6 @@ function AgentAuditPageContent() {
           lastEventSequenceRef.current = event.sequence;
         }
 
-        // 🔥 推断阶段
         inferredPhase = inferPhaseFromEvent(
           event.event_type,
           event.phase,
@@ -221,7 +212,6 @@ function AgentAuditPageContent() {
           (event.metadata?.agent as string) ||
           undefined;
 
-        // 根据事件类型创建日志项
         switch (event.event_type) {
           case 'thinking':
           case 'llm_thought':
@@ -234,7 +224,7 @@ function AgentAuditPageContent() {
               type: 'ADD_LOG',
               payload: {
                 type: 'thinking',
-                title: event.message?.slice(0, 100) + (event.message && event.message.length > 100 ? '...' : '') || 'Thinking...',
+                title: event.message?.slice(0, 100) + (event.message && event.message.length > 100 ? '...' : '') || '思考...',
                 content: event.message || (event.metadata?.thought as string) || '',
                 agentName,
                 phase: inferredPhase,
@@ -248,9 +238,9 @@ function AgentAuditPageContent() {
               type: 'ADD_LOG',
               payload: {
                 type: 'tool',
-                title: `Tool: ${event.tool_name || 'unknown'}`,
-                content: event.tool_input ? `Input:\n${JSON.stringify(event.tool_input, null, 2)}` : '',
-                tool: { name: event.tool_name || 'unknown', status: 'running' as const },
+                title: `工具: ${event.tool_name || '未知'}`,
+                content: event.tool_input ? `输入:\n${JSON.stringify(event.tool_input, null, 2)}` : '',
+                tool: { name: event.tool_name || '未知', status: 'running' as const },
                 agentName,
                 phase: inferredPhase,
               }
@@ -263,11 +253,11 @@ function AgentAuditPageContent() {
               type: 'ADD_LOG',
               payload: {
                 type: 'tool',
-                title: `Completed: ${event.tool_name || 'unknown'}`,
+                title: `完成: ${event.tool_name || '未知'}`,
                 content: event.tool_output
-                  ? `Output:\n${truncateOutput(typeof event.tool_output === 'string' ? event.tool_output : JSON.stringify(event.tool_output, null, 2))}`
+                  ? `输出:\n${truncateOutput(typeof event.tool_output === 'string' ? event.tool_output : JSON.stringify(event.tool_output, null, 2))}`
                   : '',
-                tool: { name: event.tool_name || 'unknown', duration: event.tool_duration_ms || 0, status: 'completed' as const },
+                tool: { name: event.tool_name || '未知', duration: event.tool_duration_ms || 0, status: 'completed' as const },
                 agentName,
                 phase: inferredPhase,
               }
@@ -282,7 +272,7 @@ function AgentAuditPageContent() {
               type: 'ADD_LOG',
               payload: {
                 type: 'finding',
-                title: event.message || (event.metadata?.title as string) || 'Vulnerability found',
+                title: event.message || (event.metadata?.title as string) || '发现漏洞',
                 severity: (event.metadata?.severity as string) || 'medium',
                 agentName,
                 phase: inferredPhase,
@@ -301,7 +291,7 @@ function AgentAuditPageContent() {
               type: 'ADD_LOG',
               payload: {
                 type: 'dispatch',
-                title: event.message || `Event: ${event.event_type}`,
+                title: event.message || `事件: ${event.event_type}`,
                 agentName,
                 phase: inferredPhase,
               }
@@ -312,7 +302,7 @@ function AgentAuditPageContent() {
           case 'task_complete':
             dispatch({
               type: 'ADD_LOG',
-              payload: { type: 'info', title: event.message || 'Task completed', agentName, phase: 'reporting' }
+              payload: { type: 'info', title: event.message || '任务已完成', agentName, phase: 'reporting' }
             });
             processedCount++;
             break;
@@ -320,7 +310,7 @@ function AgentAuditPageContent() {
           case 'task_error':
             dispatch({
               type: 'ADD_LOG',
-              payload: { type: 'error', title: event.message || 'Task error', agentName, phase: inferredPhase }
+              payload: { type: 'error', title: event.message || '任务出错', agentName, phase: inferredPhase }
             });
             processedCount++;
             break;
@@ -328,14 +318,14 @@ function AgentAuditPageContent() {
           case 'task_cancel':
             dispatch({
               type: 'ADD_LOG',
-              payload: { type: 'info', title: event.message || 'Task cancelled', agentName, phase: inferredPhase }
+              payload: { type: 'info', title: event.message || '任务已取消', agentName, phase: inferredPhase }
             });
             processedCount++;
             break;
 
           case 'progress':
             if (event.message) {
-              const progressPatterns: { pattern: RegExp; key: string }[] = [
+              const progressPatterns = [
                 { pattern: /索引进度[:：]?\s*\d+\/\d+/, key: 'index_progress' },
                 { pattern: /嵌入进度[:：]?\s*\d+\/\d+/, key: 'embed_progress' },
                 { pattern: /克隆进度[:：]?\s*\d+%/, key: 'clone_progress' },
@@ -365,7 +355,7 @@ function AgentAuditPageContent() {
           case 'error':
           case 'warning': {
             const message = event.message || `${event.event_type}`;
-            const progressPatterns: { pattern: RegExp; key: string }[] = [
+            const progressPatterns = [
               { pattern: /索引进度[:：]?\s*\d+\/\d+/, key: 'index_progress' },
               { pattern: /嵌入进度[:：]?\s*\d+\/\d+/, key: 'embed_progress' },
               { pattern: /克隆进度[:：]?\s*\d+%/, key: 'clone_progress' },
@@ -411,19 +401,16 @@ function AgentAuditPageContent() {
         }
       });
 
-      // 🔥 根据推断的最后阶段更新 currentPhase
       setCurrentPhase(inferredPhase);
-
-      console.log(`[AgentAudit] Processed ${processedCount} events, inferred phase: ${inferredPhase}`);
       setAfterSequence(lastEventSequenceRef.current);
       return events.length;
     } catch (err) {
-      console.error('[AgentAudit] Failed to load historical events:', err);
+      console.error('[AgentAudit] 加载历史事件失败:', err);
       return 0;
     }
   }, [taskId, dispatch, currentPhase, setCurrentPhase]);
 
-  // ============ Stream Event Handling ============
+  // ============ 流事件处理 ============
 
   const streamOptions = useMemo(() => ({
     includeThinking: true,
@@ -434,7 +421,6 @@ function AgentAuditPageContent() {
         setCurrentAgentName(event.metadata.agent_name);
       }
 
-      // 🔥 推断阶段
       const newPhase = inferPhaseFromEvent(
         event.type,
         event.metadata?.phase || null,
@@ -451,7 +437,7 @@ function AgentAuditPageContent() {
           type: 'ADD_LOG',
           payload: {
             type: 'dispatch',
-            title: event.message || `Agent dispatch: ${event.metadata?.agent || 'unknown'}`,
+            title: event.message || `Agent 调度: ${event.metadata?.agent || '未知'}`,
             agentName: getCurrentAgentName() || undefined,
             phase: newPhase,
           }
@@ -463,7 +449,7 @@ function AgentAuditPageContent() {
       const infoEvents = ['info', 'warning', 'error', 'progress'];
       if (infoEvents.includes(event.type)) {
         const message = event.message || event.type;
-        const progressPatterns: { pattern: RegExp; key: string }[] = [
+        const progressPatterns = [
           { pattern: /索引进度[:：]?\s*\d+\/\d+/, key: 'index_progress' },
           { pattern: /嵌入进度[:：]?\s*\d+\/\d+/, key: 'embed_progress' },
           { pattern: /克隆进度[:：]?\s*\d+%/, key: 'clone_progress' },
@@ -511,7 +497,7 @@ function AgentAuditPageContent() {
           type: 'ADD_LOG', payload: {
             id: newLogId,
             type: 'thinking',
-            title: 'Thinking...',
+            title: '思考...',
             content: cleanContent,
             isStreaming: true,
             agentName: getCurrentAgentName() || undefined,
@@ -554,8 +540,8 @@ function AgentAuditPageContent() {
         type: 'ADD_LOG',
         payload: {
           type: 'tool',
-          title: `Tool: ${name}`,
-          content: `Input:\n${JSON.stringify(input, null, 2)}`,
+          title: `工具: ${name}`,
+          content: `输入:\n${JSON.stringify(input, null, 2)}`,
           tool: { name, status: 'running' },
           agentName: getCurrentAgentName() || undefined,
           phase: currentPhase,
@@ -574,7 +560,7 @@ function AgentAuditPageContent() {
         type: 'ADD_LOG',
         payload: {
           type: 'finding',
-          title: (finding.title as string) || 'Vulnerability found',
+          title: (finding.title as string) || '发现漏洞',
           severity: (finding.severity as string) || 'medium',
           agentName: getCurrentAgentName() || undefined,
           phase: currentPhase,
@@ -584,9 +570,9 @@ function AgentAuditPageContent() {
         type: 'ADD_FINDING',
         payload: {
           id: (finding.id as string) || `finding-${Date.now()}`,
-          title: (finding.title as string) || 'Vulnerability found',
+          title: (finding.title as string) || '发现漏洞',
           severity: (finding.severity as string) || 'medium',
-          vulnerability_type: (finding.vulnerability_type as string) || 'unknown',
+          vulnerability_type: (finding.vulnerability_type as string) || '未知',
           file_path: finding.file_path as string,
           line_start: finding.line_start as number,
           description: finding.description as string,
@@ -596,13 +582,13 @@ function AgentAuditPageContent() {
     },
     onComplete: () => {
       setCurrentPhase('reporting');
-      dispatch({ type: 'ADD_LOG', payload: { type: 'info', title: 'Audit completed successfully', phase: 'reporting' } });
+      dispatch({ type: 'ADD_LOG', payload: { type: 'info', title: '审计已完成', phase: 'reporting' } });
       loadTask();
       loadFindings();
       loadAgentTree();
     },
     onError: (err: string) => {
-      dispatch({ type: 'ADD_LOG', payload: { type: 'error', title: `Error: ${err}`, phase: currentPhase } });
+      dispatch({ type: 'ADD_LOG', payload: { type: 'error', title: `错误: ${err}`, phase: currentPhase } });
     },
   }), [afterSequence, dispatch, loadTask, loadFindings, loadAgentTree, debouncedLoadAgentTree,
     updateLog, removeLog, getCurrentAgentName, getCurrentThinkingId,
@@ -616,7 +602,7 @@ function AgentAuditPageContent() {
 
   // ============ Effects ============
 
-  // Status animation
+  // 状态动画
   useEffect(() => {
     if (!isRunning) return;
     const dotTimer = setInterval(() => setStatusDots(d => (d + 1) % 4), 500);
@@ -629,7 +615,7 @@ function AgentAuditPageContent() {
     };
   }, [isRunning]);
 
-  // Initial load
+  // 初始加载
   useEffect(() => {
     if (!taskId) {
       setShowSplash(true);
@@ -643,10 +629,9 @@ function AgentAuditPageContent() {
       try {
         await Promise.all([loadTask(), loadFindings(), loadAgentTree()]);
         const eventsLoaded = await loadHistoricalEvents();
-        console.log(`[AgentAudit] Loaded ${eventsLoaded} historical events for task ${taskId}`);
         setHistoricalEventsLoaded(true);
       } catch (error) {
-        console.error('[AgentAudit] Failed to load data:', error);
+        console.error('[AgentAudit] 加载数据失败:', error);
         setHistoricalEventsLoaded(true);
       } finally {
         setLoading(false);
@@ -656,25 +641,23 @@ function AgentAuditPageContent() {
     loadAllData();
   }, [taskId, loadTask, loadFindings, loadAgentTree, loadHistoricalEvents, setLoading]);
 
-  // Stream connection
+  // 流连接
   useEffect(() => {
     if (!taskId || !task?.status || task.status !== 'running') return;
     if (!historicalEventsLoaded) return;
     if (hasConnectedRef.current) return;
 
     hasConnectedRef.current = true;
-    console.log(`[AgentAudit] Connecting to stream`);
     connectStream();
-    dispatch({ type: 'ADD_LOG', payload: { type: 'info', title: 'Connected to audit stream', phase: currentPhase } });
+    dispatch({ type: 'ADD_LOG', payload: { type: 'info', title: '已连接到审计流', phase: currentPhase } });
 
     return () => {
-      console.log('[AgentAudit] Cleanup: disconnecting stream');
       disconnectStream();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [taskId, task?.status, historicalEventsLoaded, connectStream, disconnectStream, dispatch]);
 
-  // Polling
+  // 轮询
   useEffect(() => {
     if (!taskId || !isRunning) return;
     const interval = setInterval(loadAgentTree, POLLING_INTERVALS.AGENT_TREE);
@@ -700,18 +683,18 @@ function AgentAuditPageContent() {
   const handleCancel = async () => {
     if (!taskId || isCancelling) return;
     setIsCancelling(true);
-    dispatch({ type: 'ADD_LOG', payload: { type: 'info', title: 'Requesting task cancellation...', phase: currentPhase } });
+    dispatch({ type: 'ADD_LOG', payload: { type: 'info', title: '请求终止任务...', phase: currentPhase } });
 
     try {
       await cancelAgentTask(taskId);
-      toast.success("Task cancellation requested");
-      dispatch({ type: 'ADD_LOG', payload: { type: 'info', title: 'Task cancellation confirmed', phase: currentPhase } });
+      toast.success("已请求终止任务");
+      dispatch({ type: 'ADD_LOG', payload: { type: 'info', title: '任务终止已确认', phase: currentPhase } });
       await loadTask();
       disconnectStream();
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      toast.error(`Failed to cancel task: ${errorMessage}`);
-      dispatch({ type: 'ADD_LOG', payload: { type: 'error', title: `Failed to cancel: ${errorMessage}`, phase: currentPhase } });
+      const errorMessage = error instanceof Error ? error.message : '未知错误';
+      toast.error(`终止任务失败: ${errorMessage}`);
+      dispatch({ type: 'ADD_LOG', payload: { type: 'error', title: `终止失败: ${errorMessage}`, phase: currentPhase } });
     } finally {
       setIsCancelling(false);
     }
@@ -735,23 +718,18 @@ function AgentAuditPageContent() {
 
   if (isLoading && !task) {
     return (
-      <div className="h-screen bg-background flex items-center justify-center font-sans relative">
-        <div className="cyber-card p-4">
-          <div className="flex items-center justify-center h-[60vh]">
-            <div className="flex items-center gap-3 text-muted-foreground">
-              <div className="loading-spinner" />
-              <span className="font-sans text-sm tracking-wide">加载审计任务...</span>
-            </div>
-          </div>
+      <div className="h-screen bg-slate-50/30 flex items-center justify-center font-sans relative">
+        <div className="flex items-center gap-3 text-slate-500">
+          <div className="loading-spinner" />
+          <span className="font-sans text-sm tracking-wide">加载审计任务...</span>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="h-screen bg-background flex flex-col overflow-hidden px-6 pt-1 pb-4 font-sans relative gap-4">
-
-      {/* Header */}
+    <div className="h-screen bg-slate-50/30 flex flex-col overflow-hidden font-sans relative">
+      {/* 顶部栏 */}
       <Header
         task={task}
         isRunning={isRunning}
@@ -759,105 +737,127 @@ function AgentAuditPageContent() {
         onCancel={handleCancel}
       />
 
-      {/* Stats Panel - at top */}
-      {task && (
-        <StatsPanel task={task} findings={findings} />
-      )}
-
-      {/* 🔥 Phase Stepper (vertical) + Agent Tree grid — flex-[9] takes 90% of remaining space (10% height reduction) */}
-      {/* Phase Stepper + Agent Tree grid — flex-[4] takes 80% of remaining space (20% height reduction) */}
-      <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {/* Left: Vertical Phase Stepper with live logs */}
-        <PhaseStepper
-          currentPhase={currentPhase}
-          completedPhases={completedPhases}
-          isRunning={isRunning}
-          isComplete={isComplete}
-          phaseLogMap={phaseLogMap}
-          expandedPhases={expandedPhases}
-          onTogglePhaseExpanded={togglePhaseExpanded}
-          currentPhaseLogs={currentPhaseLogs}
-          expandedLogIds={expandedLogIds}
-          onToggleLogExpanded={toggleLogExpanded}
-          isAutoScroll={isAutoScroll}
-          onToggleAutoScroll={() => setAutoScroll(!isAutoScroll)}
-          scrollRef={phaseScrollRef}
-        />
-
-        {/* Right: Agent Tree */}
-        <div className="bg-white border border-slate-200 rounded-lg shadow-sm px-5 py-4 overflow-hidden flex flex-col min-h-0">
-          <div className="section-header !mb-1 !pb-1 !gap-2 !border-b-0">
-            <Radio className="w-4 h-4 text-primary" />
-            <h3 className="section-title text-sm">
-              {selectedAgentId && !showAllLogs ? 'Agent 详情' : 'Agent 概览'}
-            </h3>
-            {!selectedAgentId && agentTree && (
-              <Badge variant="outline" className="ml-2 h-5 px-2 text-xs border-primary/30 text-primary bg-primary/10 font-sans">
-                {agentTree.total_agents}
-              </Badge>
-            )}
-            {isConnected && (
-              <div className="ml-auto flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-primary/10 border border-primary/25">
-                <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
-                <span className="text-xs font-sans text-primary font-semibold">LIVE</span>
-              </div>
-            )}
+      {/* 主内容区：左面板 + 右主区 */}
+      <div className="flex-1 min-h-0 flex gap-0 overflow-hidden">
+        {/* 左侧面板：阶段时间线 + 统计 */}
+        <div className="w-64 bg-gradient-to-b from-slate-800 to-slate-900 flex flex-col overflow-hidden border-r border-slate-700">
+          {/* 阶段时间线 */}
+          <div className="flex-1 overflow-y-auto custom-scrollbar px-4 py-4">
+            <PhaseTimeline
+              currentPhase={currentPhase}
+              completedPhases={completedPhases}
+              isRunning={isRunning}
+              isComplete={isComplete}
+              phaseLogMap={phaseLogMap}
+            />
           </div>
 
-          {/* Agent tree content or detail panel */}
-          <div className="flex-1 overflow-y-auto custom-scrollbar">
-            {selectedAgentId && !showAllLogs ? (
-              <AgentDetailPanel
-                agentId={selectedAgentId}
-                treeNodes={treeNodes}
-                onClose={() => selectAgent(null)}
-              />
-            ) : treeNodes.length > 0 ? (
-              <div className="space-y-0.5">
-                {treeNodes.map(node => (
-                  <AgentTreeNodeItem
-                    key={node.agent_id}
-                    node={node}
-                    selectedId={selectedAgentId}
-                    onSelect={handleAgentSelect}
-                  />
-                ))}
-              </div>
-            ) : (
-              <div className="empty-state h-auto py-4">
-                {isRunning ? (
-                  <>
-                    <Loader2 className="w-6 h-6 animate-spin text-primary" />
-                    <p className="empty-state-description">初始化 Agent...</p>
-                  </>
-                ) : (
-                  <>
-                    <Radio className="empty-state-icon w-8 h-8 text-muted-foreground/50" />
-                    <p className="empty-state-description">暂无 Agent</p>
-                  </>
-                )}
-              </div>
-            )}
+          {/* 统计摘要 */}
+          <div className="flex-shrink-0 border-t border-slate-700/60 px-4 py-4">
+            <StatsPanel task={task} findings={findings} />
           </div>
+        </div>
 
-          {/* Back button for agent detail */}
-          {selectedAgentId && !showAllLogs && (
-            <div className="flex-shrink-0 pt-2 border-t border-border mt-2">
+        {/* 右侧主区：日志流 + Agent面板 */}
+        <div className="flex-1 flex flex-col overflow-hidden p-4 gap-3">
+          {/* 导出按钮（右上角） */}
+          {task && isComplete && (
+            <div className="flex-shrink-0 flex items-center gap-2">
               <button
-                onClick={() => selectAgent(null)}
-                className="text-xs text-primary hover:text-primary/80 font-sans uppercase px-2 py-1 rounded hover:bg-primary/10"
+                onClick={handleExportReport}
+                className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium
+                  bg-indigo-600 text-white hover:bg-indigo-500 transition-colors shadow-sm"
               >
-                返回概览
+                <Download className="w-4 h-4" />
+                导出报告
               </button>
             </div>
           )}
+
+          {/* 日志流 */}
+          <div className="flex-1 min-h-0">
+            <LogStream
+              currentPhase={currentPhase}
+              completedPhases={completedPhases}
+              isRunning={isRunning}
+              isComplete={isComplete}
+              phaseLogMap={phaseLogMap}
+              expandedLogIds={expandedLogIds}
+              onToggleLogExpanded={toggleLogExpanded}
+              isAutoScroll={isAutoScroll}
+              onToggleAutoScroll={() => setAutoScroll(!isAutoScroll)}
+              scrollRef={phaseScrollRef}
+            />
+          </div>
+
+          {/* Agent 面板（底部可折叠） */}
+          <div className="flex-shrink-0 bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
+            <div className="flex items-center justify-between px-4 py-2.5 border-b border-slate-100">
+              <div className="flex items-center gap-2">
+                <Radio className="w-4 h-4 text-indigo-600" />
+                <h3 className="text-sm font-semibold text-slate-800">
+                  {selectedAgentId ? 'Agent 详情' : 'Agent 概览'}
+                </h3>
+                {!selectedAgentId && agentTree && (
+                  <Badge variant="outline" className="ml-1 h-5 px-2 text-xs border-indigo-200 text-indigo-600 bg-indigo-50">
+                    {agentTree.total_agents}
+                  </Badge>
+                )}
+              </div>
+
+              {selectedAgentId && (
+                <button
+                  onClick={() => selectAgent(null)}
+                  className="flex items-center gap-1 text-xs text-indigo-600 hover:text-indigo-500 font-medium px-2 py-1 rounded-lg hover:bg-indigo-50"
+                >
+                  <ArrowLeft className="w-3.5 h-3.5" />
+                  返回概览
+                </button>
+              )}
+            </div>
+
+            <div className="max-h-[200px] overflow-y-auto custom-scrollbar px-3 py-2">
+              {selectedAgentId ? (
+                <AgentDetailPanel
+                  agentId={selectedAgentId}
+                  treeNodes={treeNodes}
+                  onClose={() => selectAgent(null)}
+                />
+              ) : treeNodes.length > 0 ? (
+                <div>
+                  {treeNodes.map(node => (
+                    <AgentTreeNodeItem
+                      key={node.agent_id}
+                      node={node}
+                      selectedId={selectedAgentId}
+                      onSelect={handleAgentSelect}
+                    />
+                  ))}
+                </div>
+              ) : (
+                <div className="py-4 text-center">
+                  {isRunning ? (
+                    <>
+                      <Loader2 className="w-5 h-5 animate-spin text-indigo-500 mx-auto mb-1" />
+                      <p className="text-xs text-slate-400">初始化 Agent...</p>
+                    </>
+                  ) : (
+                    <>
+                      <Radio className="w-6 h-6 text-slate-300 mx-auto mb-1" />
+                      <p className="text-xs text-slate-400">暂无 Agent</p>
+                    </>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       </div>
 
-      {/* Create dialog */}
+      {/* 创建对话框 */}
       <CreateAgentTaskDialog open={showCreateDialog} onOpenChange={setShowCreateDialog} />
 
-      {/* Export dialog */}
+      {/* 导出对话框 */}
       <ReportExportDialog
         open={showExportDialog}
         onOpenChange={setShowExportDialog}
@@ -868,7 +868,7 @@ function AgentAuditPageContent() {
   );
 }
 
-// Wrapped export with Error Boundary
+// 错误边界包装
 export default function AgentAuditPage() {
   const { taskId } = useParams<{ taskId: string }>();
 

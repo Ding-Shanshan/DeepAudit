@@ -53,6 +53,8 @@ class LLMRequest:
     max_tokens: Optional[int] = None
     top_p: Optional[float] = None
     stream: bool = False
+    tools: Optional[List[Dict[str, Any]]] = None
+    response_format: Optional[Dict[str, Any]] = None
 
 
 @dataclass
@@ -64,12 +66,21 @@ class LLMUsage:
 
 
 @dataclass
+class ToolCall:
+    """LLM工具调用"""
+    id: str
+    function: Dict[str, str]  # {"name": ..., "arguments": ...}
+    type: str = "function"
+
+
+@dataclass
 class LLMResponse:
     """LLM响应"""
     content: str
     model: Optional[str] = None
     usage: Optional[LLMUsage] = None
     finish_reason: Optional[str] = None
+    tool_calls: Optional[List[ToolCall]] = None
 
 
 class LLMError(Exception):

@@ -1,6 +1,6 @@
 /**
- * Agent Error Boundary Component
- * Specialized error boundary for Agent Audit pages with retry and recovery
+ * Agent 错误边界组件
+ * 深色风格，全中文标签
  */
 
 import { Component, ReactNode } from 'react';
@@ -43,10 +43,8 @@ export class AgentErrorBoundary extends Component<Props, State> {
   }
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    console.error('[AgentErrorBoundary] Caught error:', error, errorInfo);
+    console.error('[AgentErrorBoundary] 捕获错误:', error, errorInfo);
     this.setState({ errorInfo });
-
-    // Report error to monitoring (placeholder for actual implementation)
     this.reportError(error, errorInfo);
   }
 
@@ -57,7 +55,6 @@ export class AgentErrorBoundary extends Component<Props, State> {
   }
 
   private reportError(error: Error, errorInfo: React.ErrorInfo) {
-    // Structured error report
     const report = {
       timestamp: new Date().toISOString(),
       taskId: this.props.taskId,
@@ -71,12 +68,9 @@ export class AgentErrorBoundary extends Component<Props, State> {
       url: window.location.href,
     };
 
-    // Log locally for development
     if (import.meta.env.DEV) {
-      console.error('[AgentErrorBoundary] Error Report:', report);
+      console.error('[AgentErrorBoundary] 错误报告:', report);
     }
-
-    // Future: send to error tracking service
   }
 
   private getErrorCategory(): 'network' | 'stream' | 'render' | 'unknown' {
@@ -98,13 +92,13 @@ export class AgentErrorBoundary extends Component<Props, State> {
     const category = this.getErrorCategory();
     switch (category) {
       case 'network':
-        return 'Check your network connection and try again';
+        return '请检查网络连接后重试';
       case 'stream':
-        return 'The live connection was interrupted. Refresh to reconnect';
+        return '实时连接已中断，请刷新页面重新连接';
       case 'render':
-        return 'A display error occurred. Try refreshing the page';
+        return '页面渲染出错，请尝试刷新';
       default:
-        return 'An unexpected error occurred';
+        return '发生了意外错误';
     }
   }
 
@@ -117,7 +111,6 @@ export class AgentErrorBoundary extends Component<Props, State> {
 
     this.setState({ isRetrying: true });
 
-    // Exponential backoff delay
     const delay = Math.min(1000 * Math.pow(2, this.state.retryCount), 10000);
 
     await new Promise(resolve => {
@@ -165,65 +158,62 @@ export class AgentErrorBoundary extends Component<Props, State> {
     }
 
     return (
-      <div className="h-screen cyber-bg-elevated flex items-center justify-center p-4">
+      <div className="h-screen bg-gradient-to-b from-slate-900 to-indigo-950 flex items-center justify-center p-4">
         <div className="w-full max-w-lg space-y-6">
-          {/* Error Header */}
+          {/* 错误标题 */}
           <div className="flex items-center gap-4">
             <div className={cn(
-              "p-3 rounded-lg",
-              category === 'network' ? 'bg-yellow-500/10' : 'bg-red-500/10'
+              "p-3 rounded-xl",
+              category === 'network' ? 'bg-amber-500/20' : 'bg-rose-500/20'
             )}>
               <AlertTriangle className={cn(
                 "w-8 h-8",
-                category === 'network' ? 'text-yellow-400' : 'text-red-400'
+                category === 'network' ? 'text-amber-400' : 'text-rose-400'
               )} />
             </div>
             <div>
-              <h2 className="text-xl font-semibold text-foreground">Agent Error</h2>
-              <p className="text-sm text-muted-foreground">{this.getRecoveryHint()}</p>
+              <h2 className="text-xl font-semibold text-white">审计异常</h2>
+              <p className="text-sm text-slate-400">{this.getRecoveryHint()}</p>
             </div>
           </div>
 
-          {/* Error Details */}
-          <div className="cyber-dialog border border-border rounded-lg overflow-hidden">
-            <div className="px-4 py-3 border-b border-border flex items-center gap-2">
-              <Terminal className="w-4 h-4 text-muted-foreground" />
-              <span className="text-xs text-muted-foreground uppercase tracking-wider font-bold">
-                Error Details
-              </span>
+          {/* 错误详情 */}
+          <div className="bg-slate-800/80 border border-slate-700 rounded-xl overflow-hidden">
+            <div className="px-4 py-3 border-b border-slate-700 flex items-center gap-2">
+              <Terminal className="w-4 h-4 text-slate-400" />
+              <span className="text-xs text-slate-400 font-medium">错误详情</span>
             </div>
             <div className="p-4 space-y-3">
               {error && (
                 <div className="space-y-2">
                   <div className="flex items-start gap-2">
-                    <Bug className="w-4 h-4 text-red-400 mt-0.5 flex-shrink-0" />
+                    <Bug className="w-4 h-4 text-rose-400 mt-0.5 flex-shrink-0" />
                     <div>
-                      <p className="text-sm font-sans text-red-400">{error.name}</p>
-                      <p className="text-sm text-foreground">{error.message}</p>
+                      <p className="text-sm font-sans text-rose-400">{error.name}</p>
+                      <p className="text-sm text-slate-300">{error.message}</p>
                     </div>
                   </div>
                 </div>
               )}
 
               {this.props.taskId && (
-                <div className="text-xs text-muted-foreground">
-                  Task ID: <span className="font-sans text-muted-foreground">{this.props.taskId}</span>
+                <div className="text-xs text-slate-500">
+                  任务 ID: <span className="font-sans text-slate-400">{this.props.taskId}</span>
                 </div>
               )}
 
               {retryCount > 0 && (
-                <div className="text-xs text-muted-foreground">
-                  Retry attempts: <span className="text-yellow-400">{retryCount}/{maxRetries}</span>
+                <div className="text-xs text-slate-500">
+                  重试次数: <span className="text-amber-400">{retryCount}/{maxRetries}</span>
                 </div>
               )}
 
-              {/* Stack trace (dev only) */}
               {import.meta.env.DEV && error?.stack && (
                 <details className="text-xs">
-                  <summary className="cursor-pointer text-muted-foreground hover:text-foreground transition-colors">
-                    Stack Trace
+                  <summary className="cursor-pointer text-slate-500 hover:text-slate-300 transition-colors">
+                    堆栈追踪
                   </summary>
-                  <pre className="mt-2 p-3 bg-background/50 rounded text-xs text-muted-foreground overflow-auto max-h-40">
+                  <pre className="mt-2 p-3 bg-slate-900/50 rounded text-xs text-slate-400 overflow-auto max-h-40">
                     {error.stack}
                   </pre>
                 </details>
@@ -231,10 +221,10 @@ export class AgentErrorBoundary extends Component<Props, State> {
 
               {import.meta.env.DEV && errorInfo?.componentStack && (
                 <details className="text-xs">
-                  <summary className="cursor-pointer text-muted-foreground hover:text-foreground transition-colors">
-                    Component Stack
+                  <summary className="cursor-pointer text-slate-500 hover:text-slate-300 transition-colors">
+                    组件堆栈
                   </summary>
-                  <pre className="mt-2 p-3 bg-background/50 rounded text-xs text-muted-foreground overflow-auto max-h-40">
+                  <pre className="mt-2 p-3 bg-slate-900/50 rounded text-xs text-slate-400 overflow-auto max-h-40">
                     {errorInfo.componentStack}
                   </pre>
                 </details>
@@ -242,39 +232,38 @@ export class AgentErrorBoundary extends Component<Props, State> {
             </div>
           </div>
 
-          {/* Actions */}
+          {/* 操作按钮 */}
           <div className="flex gap-3">
             {canRetry && (
               <Button
                 onClick={this.handleRetry}
                 disabled={isRetrying}
-                className="flex-1 bg-primary hover:bg-primary/90"
+                className="flex-1 bg-indigo-600 hover:bg-indigo-500 text-white"
               >
                 <RefreshCw className={cn("w-4 h-4 mr-2", isRetrying && "animate-spin")} />
-                {isRetrying ? 'Retrying...' : 'Retry'}
+                {isRetrying ? '重试中...' : '重试'}
               </Button>
             )}
             <Button
               onClick={this.handleGoBack}
               variant="outline"
-              className="flex-1 border-border hover:bg-muted"
+              className="flex-1 border-slate-600 text-slate-300 hover:bg-slate-800 hover:text-white"
             >
               <ArrowLeft className="w-4 h-4 mr-2" />
-              Go Back
+              返回
             </Button>
             <Button
               onClick={this.handleReload}
               variant="ghost"
-              className="flex-1 text-muted-foreground hover:text-foreground"
+              className="flex-1 text-slate-400 hover:text-white hover:bg-slate-800"
             >
-              Refresh Page
+              刷新页面
             </Button>
           </div>
 
-          {/* Recovery suggestion */}
           {!canRetry && (
-            <p className="text-center text-xs text-muted-foreground">
-              Maximum retry attempts reached. Please refresh the page or contact support.
+            <p className="text-center text-xs text-slate-500">
+              已达到最大重试次数，请刷新页面或联系技术支持。
             </p>
           )}
         </div>

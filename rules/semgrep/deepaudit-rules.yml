@@ -1,4 +1,5 @@
 rules:
+  # =================== Python ===================
   - id: deepaudit.python.sql-injection
     languages: [python]
     severity: ERROR
@@ -8,14 +9,137 @@ rules:
           - pattern: $CURSOR.execute("..." + $INPUT)
           - pattern: $CURSOR.execute(f"...{$INPUT}...")
 
-  - id: deepaudit.java.command-injection
+  # =================== Java ===================
+  - id: deepaudit.java.sqli-statement-execute
     languages: [java]
     severity: ERROR
-    message: Java 中直接执行系统命令，可能存在命令注入
-    pattern-either:
-      - pattern: Runtime.getRuntime().exec(...)
-      - pattern: new ProcessBuilder(...)
+    message: "Java Statement.execute() 使用了字符串拼接构造 SQL，存在注入风险。请改用 PreparedStatement。"
+    patterns:
+      - pattern-either:
+          - pattern: $STMT.execute($SQL + $INPUT)
+          - pattern: $STMT.executeQuery($SQL + $INPUT)
+          - pattern: $STMT.executeUpdate($SQL + $INPUT)
 
+  - id: deepaudit.java.sqli-hibernate-query
+    languages: [java]
+    severity: ERROR
+    message: "Hibernate/JPA createQuery/createNativeQuery 使用了字符串拼接，存在注入风险。请使用命名参数或 Criteria API。"
+    patterns:
+      - pattern-either:
+          - pattern: $EM.createQuery($SQL + $INPUT)
+          - pattern: $EM.createNativeQuery($SQL + $INPUT)
+          - pattern: $SESSION.createSQLQuery($SQL + $INPUT)
+
+  - id: deepaudit.java.xss-response-writer
+    languages: [java]
+    severity: ERROR
+    message: "Servlet response.getWriter() 直接输出数据到响应，可能造成 XSS。请使用 OWASP Java Encoder 进行输出编码。"
+    pattern-either:
+      - pattern: response.getWriter().print(...)
+      - pattern: response.getWriter().write(...)
+      - pattern: response.getWriter().println(...)
+
+  - id: deepaudit.java.xss-jsp-expression
+    languages: [jsp]
+    severity: ERROR
+    message: "JSP 表达式直接输出 request 参数，存在 XSS 风险。请使用 JSTL <c:out> 或 EL 函数进行编码。"
+    pattern: <%= request.getParameter(...)
+
+  - id: deepaudit.java.ssrf-url-from-input
+    languages: [java]
+    severity: WARNING
+    message: "URL 对象由用户输入构造，可能存在 SSRF 风险。请校验 URL 白名单并禁止请求内网地址。"
+    pattern-either:
+      - pattern: new URL($REQ.getParameter(...))
+      - pattern: new URL($INPUT)
+
+  - id: deepaudit.java.ssrf-resttemplate
+    languages: [java]
+    severity: WARNING
+    message: "RestTemplate 使用动态 URL 发起请求，可能存在 SSRF。请校验 URL 目标白名单。"
+    pattern-either:
+      - pattern: $RT.getForObject($URL, ...)
+      - pattern: $RT.postForObject($URL, ...)
+      - pattern: $RT.exchange($URL, ...)
+
+  - id: deepaudit.java.cmdi-runtime-exec
+    languages: [java]
+    severity: ERROR
+    message: "Runtime.exec() 接收了拼接的输入，存在命令注入风险。请使用固定参数列表并白名单校验输入。"
+    pattern-either:
+      - pattern: Runtime.getRuntime().exec($CMD + $INPUT)
+      - pattern: Runtime.getRuntime().exec($REQ.getParameter(...))
+
+  - id: deepaudit.java.cmdi-processbuilder
+    languages: [java]
+    severity: ERROR
+    message: "ProcessBuilder 使用了拼接的输入构造命令，存在命令注入风险。"
+    pattern-either:
+      - pattern: new ProcessBuilder($CMD + $INPUT)
+      - pattern: new ProcessBuilder($REQ.getParameter(...))
+
+  - id: deepaudit.java.cmdi-script-engine
+    languages: [java]
+    severity: ERROR
+    message: "ScriptEngine.eval() 执行了拼接的输入，存在代码注入风险。"
+    patterns:
+      - pattern: $ENGINE.eval($SCRIPT + $INPUT)
+
+  - id: deepaudit.java.path-traversal-file
+    languages: [java]
+    severity: WARNING
+    message: "File/Path 对象由外部输入构造，可能存在路径遍历。请做路径归一化和白名单校验。"
+    pattern-either:
+      - pattern: new File($REQ.getParameter(...))
+      - pattern: new File($BASE + $INPUT)
+      - pattern: Paths.get($BASE, $INPUT)
+      - pattern: new FileInputStream($REQ.getParameter(...))
+      - pattern: new FileOutputStream($REQ.getParameter(...))
+
+  - id: deepaudit.java.hardcoded-password
+    languages: [java]
+    severity: WARNING
+    message: "代码中硬编码了密码，请迁移到环境变量或密钥管理系统。"
+    pattern-either:
+      - pattern: setPassword("...")
+      - pattern: $CONN.setPassword("...")
+
+  - id: deepaudit.java.weak-crypto-hash
+    languages: [java]
+    severity: WARNING
+    message: "使用 MD5 或 SHA-1 进行哈希，算法不安全。请改用 SHA-256 或更强的算法。"
+    pattern-either:
+      - pattern: MessageDigest.getInstance("MD5")
+      - pattern: MessageDigest.getInstance("SHA1")
+      - pattern: MessageDigest.getInstance("SHA-1")
+
+  - id: deepaudit.java.weak-crypto-cipher
+    languages: [java]
+    severity: WARNING
+    message: "使用 DES/RC4/Blowfish 加密，算法不安全。请改用 AES-256-GCM。"
+    pattern-either:
+      - pattern: Cipher.getInstance("DES...")
+      - pattern: Cipher.getInstance("RC4...")
+      - pattern: DESKeySpec(...)
+
+  - id: deepaudit.java.resource-leak-connection
+    languages: [java]
+    severity: WARNING
+    message: "数据库连接未使用 try-with-resources，可能导致资源泄漏。请确保在 finally 或 try-with-resources 中关闭。"
+    pattern-either:
+      - pattern: $DS.getConnection()
+      - pattern: DriverManager.getConnection(...)
+
+  - id: deepaudit.java.resource-leak-stream
+    languages: [java]
+    severity: WARNING
+    message: "IO 流未使用 try-with-resources，可能导致资源泄漏。"
+    pattern-either:
+      - pattern: new FileInputStream(...)
+      - pattern: new Socket(...)
+      - pattern: new ServerSocket(...)
+
+  # =================== JavaScript ===================
   - id: deepaudit.javascript.xss
     languages: [javascript, typescript]
     severity: ERROR
@@ -24,6 +148,7 @@ rules:
       - pattern: $EL.innerHTML = $VALUE
       - pattern: dangerouslySetInnerHTML
 
+  # =================== PHP ===================
   - id: deepaudit.php.path-traversal
     languages: [php]
     severity: WARNING
@@ -34,6 +159,7 @@ rules:
           - pattern: require($_GET[...])
           - pattern: file_get_contents($_GET[...])
 
+  # =================== Go ===================
   - id: deepaudit.go.ssrf
     languages: [go]
     severity: WARNING
@@ -43,6 +169,7 @@ rules:
           - pattern: http.Get($URL)
           - pattern: http.Post($URL, ...)
 
+  # =================== C/C++ ===================
   - id: deepaudit.c.buffer-overflow
     languages: [c, cpp]
     severity: ERROR
@@ -52,3 +179,97 @@ rules:
       - pattern: strcat(...)
       - pattern: gets(...)
       - pattern: sprintf(...)
+
+  - id: deepaudit.cpp.cmdi-system
+    languages: [c, cpp]
+    severity: ERROR
+    message: "C/C++ 使用 system() 执行命令，存在命令注入风险。请使用 execve() 等参数数组接口。"
+    pattern: system($VAR)
+
+  - id: deepaudit.cpp.cmdi-popen
+    languages: [c, cpp]
+    severity: ERROR
+    message: "C/C++ 使用 popen() 执行命令，存在命令注入风险。"
+    pattern: popen($VAR, ...)
+
+  - id: deepaudit.cpp.cmdi-exec-family
+    languages: [c, cpp]
+    severity: WARNING
+    message: "C/C++ 使用 exec 函数族执行外部程序，请确认参数来源可信。"
+    pattern-either:
+      - pattern: execl(...)
+      - pattern: execlp(...)
+      - pattern: execle(...)
+      - pattern: execv(...)
+      - pattern: execvp(...)
+      - pattern: execve(...)
+
+  - id: deepaudit.cpp.path-traversal-fopen
+    languages: [c, cpp]
+    severity: WARNING
+    message: "fopen() 使用了拼接的路径，可能存在路径遍历。请做路径归一化校验。"
+    patterns:
+      - pattern-either:
+          - pattern: fopen($PATH + $INPUT, ...)
+          - pattern: fopen($BUF, ...)
+
+  - id: deepaudit.cpp.xss-cgi-printf
+    languages: [c, cpp]
+    severity: WARNING
+    message: "CGI 程序使用 printf 输出 HTML，存在 XSS 风险。请对所有动态内容做 HTML 实体编码。"
+    patterns:
+      - pattern: printf("<...>", ...)
+
+  - id: deepaudit.cpp.sqli-mysql-query
+    languages: [c, cpp]
+    severity: ERROR
+    message: "C/C++ mysql_query() 使用了拼接的 SQL，存在注入风险。请使用 mysql_stmt_prepare + bind。"
+    pattern: mysql_query($CONN, $SQL + $INPUT)
+
+  - id: deepaudit.cpp.sqli-sqlite-exec
+    languages: [c, cpp]
+    severity: ERROR
+    message: "C/C++ sqlite3_exec() 使用了拼接的 SQL，存在注入风险。请使用 sqlite3_prepare_v2 + bind。"
+    pattern: sqlite3_exec($DB, $SQL + $INPUT, ...)
+
+  - id: deepaudit.cpp.weak-crypto-md5
+    languages: [c, cpp]
+    severity: WARNING
+    message: "使用 OpenSSL MD5 哈希，算法不安全。请改用 SHA-256+。"
+    pattern-either:
+      - pattern: MD5_Init(...)
+      - pattern: MD5_Update(...)
+      - pattern: MD5_Final(...)
+
+  - id: deepaudit.cpp.weak-crypto-sha1
+    languages: [c, cpp]
+    severity: WARNING
+    message: "使用 OpenSSL SHA-1 哈希，算法不安全。请改用 SHA-256+。"
+    pattern-either:
+      - pattern: SHA1_Init(...)
+      - pattern: SHA1_Update(...)
+
+  - id: deepaudit.cpp.weak-crypto-des
+    languages: [c, cpp]
+    severity: WARNING
+    message: "使用 OpenSSL DES 加密，算法不安全。请改用 AES-256。"
+    pattern-either:
+      - pattern: DES_set_key(...)
+      - pattern: DES_ecb_encrypt(...)
+      - pattern: DES_encrypt(...)
+
+  - id: deepaudit.cpp.buffer-overflow-format
+    languages: [c, cpp]
+    severity: ERROR
+    message: "C/C++ 使用 vsprintf，可能导致缓冲区溢出。请改用 vsnprintf。"
+    pattern: vsprintf(...)
+
+  - id: deepaudit.cpp.null-deref-after-malloc
+    languages: [c, cpp]
+    severity: WARNING
+    message: "malloc/calloc/realloc 后未检查返回值是否为 NULL，可能导致空指针解引用。请添加 NULL 检查。"
+    patterns:
+      - pattern: $PTR = malloc(...)
+      - pattern-not-inside: |
+          $PTR = malloc(...);
+          if ($PTR == NULL) { ... }

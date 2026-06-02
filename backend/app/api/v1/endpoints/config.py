@@ -18,6 +18,9 @@ from app.core.encryption import encrypt_sensitive_data, decrypt_sensitive_data
 
 router = APIRouter()
 
+# 清除标记：前端发送此值表示用户主动清除该字段
+CLEAR_MARKER = '__CLEAR__'
+
 # 需要加密的敏感字段列表
 SENSITIVE_LLM_FIELDS = [
     'llmApiKey', 'geminiApiKey', 'openaiApiKey', 'claudeApiKey',
@@ -237,13 +240,28 @@ async def update_my_config(
     # 准备要保存的配置数据（加密敏感字段）
     llm_data = config_in.llmConfig.dict(exclude_none=True) if config_in.llmConfig else {}
     other_data = config_in.otherConfig.dict(exclude_none=True) if config_in.otherConfig else {}
-    
-    # 加密敏感字段
-    llm_data_encrypted = encrypt_config(llm_data, SENSITIVE_LLM_FIELDS)
-    other_data_encrypted = encrypt_config(other_data, SENSITIVE_OTHER_FIELDS)
+
+    # 加密敏感字段（__CLEAR__ 标记不加密，在后续逻辑中处理）
+    def encrypt_config_safe(config: dict, sensitive_fields: list) -> dict:
+        encrypted = config.copy()
+        for field in sensitive_fields:
+            if field in encrypted and encrypted[field] and encrypted[field] != CLEAR_MARKER:
+                encrypted[field] = encrypt_sensitive_data(encrypted[field])
+        return encrypted
+    llm_data_encrypted = encrypt_config_safe(llm_data, SENSITIVE_LLM_FIELDS)
+    other_data_encrypted = encrypt_config_safe(other_data, SENSITIVE_OTHER_FIELDS)
     
     if not config:
-        # 创建新配置
+        # 创建新配置：__CLEAR__ 标记在新建时等同于空值
+        for field in SENSITIVE_LLM_FIELDS:
+            if llm_data.get(field) == CLEAR_MARKER:
+                llm_data[field] = ''
+        for field in SENSITIVE_OTHER_FIELDS:
+            if other_data.get(field) == CLEAR_MARKER:
+                other_data[field] = ''
+        # 重新加密（因为修改了数据）
+        llm_data_encrypted = encrypt_config_safe(llm_data, SENSITIVE_LLM_FIELDS)
+        other_data_encrypted = encrypt_config_safe(other_data, SENSITIVE_OTHER_FIELDS)
         config = UserConfig(
             user_id=current_user.id,
             llm_config=json.dumps(llm_data_encrypted),
@@ -256,14 +274,38 @@ async def update_my_config(
             existing_llm = json.loads(config.llm_config) if config.llm_config else {}
             # 先解密现有数据，再合并新数据，最后加密
             existing_llm = decrypt_config(existing_llm, SENSITIVE_LLM_FIELDS)
-            existing_llm.update(llm_data)  # 使用未加密的新数据合并
+            # 合并新数据，但跳过敏感字段的空字符串（防止覆盖已保存的密钥）
+            for key, value in llm_data.items():
+                if key in SENSITIVE_LLM_FIELDS:
+                    if value == CLEAR_MARKER:
+                        # 用户主动清除该字段
+                        existing_llm[key] = ''
+                    elif value == '':
+                        # 空字符串不覆盖已保存的敏感值
+                        continue
+                    else:
+                        existing_llm[key] = value
+                else:
+                    existing_llm[key] = value
             config.llm_config = json.dumps(encrypt_config(existing_llm, SENSITIVE_LLM_FIELDS))
-        
+
         if config_in.otherConfig:
             existing_other = json.loads(config.other_config) if config.other_config else {}
             # 先解密现有数据，再合并新数据，最后加密
             existing_other = decrypt_config(existing_other, SENSITIVE_OTHER_FIELDS)
-            existing_other.update(other_data)  # 使用未加密的新数据合并
+            # 合并新数据，但跳过敏感字段的空字符串（防止覆盖已保存的Token）
+            for key, value in other_data.items():
+                if key in SENSITIVE_OTHER_FIELDS:
+                    if value == CLEAR_MARKER:
+                        # 用户主动清除该字段
+                        existing_other[key] = ''
+                    elif value == '':
+                        # 空字符串不覆盖已保存的Token
+                        continue
+                    else:
+                        existing_other[key] = value
+                else:
+                    existing_other[key] = value
             config.other_config = json.dumps(encrypt_config(existing_other, SENSITIVE_OTHER_FIELDS))
     
     await db.commit()

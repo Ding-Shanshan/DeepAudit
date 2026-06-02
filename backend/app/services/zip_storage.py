@@ -1,6 +1,6 @@
 """
 ZIP文件存储服务
-用于管理项目归档文件的持久化存储
+用于管理项目本地文件的持久化存储
 """
 
 import os
@@ -13,7 +13,7 @@ from app.core.config import settings
 
 
 def normalize_archive_extension(filename: str) -> str:
-    """规范化归档文件扩展名。"""
+    """规范化本地文件扩展名。"""
     name = (filename or "").lower()
     if name.endswith(".tar.gz"):
         return ".tar.gz"
@@ -30,7 +30,7 @@ def get_zip_storage_path() -> Path:
 
 
 def get_project_zip_path(project_id: str, extension: str = ".zip") -> Path:
-    """获取项目归档文件路径。"""
+    """获取项目本地文件路径。"""
     normalized_ext = extension if extension.startswith(".") else f".{extension}"
     return get_zip_storage_path() / f"{project_id}{normalized_ext}"
 
@@ -82,7 +82,7 @@ async def save_project_zip(project_id: str, file_path: str, original_filename: s
     with open(meta_path, 'w') as f:
         json.dump(meta, f)
     
-    print(f"✓ 归档文件已保存: {project_id} ({file_size / 1024 / 1024:.2f} MB)")
+    print(f"✓ 本地文件已保存: {project_id} ({file_size / 1024 / 1024:.2f} MB)")
     
     return meta
 
@@ -158,7 +158,7 @@ async def delete_project_zip(project_id: str) -> bool:
         if zip_path.exists():
             os.remove(zip_path)
             deleted = True
-            print(f"✓ 已删除归档文件: {project_id}")
+            print(f"✓ 已删除本地文件: {project_id}")
     
     if meta_path.exists():
         os.remove(meta_path)

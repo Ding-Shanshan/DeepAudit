@@ -81,7 +81,7 @@ export interface UnifiedIssue {
   filePath: string | null;
   severity: 'critical' | 'high' | 'medium' | 'low';
   issueType: string;           // bug, security, performance 等
-  status: string;              // open, pending_review, resolved, false_positive
+  status: string;              // fixed, not_fixed, false_positive, suspicious
   createdAt: string;
   resolvedAt: string | null;
 }

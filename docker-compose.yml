@@ -54,8 +54,8 @@ services:
       - HTTPS_PROXY=http://192.168.66.1:7890
       - http_proxy=http://192.168.66.1:7890
       - https_proxy=http://192.168.66.1:7890
-      - NO_PROXY=localhost,127.0.0.1,db,redis,deepaudit-backend-1
-      - no_proxy=localhost,127.0.0.1,db,redis
+      - NO_PROXY=localhost,127.0.0.1,db,redis,deepaudit-backend-1,aiapi.chaitin.net
+      - no_proxy=localhost,127.0.0.1,db,redis,aiapi.chaitin.net
     depends_on:
       db:
         condition: service_healthy

@@ -1,10 +1,11 @@
 /**
- * Agent Tree Node Component
- * 简洁灰色边框风格，与日志流视觉一致
+ * Agent 树节点组件
+ * 卡片式节点，左边框按类型颜色编码，全中文标签
  */
 
 import { useState, memo } from "react";
 import { ChevronDown, ChevronRight, Zap, Bug } from "lucide-react";
+import { AGENT_TYPE_CONFIG, AGENT_STATUS_CONFIG } from "../constants";
 import type { AgentTreeNodeItemProps } from "../types";
 
 export const AgentTreeNodeItem = memo(function AgentTreeNodeItem({
@@ -19,7 +20,10 @@ export const AgentTreeNodeItem = memo(function AgentTreeNodeItem({
   const isSelected = selectedId === node.agent_id;
   const isRunning = node.status === 'running';
 
-  const indent = depth * 24;
+  const typeConfig = AGENT_TYPE_CONFIG[node.agent_type] || AGENT_TYPE_CONFIG.orchestrator;
+  const statusConfig = AGENT_STATUS_CONFIG[node.status] || AGENT_STATUS_CONFIG.created;
+
+  const indent = depth * 20;
 
   return (
     <div className="relative">
@@ -29,85 +33,81 @@ export const AgentTreeNodeItem = memo(function AgentTreeNodeItem({
           <div
             className="absolute border-l border-slate-200"
             style={{
-              left: `${indent - 12}px`,
+              left: `${indent - 10}px`,
               top: 0,
-              height: isLast ? '20px' : '100%',
+              height: isLast ? '18px' : '100%',
             }}
           />
           <div
             className="absolute border-t border-slate-200"
             style={{
-              left: `${indent - 12}px`,
-              top: '20px',
-              width: '12px',
+              left: `${indent - 10}px`,
+              top: '18px',
+              width: '10px',
             }}
           />
         </>
       )}
 
-      {/* Node item - 灰色细边框 + 小圆角 */}
+      {/* 卡片节点 */}
       <div
         className={`
-          relative flex items-center gap-2 py-2.5 px-2 cursor-pointer rounded
+          relative flex items-center gap-2.5 py-2 px-3 cursor-pointer rounded-lg mb-1
+          border-l-[3px] transition-all duration-150
           ${isSelected
-            ? 'border border-slate-400'
-            : 'border border-slate-200 hover:border-slate-300'
+            ? `ring-2 ring-indigo-300 shadow-md ${typeConfig.borderColor} bg-white`
+            : `${typeConfig.borderColor} bg-white hover:shadow hover:bg-slate-50`
           }
         `}
         style={{ marginLeft: `${indent}px` }}
         onClick={() => onSelect(node.agent_id)}
       >
-        {/* Expand/collapse */}
+        {/* 展开/折叠 */}
         {hasChildren ? (
           <button
             onClick={(e) => { e.stopPropagation(); setExpanded(!expanded); }}
-            className="flex-shrink-0 w-5 h-5 flex items-center justify-center text-slate-400"
+            className="flex-shrink-0 w-4 h-4 flex items-center justify-center text-slate-400 hover:text-slate-600"
           >
             {expanded ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
           </button>
         ) : (
-          <span className="w-5" />
+          <span className="w-4" />
         )}
 
-        {/* Status dot */}
-        <div className={`
-          w-2 h-2 rounded-full flex-shrink-0
-          ${isRunning ? 'bg-emerald-400' : ''}
-          ${node.status === 'completed' ? 'bg-slate-400' : ''}
-          ${node.status === 'failed' ? 'bg-rose-400' : ''}
-          ${node.status === 'waiting' ? 'bg-amber-400' : ''}
-          ${node.status === 'created' ? 'bg-slate-200' : ''}
-        `} />
+        {/* 类型图标 */}
+        <div className="flex-shrink-0">
+          {typeConfig.icon}
+        </div>
 
-        {/* Agent name */}
-        <span className="font-sans text-xs truncate flex-1 text-slate-700">
+        {/* Agent名称 */}
+        <span className="text-xs font-medium truncate flex-1 text-slate-700">
           {node.agent_name}
         </span>
 
-        {/* Metrics */}
-        <div className="flex items-center gap-1.5 flex-shrink-0">
-          {(node.iterations ?? 0) > 0 && (
-            <span className="flex items-center gap-1 text-xs text-slate-500 font-sans">
-              <Zap className="w-3 h-3" />
-              {node.iterations}
-            </span>
-          )}
+        {/* 状态文字 */}
+        <span className={`text-[10px] font-medium flex-shrink-0 ${statusConfig.color}`}>
+          {statusConfig.text}
+        </span>
 
-          {!node.parent_agent_id && node.findings_count > 0 && (
-            <span className="flex items-center gap-1 text-xs text-slate-600 font-sans">
-              <Bug className="w-3 h-3" />
-              {node.findings_count}
-            </span>
-          )}
-        </div>
+        {/* 指标 */}
+        {(node.iterations ?? 0) > 0 && (
+          <span className="flex items-center gap-0.5 text-[10px] text-slate-500 flex-shrink-0">
+            <Zap className="w-2.5 h-2.5" />
+            {node.iterations}
+          </span>
+        )}
+
+        {!node.parent_agent_id && node.findings_count > 0 && (
+          <span className="flex items-center gap-0.5 text-[10px] text-rose-500 flex-shrink-0">
+            <Bug className="w-2.5 h-2.5" />
+            {node.findings_count}
+          </span>
+        )}
       </div>
 
-      {/* Children - 灰色细边框包裹 */}
+      {/* 子Agent */}
       {expanded && hasChildren && (
-        <div
-          className="ml-3 mt-1 p-1.5 rounded border border-slate-200"
-          style={{ marginLeft: `${indent + 12}px` }}
-        >
+        <div style={{ marginLeft: `${indent + 10}px` }}>
           {node.children.map((child, index) => (
             <AgentTreeNodeItem
               key={child.agent_id}

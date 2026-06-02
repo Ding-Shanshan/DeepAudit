@@ -34,14 +34,14 @@ router = APIRouter()
 def normalize_path(path: str) -> str:
     """
     统一路径分隔符为正斜杠，确保跨平台兼容性
-    Windows 使用反斜杠 (\)，Unix/Mac 使用正斜杠 (/)
+    Windows 使用反斜杠 (\\)，Unix/Mac 使用正斜杠 (/)
     统一转换为正斜杠以保证一致性
     """
     return path.replace("\\", "/")
 
 
 async def process_zip_task(task_id: str, file_path: str, db_session_factory, user_config: dict = None):
-    """后台归档文件处理任务"""
+    """后台本地文件处理任务"""
     async with db_session_factory() as db:
         task = await db.get(AuditTask, task_id)
         if not task:
@@ -58,7 +58,7 @@ async def process_zip_task(task_id: str, file_path: str, db_session_factory, use
             task_control.cleanup_task(task_id)
             
         except Exception as e:
-            print(f"❌ 归档扫描失败: {e}")
+            print(f"❌ 本地文件扫描失败: {e}")
             task.status = "failed"
             task.completed_at = datetime.now(timezone.utc)
             await db.commit()
@@ -91,7 +91,7 @@ async def scan_zip(
         raise HTTPException(status_code=403, detail="无权操作此项目")
     
     if not file.filename or not is_supported_archive(file.filename):
-        raise HTTPException(status_code=400, detail="请上传 zip、rar、7z、tar、gz、tar.gz 等归档文件")
+        raise HTTPException(status_code=400, detail="请上传 zip、rar、7z、tar、gz、tar.gz 等本地文件")
         
     # Save Uploaded File to temp
     file_id = str(uuid.uuid4())
@@ -109,7 +109,7 @@ async def scan_zip(
                 raise HTTPException(status_code=400, detail="文件大小不能超过2GB")
             buffer.write(chunk)
     
-    # 保存归档文件到持久化存储
+    # 保存本地文件到持久化存储
     await save_project_zip(project_id, file_path, file.filename)
     
     # Parse scan_config if provided
@@ -142,6 +142,9 @@ async def scan_zip(
             'exclude_patterns': parsed_scan_config.get('exclude_patterns', []),
             'rule_set_id': parsed_scan_config.get('rule_set_id'),
             'prompt_template_id': parsed_scan_config.get('prompt_template_id'),
+            'functionWhitelist': parsed_scan_config.get('functionWhitelist', []),
+            'vulnerabilityWhitelist': parsed_scan_config.get('vulnerabilityWhitelist', []),
+            'sanitizerFunctions': parsed_scan_config.get('sanitizerFunctions', []),
         }
 
     # Trigger Background Task - 使用持久化存储的文件路径
@@ -157,6 +160,9 @@ class ScanRequest(BaseModel):
     exclude_patterns: Optional[List[str]] = None
     rule_set_id: Optional[str] = None
     prompt_template_id: Optional[str] = None
+    functionWhitelist: Optional[List[str]] = None
+    vulnerabilityWhitelist: Optional[List[str]] = None
+    sanitizerFunctions: Optional[List[str]] = None
 
 
 @router.post("/scan-stored-zip")
@@ -168,7 +174,7 @@ async def scan_stored_zip(
     current_user: User = Depends(deps.get_current_user),
 ) -> Any:
     """
-    使用已存储的归档文件启动扫描（无需重新上传）
+    使用已存储的本地文件启动扫描（无需重新上传）
     """
     # Verify project exists
     project = await db.get(Project, project_id)
@@ -179,10 +185,10 @@ async def scan_stored_zip(
     if project.owner_id != current_user.id:
         raise HTTPException(status_code=403, detail="无权操作此项目")
     
-    # 检查是否有存储的归档文件
+    # 检查是否有存储的本地文件
     stored_zip_path = await load_project_zip(project_id)
     if not stored_zip_path:
-        raise HTTPException(status_code=400, detail="项目没有已存储的归档文件，请先上传")
+        raise HTTPException(status_code=400, detail="项目没有已存储的本地文件，请先上传")
     
     # Create Task
     task = AuditTask(
@@ -206,6 +212,9 @@ async def scan_stored_zip(
             'exclude_patterns': scan_request.exclude_patterns or [],
             'rule_set_id': scan_request.rule_set_id,
             'prompt_template_id': scan_request.prompt_template_id,
+            'functionWhitelist': scan_request.functionWhitelist or [],
+            'vulnerabilityWhitelist': scan_request.vulnerabilityWhitelist or [],
+            'sanitizerFunctions': scan_request.sanitizerFunctions or [],
         }
 
     # Trigger Background Task

@@ -116,6 +116,9 @@ class ScheduledScanBase(BaseModel):
     prompt_template_id: Optional[str] = None
     exclude_patterns: List[str] = Field(default_factory=list)
     file_paths: List[str] = Field(default_factory=list)
+    functionWhitelist: List[str] = Field(default_factory=list)
+    vulnerabilityWhitelist: List[str] = Field(default_factory=list)
+    sanitizerFunctions: List[str] = Field(default_factory=list)
     is_active: bool = True
 
 

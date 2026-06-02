@@ -3,7 +3,7 @@
  * Matching Project Detail layout style
  */
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useParams, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -24,7 +24,10 @@ import {
   Lightbulb,
   Info,
   Zap,
-  XCircle
+  XCircle,
+  Sparkles,
+  Loader2,
+  ChevronDown,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -34,15 +37,21 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { api } from "@/shared/config/database";
 import type { AuditTask, AuditIssue, AggregatedAuditIssue } from "@/shared/types";
+import { ISSUE_STATUS_LABELS, ISSUE_STATUS_BADGE_CLASS, ISSUE_STATUS } from "@/shared/constants";
 import { toast } from "sonner";
-import { calculateTaskProgress } from "@/shared/utils/utils";
+import { calculateTaskProgress, safeJsonParseArray } from "@/shared/utils/utils";
 import IssueDetailSheet from "@/components/issues/IssueDetailSheet";
 
 // Issues Table Component
-function IssuesTable({ issues, onStatusChange, onViewDetail }: {
+function IssuesTable({ issues, total, hasMore, onLoadMore, loadingMore, onStatusChange, onViewDetail, onAiInvestigate }: {
   issues: AuditIssue[];
+  total: number;
+  hasMore: boolean;
+  onLoadMore: () => void;
+  loadingMore: boolean;
   onStatusChange?: (issue: AuditIssue, newStatus: string) => void;
   onViewDetail?: (issue: AuditIssue) => void;
+  onAiInvestigate?: (issue: AuditIssue) => void;
 }) {
   const getSeverityBadge = (severity: string) => {
     const baseClass = "font-bold uppercase px-2 py-1 rounded text-xs inline-flex justify-center min-w-[56px] text-center";
@@ -53,6 +62,15 @@ function IssuesTable({ issues, onStatusChange, onViewDetail }: {
       case 'low': return <Badge className={`severity-low ${baseClass}`}>低</Badge>;
       default: return <Badge className={`severity-info ${baseClass}`}>信息</Badge>;
     }
+  };
+
+  const getStatusLabel = (status: string) => ISSUE_STATUS_LABELS[status] || status;
+  const getStatusBadgeClass = (status: string) => ISSUE_STATUS_BADGE_CLASS[status] || "bg-warning/15 text-warning dark:text-warning border-warning/25";
+
+  const hasAiSuggestion = (issue: AuditIssue) => !!(issue as any).ai_suggestion;
+  const isAiAnalyzing = (issue: AuditIssue) => {
+    if (!(issue as any).ai_suggestion) return false;
+    try { return JSON.parse((issue as any).ai_suggestion).verdict === "analyzing"; } catch { return false; }
   };
 
   if (issues.length === 0) {
@@ -104,26 +122,45 @@ function IssuesTable({ issues, onStatusChange, onViewDetail }: {
                     {onStatusChange ? (
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                          <Button variant="outline" size="sm" className="text-xs font-sans border h-7">
-                            {issue.status === 'resolved' ? '已解决' :
-                              issue.status === 'false_positive' ? '误报' :
-                                issue.status === 'pending_review' ? '存疑' : '待处理'}
+                          <Button variant="outline" size="sm" className={`text-xs font-sans border h-7 ${getStatusBadgeClass(issue.status)}`}>
+                            {getStatusLabel(issue.status)}
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => onStatusChange(issue, "pending_review")}>存疑</DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => onStatusChange(issue, "resolved")}>已解决</DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => onStatusChange(issue, "false_positive")}>误报</DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => onStatusChange(issue, "open")}>恢复</DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => onStatusChange(issue, ISSUE_STATUS.FIXED)}>已修复</DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => onStatusChange(issue, ISSUE_STATUS.NOT_FIXED)}>未修复</DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => onStatusChange(issue, ISSUE_STATUS.FALSE_POSITIVE)}>误报</DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => onStatusChange(issue, ISSUE_STATUS.SUSPICIOUS)}>存疑</DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
                     ) : (
-                      <span className="text-xs">{issue.status === 'resolved' ? '已解决' :
-                        issue.status === 'false_positive' ? '误报' :
-                          issue.status === 'pending_review' ? '存疑' : '待处理'}</span>
+                      <span className="text-xs">{getStatusLabel(issue.status)}</span>
                     )}
                   </td>
-                  <td className="py-2.5 px-3">
+                  <td className="py-2.5 px-3 flex items-center gap-1">
+                    {/* AI排查按钮 */}
+                    {onAiInvestigate && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className={`h-7 ${hasAiSuggestion(issue)
+                          ? 'text-muted-foreground cursor-not-allowed'
+                          : isAiAnalyzing(issue)
+                            ? 'text-purple-500'
+                            : 'hover:bg-purple-500/12 hover:text-purple-500'}`}
+                        disabled={hasAiSuggestion(issue) && !isAiAnalyzing(issue)}
+                        onClick={() => onAiInvestigate(issue)}
+                      >
+                        {isAiAnalyzing(issue) ? (
+                          <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" />
+                        ) : hasAiSuggestion(issue) ? (
+                          <CheckCircle className="w-3.5 h-3.5 mr-1" />
+                        ) : (
+                          <Sparkles className="w-3.5 h-3.5 mr-1" />
+                        )}
+                        {isAiAnalyzing(issue) ? '排查中' : hasAiSuggestion(issue) ? '已排查' : 'AI排查'}
+                      </Button>
+                    )}
                     <Button
                       variant="ghost"
                       size="sm"
@@ -140,6 +177,30 @@ function IssuesTable({ issues, onStatusChange, onViewDetail }: {
           </tbody>
         </table>
       </div>
+      {/* 分页加载更多 */}
+      {hasMore && (
+        <div className="flex items-center justify-center py-4 border-t border-border">
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-8 text-sm gap-1 border-border hover:bg-primary/10 hover:text-primary"
+            onClick={onLoadMore}
+            disabled={loadingMore}
+          >
+            {loadingMore ? (
+              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+            ) : (
+              <ChevronDown className="w-3.5 h-3.5" />
+            )}
+            {loadingMore ? '加载中...' : `加载更多 (还有 ${total - issues.length} 条)`}
+          </Button>
+        </div>
+      )}
+      {!hasMore && issues.length > 0 && (
+        <div className="flex items-center justify-center py-3 border-t border-border">
+          <span className="text-xs text-muted-foreground">已加载全部 {issues.length} 条问题</span>
+        </div>
+      )}
     </div>
   );
 }
@@ -148,7 +209,10 @@ export default function TaskDetail() {
   const { id } = useParams<{ id: string }>();
   const [task, setTask] = useState<AuditTask | null>(null);
   const [issues, setIssues] = useState<AuditIssue[]>([]);
+  const [totalIssues, setTotalIssues] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const PAGE_SIZE = 20;
     const [cancelling, setCancelling] = useState(false);
     const [nameFilter, setNameFilter] = useState("");
   const [severityFilter, setSeverityFilter] = useState<string>("all");
@@ -185,7 +249,7 @@ export default function TaskDetail() {
         try {
           const [taskData, issuesData] = await Promise.all([
             api.getAuditTaskById(id),
-            api.getAuditIssues(id)
+            api.getAuditIssues(id, { skip: 0, limit: issues.length > PAGE_SIZE ? issues.length : PAGE_SIZE })
           ]);
 
           if (!taskData) {
@@ -210,7 +274,8 @@ export default function TaskDetail() {
             taskData.issues_count !== task.issues_count
           ) {
             setTask(taskData);
-            setIssues(issuesData);
+            setIssues(issuesData.items || []);
+            setTotalIssues(issuesData.total || 0);
 
             if (['completed', 'failed', 'cancelled'].includes(taskData.status)) {
               clearInterval(intervalId);
@@ -255,11 +320,12 @@ export default function TaskDetail() {
       setLoading(true);
       const [taskData, issuesData] = await Promise.all([
         api.getAuditTaskById(id),
-        api.getAuditIssues(id)
+        api.getAuditIssues(id, { skip: 0, limit: PAGE_SIZE })
       ]);
 
       setTask(taskData);
-      setIssues(issuesData);
+      setIssues(issuesData.items || []);
+      setTotalIssues(issuesData.total || 0);
     } catch (error) {
       console.error('Failed to load task detail:', error);
       toast.error("加载任务详情失败");
@@ -268,10 +334,26 @@ export default function TaskDetail() {
     }
   };
 
+  // 加载更多问题
+  const loadMoreIssues = useCallback(async () => {
+    if (!id || loadingMore) return;
+    try {
+      setLoadingMore(true);
+      const issuesData = await api.getAuditIssues(id, { skip: issues.length, limit: PAGE_SIZE });
+      setIssues(prev => [...prev, ...(issuesData.items || [])]);
+      setTotalIssues(issuesData.total || 0);
+    } catch (error) {
+      console.error('Failed to load more issues:', error);
+      toast.error("加载更多问题失败");
+    } finally {
+      setLoadingMore(false);
+    }
+  }, [id, issues.length, loadingMore]);
+
   const filteredIssues = issues.filter(i => {
     if (nameFilter && !i.title.toLowerCase().includes(nameFilter.toLowerCase())) return false;
     if (severityFilter !== "all" && i.severity !== severityFilter) return false;
-    if (statusFilter !== "all" && (i.status || 'open') !== statusFilter) return false;
+    if (statusFilter !== "all" && (i.status || 'not_fixed') !== statusFilter) return false;
     return true;
   });
 
@@ -280,11 +362,82 @@ export default function TaskDetail() {
     try {
       await api.updateAuditIssue(id, issue.id, { status: newStatus } as any);
       toast.success("状态已更新");
-      const issuesData = await api.getAuditIssues(id);
-      setIssues(issuesData);
+      const issuesData = await api.getAuditIssues(id, { skip: 0, limit: issues.length > PAGE_SIZE ? issues.length : PAGE_SIZE });
+      setIssues(issuesData.items || []);
+      setTotalIssues(issuesData.total || 0);
     } catch (error) {
       console.error("Failed to update issue status:", error);
       toast.error("状态更新失败");
+    }
+  };
+
+  const handleAiInvestigate = async (issue: AuditIssue) => {
+    if (!id) return;
+    try {
+      await api.aiInvestigateIssue(id, issue.id);
+      toast.success("AI排查已启动，请稍候刷新查看结果");
+      // 5秒后自动刷新
+      setTimeout(async () => {
+        const issuesData = await api.getAuditIssues(id, { skip: 0, limit: issues.length > PAGE_SIZE ? issues.length : PAGE_SIZE });
+        setIssues(issuesData.items || []);
+        setTotalIssues(issuesData.total || 0);
+      }, 5000);
+    } catch (error: any) {
+      console.error("AI排查启动失败:", error);
+      toast.error(error?.response?.data?.detail || "AI排查启动失败");
+    }
+  };
+
+  // 批量AI排查
+  const [aiBatchInProgress, setAiBatchInProgress] = useState(false);
+  const [aiBatchProgress, setAiBatchProgressData] = useState({ completed: 0, total: 0 });
+
+  const handleBatchAiInvestigate = async () => {
+    if (!id) return;
+    try {
+      const res = await api.aiInvestigateBatch(id);
+      if (!res.batch_id || res.total === 0) {
+        toast.info(res.message || "没有需要排查的问题");
+        return;
+      }
+      setAiBatchInProgress(true);
+      setAiBatchProgressData({ completed: 0, total: res.total });
+      toast.success(`批量AI排查已启动，共 ${res.total} 个问题`);
+
+      // 轮询进度
+      const pollInterval = setInterval(async () => {
+        try {
+          const status = await api.getAiInvestigateBatchStatus(id, res.batch_id);
+          setAiBatchProgressData({ completed: status.completed, total: status.total });
+          if (status.status === "completed") {
+            clearInterval(pollInterval);
+            setAiBatchInProgress(false);
+            toast.success("批量AI排查完成");
+            const issuesData = await api.getAuditIssues(id, { skip: 0, limit: issues.length > PAGE_SIZE ? issues.length : PAGE_SIZE });
+            setIssues(issuesData.items || []);
+            setTotalIssues(issuesData.total || 0);
+          }
+        } catch {
+          // 轮询失败，继续
+        }
+      }, 3000);
+
+      // 60秒超时保护
+      setTimeout(() => {
+        clearInterval(pollInterval);
+        if (aiBatchInProgress) {
+          setAiBatchInProgress(false);
+          // 最终刷新
+          api.getAuditIssues(id, { skip: 0, limit: issues.length > PAGE_SIZE ? issues.length : PAGE_SIZE }).then(res => {
+            setIssues(res.items || []);
+            setTotalIssues(res.total || 0);
+          });
+        }
+      }, 60000);
+    } catch (error: any) {
+      console.error("批量AI排查启动失败:", error);
+      toast.error(error?.response?.data?.detail || "批量AI排查启动失败");
+      setAiBatchInProgress(false);
     }
   };
 
@@ -396,7 +549,7 @@ export default function TaskDetail() {
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-muted-foreground uppercase">项目语言</span>
                   <div className="flex flex-wrap gap-2">
-                    {JSON.parse(task.project.programming_languages).map((lang: string) => (
+                    {safeJsonParseArray(task.project.programming_languages).map((lang: string) => (
                       <Badge key={lang} className="cyber-badge-primary">
                         {lang}
                       </Badge>
@@ -447,7 +600,7 @@ export default function TaskDetail() {
           {task.scan_config && (() => {
             let config: any = {};
             try { config = JSON.parse(task.scan_config); } catch {}
-            const excludePatterns: string[] = config.exclude_patterns || [];
+            const excludePatterns: string[] = Array.isArray(config.exclude_patterns) ? config.exclude_patterns : [];
             return excludePatterns.length > 0 && (
               <div>
                 <div className="flex items-start justify-between">
@@ -506,20 +659,40 @@ export default function TaskDetail() {
               <SelectItem value="all">全部状态</SelectItem>
               {Object.entries(
                 issues.reduce((acc: Record<string, number>, i) => {
-                  const key = i.status || 'open';
+                  const key = i.status || 'not_fixed';
                   acc[key] = (acc[key] || 0) + 1;
                   return acc;
                 }, {})
               ).map(([key, count]) => (
                 <SelectItem key={key} value={key}>
-                  {{ open: '待处理', pending_review: '存疑', resolved: '已解决', false_positive: '误报' }[key] || key} ({count})
+                  {ISSUE_STATUS_LABELS[key] || key} ({count})
                 </SelectItem>
               ))}
             </SelectContent>
           </Select>
+          {/* 批量AI排查按钮 */}
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-8 text-sm border-purple-500/30 hover:bg-purple-500/12 hover:text-purple-500 hover:border-purple-500/50"
+            disabled={aiBatchInProgress}
+            onClick={handleBatchAiInvestigate}
+          >
+            <Sparkles className="w-3.5 h-3.5 mr-1" />
+            {aiBatchInProgress ? `排查中 (${aiBatchProgress.completed}/${aiBatchProgress.total})` : '批量AI排查'}
+          </Button>
         </div>
 
-        <IssuesTable issues={filteredIssues} onStatusChange={handleIssueStatusChange} onViewDetail={handleViewDetail} />
+        <IssuesTable
+          issues={filteredIssues}
+          total={totalIssues}
+          hasMore={filteredIssues.length < totalIssues}
+          onLoadMore={loadMoreIssues}
+          loadingMore={loadingMore}
+          onStatusChange={handleIssueStatusChange}
+          onViewDetail={handleViewDetail}
+          onAiInvestigate={handleAiInvestigate}
+        />
       </div>
 
       {/* Issue detail Sheet */}

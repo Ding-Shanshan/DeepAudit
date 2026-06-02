@@ -326,7 +326,7 @@ export function DatabaseManager() {
               <div className="cyber-card p-4">
                 <p className="stat-label">问题</p>
                 <p className="stat-value text-warning">{stats.total_issues}</p>
-                <p className="text-xs text-muted-foreground mt-1">未解决: {stats.open_issues} | 已解决: {stats.resolved_issues}</p>
+                <p className="text-xs text-muted-foreground mt-1">未解决: {stats.open_issues} | 已处置: {stats.resolved_issues}</p>
               </div>
               <div className="cyber-card p-4">
                 <p className="stat-label">分析记录</p>

@@ -48,6 +48,7 @@ export default function AuditTasks() {
   const [cancellingTaskId, setCancellingTaskId] = useState<string | null>(null);
   const [showTerminal, setShowTerminal] = useState(false);
   const [currentTaskId, setCurrentTaskId] = useState<string | null>(null);
+  const [currentTaskType, setCurrentTaskType] = useState<"repository" | "zip">("repository");
 
   // Agent任务状态
   const [agentTasks, setAgentTasks] = useState<AgentTask[]>([]);
@@ -210,8 +211,9 @@ export default function AuditTasks() {
     }
   };
 
-  const handleFastScanStarted = (taskId: string) => {
+  const handleFastScanStarted = (taskId: string, taskType?: "repository" | "zip") => {
     setCurrentTaskId(taskId);
+    setCurrentTaskType(taskType || "repository");
     setShowTerminal(true);
   };
 
@@ -461,7 +463,7 @@ export default function AuditTasks() {
         open={showTerminal}
         onOpenChange={setShowTerminal}
         taskId={currentTaskId}
-        taskType="repository"
+        taskType={currentTaskType}
       />
 
     </div>

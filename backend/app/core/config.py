@@ -82,7 +82,7 @@ class Settings(BaseSettings):
     
     # ZIP文件存储配置
     ZIP_STORAGE_PATH: str = "./uploads/zip_files"  # ZIP文件存储目录
-    UPLOAD_MAX_SIZE_BYTES: int = 2 * 1024 * 1024 * 1024  # 上传归档最大大小 2GB
+    UPLOAD_MAX_SIZE_BYTES: int = 2 * 1024 * 1024 * 1024  # 上传文件最大大小 2GB
     MAX_ARCHIVE_DEPTH: int = 3  # 嵌套压缩包最大展开层级
     
     # 输出语言配置 - 支持 zh-CN（中文）和 en-US（英文）

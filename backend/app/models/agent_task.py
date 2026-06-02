@@ -312,15 +312,17 @@ class VulnerabilityType:
 
 
 class FindingStatus:
-    """发现状态"""
-    NEW = "new"               # 新发现
-    ANALYZING = "analyzing"   # 分析中
-    VERIFIED = "verified"     # 已验证
+    """发现状态 - 统一审核状态"""
+    NEW = "new"                        # 新发现
+    ANALYZING = "analyzing"            # 正在分析
+    VERIFIED = "verified"              # 已验证
+    NEEDS_REVIEW = "needs_review"      # 待审核
+    FIXED = "fixed"                    # 已修复
+    NOT_FIXED = "not_fixed"            # 未修复（默认）
     FALSE_POSITIVE = "false_positive"  # 误报
-    NEEDS_REVIEW = "needs_review"      # 需要人工审核
-    FIXED = "fixed"           # 已修复
-    WONT_FIX = "wont_fix"     # 不修复
-    DUPLICATE = "duplicate"   # 重复
+    WONT_FIX = "wont_fix"              # 不修复
+    DUPLICATE = "duplicate"            # 重复
+    SUSPICIOUS = "suspicious"           # 存疑
 
 
 class AgentFinding(Base):
@@ -355,7 +357,7 @@ class AgentFinding(Base):
     dataflow_path = Column(JSON, nullable=True)  # 数据流路径
     
     # 验证信息
-    status = Column(String(30), default=FindingStatus.NEW, index=True)
+    status = Column(String(30), default=FindingStatus.NOT_FIXED, server_default="not_fixed", index=True)
     is_verified = Column(Boolean, default=False)
     verification_method = Column(Text, nullable=True)
     verification_result = Column(JSON, nullable=True)
@@ -376,6 +378,7 @@ class AgentFinding(Base):
     # AI 解释
     ai_explanation = Column(Text, nullable=True)
     ai_confidence = Column(Float, nullable=True)  # AI 置信度 0-1
+    ai_suggestion = Column(Text, nullable=True)  # AI排查结果 (JSON)
     
     # XAI (可解释AI)
     xai_what = Column(Text, nullable=True)
@@ -433,7 +436,15 @@ class AgentFinding(Base):
             "file_path": self.file_path,
             "line_start": self.line_start,
             "line_end": self.line_end,
+            "column_start": self.column_start,
+            "column_end": self.column_end,
+            "function_name": self.function_name,
+            "class_name": self.class_name,
             "code_snippet": self.code_snippet,
+            "code_context": self.code_context,
+            "source": self.source,
+            "sink": self.sink,
+            "dataflow_path": self.dataflow_path,
             "status": self.status,
             "is_verified": self.is_verified,
             "has_poc": self.has_poc,

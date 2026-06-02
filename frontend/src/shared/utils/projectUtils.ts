@@ -26,7 +26,7 @@ export function isZipProject(project: Project): boolean {
 export function getSourceTypeLabel(sourceType: ProjectSourceType): string {
   const labels: Record<ProjectSourceType, string> = {
     repository: '远程仓库',
-    zip: '归档上传'
+    zip: '本地上传'
   };
   return labels[sourceType] || '未知';
 }
@@ -70,7 +70,7 @@ export function getScanMethodDescription(project: Project): string {
   if (isRepositoryProject(project)) {
     return `从 ${getRepositoryPlatformLabel(project.repository_type)} 仓库拉取代码`;
   }
-  return '上传本地归档文件进行扫描';
+  return '上传本地文件进行扫描';
 }
 
 /**

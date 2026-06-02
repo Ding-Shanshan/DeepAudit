@@ -1,6 +1,6 @@
 /**
- * 归档文件存储工具
- * 通过后端 API 管理项目归档文件
+ * 本地文件存储工具
+ * 通过后端 API 管理项目本地文件
  */
 
 import { apiClient } from '@/shared/api/serverClient';
@@ -15,20 +15,20 @@ export interface ZipFileMeta {
 export type UploadProgressCallback = (progress: number) => void;
 
 /**
- * 获取项目归档文件信息
+ * 获取项目本地文件信息
  */
 export async function getZipFileInfo(projectId: string): Promise<ZipFileMeta> {
   try {
     const response = await apiClient.get(`/projects/${projectId}/zip`);
     return response.data;
   } catch (error) {
-    console.error('获取归档文件信息失败:', error);
+    console.error('获取本地文件信息失败:', error);
     return { has_file: false };
   }
 }
 
 /**
- * 上传项目归档文件
+ * 上传项目本地文件
  *
  * @param projectId 项目ID
  * @param file 要上传的文件
@@ -72,7 +72,7 @@ export async function uploadZipFile(
       file_size: response.data.file_size,
     };
   } catch (error: any) {
-    console.error('上传归档文件失败:', error);
+    console.error('上传本地文件失败:', error);
     // 优先使用服务器返回的详细错误信息，否则根据错误类型生成提示
     const serverDetail = error.response?.data?.detail;
     const detail = serverDetail
@@ -86,20 +86,20 @@ export async function uploadZipFile(
 }
 
 /**
- * 删除项目归档文件
+ * 删除项目本地文件
  */
 export async function deleteZipFile(projectId: string): Promise<boolean> {
   try {
     await apiClient.delete(`/projects/${projectId}/zip`);
     return true;
   } catch (error) {
-    console.error('删除归档文件失败:', error);
+    console.error('删除本地文件失败:', error);
     return false;
   }
 }
 
 /**
- * 检查项目是否已有归档文件
+ * 检查项目是否已有本地文件
  */
 export async function hasZipFile(projectId: string): Promise<boolean> {
   const info = await getZipFileInfo(projectId);

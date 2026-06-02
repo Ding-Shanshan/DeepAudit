@@ -9,13 +9,16 @@ export async function runRepositoryAudit(params: {
   filePaths?: string[];
   ruleSetId?: string;
   promptTemplateId?: string;
+  functionWhitelist?: string[];
+  vulnerabilityWhitelist?: string[];
+  sanitizerFunctions?: string[];
 }) {
   // 后端会从用户配置中读取 GitHub/GitLab Token，前端不需要传递
-  // The backend handles everything now. 
+  // The backend handles everything now.
   // We just need to create the task (which triggers the scan in our new api implementation)
   // or call a specific scan endpoint.
 
-  // In our new api.createAuditTask implementation (src/shared/api/database.ts), 
+  // In our new api.createAuditTask implementation (src/shared/api/database.ts),
   // it actually calls /projects/{id}/scan which starts the process.
 
   const task = await api.createAuditTask({
@@ -23,6 +26,9 @@ export async function runRepositoryAudit(params: {
     task_type: "repository",
     branch_name: params.branch || "main",
     exclude_patterns: params.exclude || [],
+    functionWhitelist: params.functionWhitelist,
+    vulnerabilityWhitelist: params.vulnerabilityWhitelist,
+    sanitizerFunctions: params.sanitizerFunctions,
     scan_config: {
       file_paths: params.filePaths,
       rule_set_id: params.ruleSetId,

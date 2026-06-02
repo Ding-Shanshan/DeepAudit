@@ -1,19 +1,28 @@
 from typing import Any, List, Optional
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy.orm import selectinload
 from sqlalchemy import func
 from pydantic import BaseModel
 from datetime import datetime, timezone
+import json
+import uuid
 
 from app.api import deps
-from app.db.session import get_db
+from app.db.session import get_db, async_session_factory
 from app.models.audit import AuditTask, AuditIssue
 from app.models.project import Project
 from app.models.user import User
+from app.models.user_config import UserConfig
 from app.services.scanner import task_control
 from app.services.quick_scan import calculate_quality_score
+from app.services.ai_investigation import (
+    execute_single_investigation,
+    execute_batch_investigation,
+    get_batch_progress,
+    set_batch_progress,
+)
 
 router = APIRouter()
 
@@ -67,6 +76,12 @@ class AuditIssueSchema(BaseModel):
     status: str
     resolved_by: Optional[str] = None
     resolved_at: Optional[datetime] = None
+    ai_suggestion: Optional[str] = None
+    # 数据流路径字段
+    source: Optional[str] = None
+    sink: Optional[str] = None
+    dataflow_path: Optional[str] = None  # JSON string of DataFlowStep[]
+    code_context: Optional[str] = None
     created_at: datetime
 
     class Config:
@@ -75,6 +90,16 @@ class AuditIssueSchema(BaseModel):
 
 class IssueUpdateSchema(BaseModel):
     status: Optional[str] = None
+
+
+class PaginatedIssuesResponse(BaseModel):
+    total: int
+    items: List[AuditIssueSchema]
+    skip: int
+    limit: int
+
+    class Config:
+        from_attributes = True
     
 
 class ProjectSchema(BaseModel):
@@ -206,14 +231,16 @@ async def cancel_task(
     return {"message": "任务已取消", "task_id": id}
 
 
-@router.get("/{id}/issues", response_model=List[AuditIssueSchema])
+@router.get("/{id}/issues", response_model=PaginatedIssuesResponse)
 async def read_task_issues(
     id: str,
+    skip: int = Query(0, ge=0, description="跳过的记录数"),
+    limit: int = Query(20, ge=1, le=200, description="每页记录数"),
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(deps.get_current_user),
 ) -> Any:
     """
-    Get issues for a specific task.
+    Get issues for a specific task (paginated).
     """
     # 先检查任务是否存在且属于当前用户
     task_result = await db.execute(
@@ -222,21 +249,40 @@ async def read_task_issues(
     task = task_result.scalars().first()
     if not task:
         raise HTTPException(status_code=404, detail="任务不存在")
-    
+
     # 检查权限：只有任务创建者可以查看问题
     if task.created_by != current_user.id:
         raise HTTPException(status_code=403, detail="无权查看此任务的问题")
-    
+
+    # 查询总数
+    count_result = await db.execute(
+        select(func.count(AuditIssue.id)).where(AuditIssue.task_id == id)
+    )
+    total = count_result.scalar() or 0
+
+    # 分页查询
     result = await db.execute(
         select(AuditIssue)
         .where(AuditIssue.task_id == id)
         .order_by(
-            # 按严重程度排序
             AuditIssue.severity.desc(),
             AuditIssue.created_at.desc()
         )
+        .offset(skip)
+        .limit(limit)
     )
-    return result.scalars().all()
+    items = result.scalars().all()
+
+    # 显式转换为 Pydantic schema，避免 from_attributes 序列化失败
+    # (Pydantic v2 在嵌套 dict 中无法自动转换 SQLAlchemy ORM 对象)
+    schema_items = [AuditIssueSchema.model_validate(item) for item in items]
+
+    return PaginatedIssuesResponse(
+        total=total,
+        items=schema_items,
+        skip=skip,
+        limit=limit,
+    )
 
 
 @router.patch("/{task_id}/issues/{issue_id}", response_model=AuditIssueSchema)
@@ -259,10 +305,10 @@ async def update_issue(
         raise HTTPException(status_code=404, detail="问题不存在")
     
     if issue_update.status:
-        if issue_update.status not in {"open", "pending_review", "resolved", "false_positive"}:
+        if issue_update.status not in {"fixed", "not_fixed", "false_positive", "suspicious"}:
             raise HTTPException(status_code=400, detail="不支持的问题状态")
         issue.status = issue_update.status
-        if issue_update.status == "resolved":
+        if issue_update.status == "fixed":
             issue.resolved_by = current_user.id
             issue.resolved_at = datetime.now(timezone.utc)
         else:
@@ -271,10 +317,158 @@ async def update_issue(
     
     await db.commit()
     await db.refresh(issue)
-    return issue
+    return AuditIssueSchema.model_validate(issue)
 
 
-@router.get("/{id}/report/pdf")
+# ============ AI排查相关端点 ============
+
+async def _get_user_config(db: AsyncSession, user_id: str) -> Optional[dict]:
+    """获取用户 LLM 配置"""
+    if not user_id:
+        return None
+    try:
+        from app.api.v1.endpoints.config import decrypt_config, SENSITIVE_LLM_FIELDS, SENSITIVE_OTHER_FIELDS
+        result = await db.execute(select(UserConfig).where(UserConfig.user_id == user_id))
+        config = result.scalar_one_or_none()
+        if config and config.llm_config:
+            user_llm_config = json.loads(config.llm_config) if config.llm_config else {}
+            user_other_config = json.loads(config.other_config) if config.other_config else {}
+            user_llm_config = decrypt_config(user_llm_config, SENSITIVE_LLM_FIELDS)
+            user_other_config = decrypt_config(user_other_config, SENSITIVE_OTHER_FIELDS)
+            return {"llmConfig": user_llm_config, "otherConfig": user_other_config}
+    except Exception as e:
+        import logging
+        logging.getLogger(__name__).warning(f"获取用户配置失败: {e}")
+    return None
+
+
+@router.post("/{task_id}/issues/{issue_id}/ai-investigate")
+async def ai_investigate_issue(
+    task_id: str,
+    issue_id: str,
+    background_tasks: BackgroundTasks,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(deps.get_current_user),
+) -> Any:
+    """
+    对单个 AuditIssue 进行 AI 排查
+    """
+    # 验证问题存在
+    result = await db.execute(
+        select(AuditIssue).where(AuditIssue.id == issue_id, AuditIssue.task_id == task_id)
+    )
+    issue = result.scalars().first()
+    if not issue:
+        raise HTTPException(status_code=404, detail="问题不存在")
+
+    # 验证权限
+    task = await db.get(AuditTask, task_id)
+    if not task:
+        raise HTTPException(status_code=404, detail="任务不存在")
+    project = await db.get(Project, task.project_id)
+    if not project or project.owner_id != current_user.id:
+        raise HTTPException(status_code=403, detail="无权操作")
+
+    # 标记为排查中
+    issue.ai_suggestion = json.dumps({
+        "verdict": "analyzing",
+        "analyzed_at": datetime.now(timezone.utc).isoformat(),
+    }, ensure_ascii=False)
+    await db.commit()
+
+    # 获取用户配置
+    user_config = await _get_user_config(db, current_user.id)
+
+    # 启动后台任务
+    background_tasks.add_task(
+        execute_single_investigation,
+        issue_id,
+        "audit",
+        user_config,
+    )
+
+    return {"message": "AI排查已启动", "issue_id": issue_id, "status": "analyzing"}
+
+
+@router.post("/{task_id}/issues/ai-investigate-batch")
+async def ai_investigate_batch(
+    task_id: str,
+    background_tasks: BackgroundTasks,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(deps.get_current_user),
+) -> Any:
+    """
+    对任务下所有未排查的 AuditIssue 进行批量 AI 排查
+    """
+    # 验证任务和权限
+    task = await db.get(AuditTask, task_id)
+    if not task:
+        raise HTTPException(status_code=404, detail="任务不存在")
+    project = await db.get(Project, task.project_id)
+    if not project or project.owner_id != current_user.id:
+        raise HTTPException(status_code=403, detail="无权操作")
+
+    # 获取未排查的问题
+    result = await db.execute(
+        select(AuditIssue).where(
+            AuditIssue.task_id == task_id,
+            (AuditIssue.ai_suggestion == None) | (AuditIssue.ai_suggestion == "")
+        )
+    )
+    issues = result.scalars().all()
+
+    if not issues:
+        return {"message": "没有需要排查的问题", "batch_id": None, "total": 0}
+
+    # 标记所有为排查中
+    for issue in issues:
+        issue.ai_suggestion = json.dumps({
+            "verdict": "analyzing",
+            "analyzed_at": datetime.now(timezone.utc).isoformat(),
+        }, ensure_ascii=False)
+    await db.commit()
+
+    batch_id = str(uuid.uuid4())[:8]
+    issue_ids = [i.id for i in issues]
+    issue_types = ["audit"] * len(issues)
+
+    # 初始化进度
+    set_batch_progress(batch_id, {
+        "total": len(issues),
+        "completed": 0,
+        "current_issue": "",
+        "status": "running",
+    })
+
+    user_config = await _get_user_config(db, current_user.id)
+
+    background_tasks.add_task(
+        execute_batch_investigation,
+        batch_id,
+        issue_ids,
+        issue_types,
+        user_config,
+    )
+
+    return {
+        "message": "批量AI排查已启动",
+        "batch_id": batch_id,
+        "total": len(issues),
+    }
+
+
+@router.get("/{task_id}/issues/ai-investigate-batch/{batch_id}/status")
+async def get_batch_status(
+    task_id: str,
+    batch_id: str,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(deps.get_current_user),
+) -> Any:
+    """查询批量 AI 排查进度"""
+    progress = get_batch_progress(batch_id)
+    if not progress:
+        raise HTTPException(status_code=404, detail="批量排查任务不存在")
+    return progress
 async def export_task_report_pdf(
     id: str,
     db: AsyncSession = Depends(get_db),

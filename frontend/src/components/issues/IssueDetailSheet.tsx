@@ -199,12 +199,16 @@ export default function IssueDetailSheet({
   const fixDesc = (agent as any)?.fix_description;
   const references: Array<{ url?: string; title?: string; cwe?: string }> | null = (agent as any)?.references;
   const aiConfidence = (agent as any)?.ai_confidence ?? (agent as any)?.confidence;
-  const codeContext = agent?.code_context;
+  const codeContext = agent?.code_context || (audit as any)?.code_context;
   const functionName = agent?.function_name;
   const className = agent?.class_name;
-  const dataflowPath = agent?.dataflow_path;
-  const source = agent?.source;
-  const sink = agent?.sink;
+  // 数据流路径：Agent finding 直接有 DataFlowStep[]，Audit issue 的 dataflow_path 是 JSON 字符串
+  const source = agent?.source || (audit as any)?.source;
+  const sink = agent?.sink || (audit as any)?.sink;
+  const dataflowPath = agent?.dataflow_path
+    || ((audit as any)?.dataflow_path
+      ? (() => { try { return JSON.parse((audit as any).dataflow_path); } catch { return null; } })()
+      : null);
   const verificationMethod = (agent as any)?.verification_method;
   const cvssScore = (agent as any)?.cvss_score;
   const cvssVector = (agent as any)?.cvss_vector;
@@ -320,8 +324,8 @@ export default function IssueDetailSheet({
             </SectionCard>
           )}
 
-          {/* 数据流路径 (Agent only) */}
-          {isAgent && (source || sink || dataflowPath) && (
+          {/* 数据流路径 */}
+          {(source || sink || dataflowPath) && (
             <SectionCard icon={ChevronRight} title="数据流路径" accentColor="text-violet-400">
               <DataFlowPathDiagram
                 dataflowPath={dataflowPath}

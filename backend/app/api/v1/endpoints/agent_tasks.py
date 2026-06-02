@@ -32,6 +32,7 @@ from app.models.agent_task import (
 from app.models.project import Project
 from app.models.user import User
 from app.models.user_config import UserConfig
+from app.services.scanner import merge_whitelist_config, _is_whitelisted_finding
 from app.services.agent.event_manager import EventManager
 from app.services.agent.streaming import StreamHandler, StreamEvent, StreamEventType
 from app.services.git_ssh_service import GitSSHOperations
@@ -81,6 +82,11 @@ class AgentTaskCreate(BaseModel):
     # Agent 配置
     max_iterations: int = Field(50, ge=1, le=200, description="最大迭代次数")
     timeout_seconds: int = Field(1800, ge=60, le=7200, description="超时时间（秒）")
+
+    # 白名单与过滤配置
+    functionWhitelist: Optional[List[str]] = Field(None, description="函数白名单")
+    vulnerabilityWhitelist: Optional[List[str]] = Field(None, description="缺陷白名单")
+    sanitizerFunctions: Optional[List[str]] = Field(None, description="特有过滤函数")
 
 
 class AgentTaskResponse(BaseModel):
@@ -137,6 +143,11 @@ class AgentTaskResponse(BaseModel):
     verification_level: Optional[str] = None
     exclude_patterns: Optional[List[str]] = None
     target_files: Optional[List[str]] = None
+
+    # 白名单与过滤配置
+    functionWhitelist: Optional[List[str]] = None
+    vulnerabilityWhitelist: Optional[List[str]] = None
+    sanitizerFunctions: Optional[List[str]] = None
     
     # 错误信息
     error_message: Optional[str] = None
@@ -537,6 +548,20 @@ async def _execute_agent_task(task_id: str):
                 for i, f in enumerate(findings[:5]):  # Log first 5
                     if isinstance(f, dict):
                         logger.debug(f"[AgentTask] Finding {i+1}: {f.get('title', 'N/A')[:50]} - {f.get('severity', 'N/A')}")
+
+                # 应用白名单过滤：合并 per-task 和全局白名单
+                try:
+                    agent_config_data = json.loads(task.agent_config) if task.agent_config else {}
+                    task_whitelist = {k: v for k in ("functionWhitelist", "vulnerabilityWhitelist", "sanitizerFunctions")
+                                      if agent_config_data.get(k)}
+                    global_other_config = (user_config or {}).get("otherConfig", {})
+                    merged_whitelist = merge_whitelist_config(global_other_config, task_whitelist)
+                    pre_filter_count = len(findings)
+                    findings = [f for f in findings if not _is_whitelisted_finding(f, merged_whitelist)]
+                    if pre_filter_count != len(findings):
+                        logger.info(f"[AgentTask] Task {task_id}: whitelist filtered {pre_filter_count - len(findings)} findings")
+                except Exception as wl_err:
+                    logger.warning(f"[AgentTask] Task {task_id}: whitelist filter failed, skipping: {wl_err}")
 
                 # 🔥 v2.1: 传递 project_root 用于文件路径验证
                 saved_count = await _save_findings(db, task_id, findings, project_root=project_root)
@@ -1595,6 +1620,11 @@ async def create_agent_task(
         max_iterations=request.max_iterations or 50,
         timeout_seconds=request.timeout_seconds or 1800,
         created_by=current_user.id,
+        agent_config=json.dumps({
+            "functionWhitelist": request.functionWhitelist or [],
+            "vulnerabilityWhitelist": request.vulnerabilityWhitelist or [],
+            "sanitizerFunctions": request.sanitizerFunctions or [],
+        }),
     )
     
     db.add(task)
@@ -1771,6 +1801,9 @@ async def get_agent_task(
             "verification_level": task.verification_level,
             "exclude_patterns": task.exclude_patterns,
             "target_files": task.target_files,
+            "functionWhitelist": (json.loads(task.agent_config) if task.agent_config else {}).get("functionWhitelist"),
+            "vulnerabilityWhitelist": (json.loads(task.agent_config) if task.agent_config else {}).get("vulnerabilityWhitelist"),
+            "sanitizerFunctions": (json.loads(task.agent_config) if task.agent_config else {}).get("sanitizerFunctions"),
         }
         
         return AgentTaskResponse(**response_data)
@@ -2200,8 +2233,9 @@ async def list_agent_findings(
     
     result = await db.execute(query)
     findings = result.scalars().all()
-    
-    return findings
+
+    # 显式转换为 Pydantic schema，避免 from_attributes 序列化失败
+    return [AgentFindingResponse.model_validate(f) for f in findings]
 
 
 @router.get("/{task_id}/summary", response_model=TaskSummaryResponse)
@@ -2268,6 +2302,69 @@ async def get_task_summary(
         duration_seconds=duration,
         phases_completed=phases,
     )
+
+
+@router.post("/{task_id}/findings/{finding_id}/ai-investigate")
+async def ai_investigate_finding(
+    task_id: str,
+    finding_id: str,
+    background_tasks: BackgroundTasks,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(deps.get_current_user),
+) -> Any:
+    """
+    对单个 AgentFinding 进行 AI 排查
+    """
+    # 验证发现存在
+    result = await db.execute(
+        select(AgentFinding).where(AgentFinding.id == finding_id, AgentFinding.task_id == task_id)
+    )
+    finding = result.scalars().first()
+    if not finding:
+        raise HTTPException(status_code=404, detail="发现不存在")
+
+    # 验证权限
+    task = await db.get(AgentTask, task_id)
+    if not task:
+        raise HTTPException(status_code=404, detail="任务不存在")
+    project = await db.get(Project, task.project_id)
+    if not project or project.owner_id != current_user.id:
+        raise HTTPException(status_code=403, detail="无权操作")
+
+    # 标记为排查中
+    finding.ai_suggestion = json.dumps({
+        "verdict": "analyzing",
+        "analyzed_at": datetime.now(timezone.utc).isoformat(),
+    }, ensure_ascii=False)
+    await db.commit()
+
+    # 获取用户 LLM 配置
+    user_config = None
+    try:
+        from app.api.v1.endpoints.config import decrypt_config, SENSITIVE_LLM_FIELDS, SENSITIVE_OTHER_FIELDS
+        config_result = await db.execute(
+            select(UserConfig).where(UserConfig.user_id == current_user.id)
+        )
+        config = config_result.scalar_one_or_none()
+        if config and config.llm_config:
+            user_llm_config = json.loads(config.llm_config) if config.llm_config else {}
+            user_other_config = json.loads(config.other_config) if config.other_config else {}
+            user_llm_config = decrypt_config(user_llm_config, SENSITIVE_LLM_FIELDS)
+            user_other_config = decrypt_config(user_other_config, SENSITIVE_OTHER_FIELDS)
+            user_config = {"llmConfig": user_llm_config, "otherConfig": user_other_config}
+    except Exception as e:
+        logger.warning(f"获取用户配置失败: {e}")
+
+    # 启动后台任务
+    from app.services.ai_investigation import execute_single_investigation
+    background_tasks.add_task(
+        execute_single_investigation,
+        finding_id,
+        "agent",
+        user_config,
+    )
+
+    return {"message": "AI排查已启动", "finding_id": finding_id, "status": "analyzing"}
 
 
 @router.patch("/{task_id}/findings/{finding_id}")

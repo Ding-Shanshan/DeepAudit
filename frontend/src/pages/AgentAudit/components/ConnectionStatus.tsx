@@ -1,6 +1,6 @@
 /**
- * Connection Status Indicator
- * Shows real-time connection state with reconnection progress
+ * 连接状态指示器
+ * 显示实时连接状态，全中文标签
  */
 
 import { Wifi, WifiOff, RefreshCw, AlertCircle } from 'lucide-react';
@@ -23,35 +23,35 @@ const STATUS_CONFIG: Record<ConnectionState, {
 }> = {
   disconnected: {
     icon: WifiOff,
-    label: 'Disconnected',
-    color: 'text-muted-foreground',
-    bgColor: 'bg-muted/30',
+    label: '已断开',
+    color: 'text-slate-400',
+    bgColor: 'bg-slate-400/10',
   },
   connecting: {
     icon: RefreshCw,
-    label: 'Connecting',
-    color: 'text-yellow-400',
-    bgColor: 'bg-yellow-400/10',
+    label: '连接中',
+    color: 'text-amber-500',
+    bgColor: 'bg-amber-400/10',
     animate: true,
   },
   connected: {
     icon: Wifi,
-    label: 'Live',
-    color: 'text-green-400',
-    bgColor: 'bg-green-400/10',
+    label: '实时',
+    color: 'text-emerald-500',
+    bgColor: 'bg-emerald-400/10',
   },
   reconnecting: {
     icon: RefreshCw,
-    label: 'Reconnecting',
-    color: 'text-yellow-400',
-    bgColor: 'bg-yellow-400/10',
+    label: '重连中',
+    color: 'text-amber-500',
+    bgColor: 'bg-amber-400/10',
     animate: true,
   },
   failed: {
     icon: AlertCircle,
-    label: 'Connection Failed',
-    color: 'text-red-400',
-    bgColor: 'bg-red-400/10',
+    label: '连接失败',
+    color: 'text-rose-500',
+    bgColor: 'bg-rose-400/10',
   },
 };
 
@@ -84,7 +84,7 @@ export function ConnectionStatus({
       </div>
 
       {state === 'connected' && (
-        <span className="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse" />
+        <span className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse" />
       )}
     </div>
   );

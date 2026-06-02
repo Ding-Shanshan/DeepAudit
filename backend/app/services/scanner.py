@@ -13,6 +13,7 @@ from typing import List, Dict, Any, Optional
 from datetime import datetime, timezone
 from urllib.parse import urlparse, quote
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.future import select
 
 from app.utils.repo_utils import parse_repository_url
 from app.models.audit import AuditTask, AuditIssue
@@ -302,6 +303,7 @@ def _is_whitelisted_finding(
         str(finding.get("rule_id", "")).lower(),
         str(finding.get("title", "")).lower(),
         str(finding.get("issue_type", "")).lower(),
+        str(finding.get("vulnerability_type", "")).lower(),  # Agent finding field
         str(finding.get("code_snippet", "")).lower(),
     ]
     if vuln_whitelist and any(item in hay for item in vuln_whitelist for hay in haystacks):
@@ -313,6 +315,21 @@ def _is_whitelisted_finding(
     if sanitizer_functions and any(item in snippet for item in sanitizer_functions):
         return True
     return False
+
+
+def merge_whitelist_config(
+    global_config: Dict[str, Any],
+    task_whitelist: Optional[Dict[str, Any]] = None,
+) -> Dict[str, Any]:
+    """合并 per-task 白名单与全局配置白名单（union, deduped）"""
+    merged = global_config.copy()
+    if not task_whitelist:
+        return merged
+    for key in ("functionWhitelist", "vulnerabilityWhitelist", "sanitizerFunctions"):
+        global_list = merged.get(key, []) or []
+        task_list = task_whitelist.get(key, []) or []
+        merged[key] = list(set(global_list + task_list))
+    return merged
 
 
 async def materialize_repository_workspace(
@@ -397,23 +414,35 @@ async def scan_local_workspace(
     analysis_config = get_analysis_config(user_config)
     other_config = (user_config or {}).get("otherConfig", {})
 
+    # 合并 per-task 白名单与全局白名单
+    task_whitelist = {k: scan_config[k] for k in ("functionWhitelist", "vulnerabilityWhitelist", "sanitizerFunctions")
+                      if scan_config.get(k)}
+    other_config = merge_whitelist_config(other_config, task_whitelist)
+
     source_files = collect_source_files(
         workspace_dir,
         exclude_patterns=exclude_patterns,
         target_files=target_files,
         max_file_size=settings.MAX_FILE_SIZE_BYTES,
     )
-    if analysis_config["max_analyze_files"] > 0:
-        source_files = source_files[: analysis_config["max_analyze_files"]]
+    # 快速审计仅使用规则引擎（Semgrep + 正则），无 LLM 开销，不截断文件数
+    # max_analyze_files 仅用于限制 LLM 分析的文件数量，对规则扫描无效
 
     task.total_files = len(source_files)
+    task.scanned_files = 0  # 初始为0，扫描过程中逐步更新
+    task.status = "running"
     await db.commit()
 
+    # Phase 1: 规则扫描（Semgrep + 正则）
     semgrep_findings = run_semgrep_scan(
         workspace_dir,
         source_files,
         exclude_patterns=exclude_patterns,
     )
+    # Semgrep扫描完成，更新进度到50%
+    task.scanned_files = len(source_files) // 2
+    await db.commit()
+
     pattern_findings = run_pattern_scan(source_files)
     findings = deduplicate_findings(semgrep_findings + pattern_findings)
 
@@ -441,7 +470,11 @@ async def scan_local_workspace(
                     },
                     ensure_ascii=False,
                 ),
-                status="open",
+                source=finding.get("source"),
+                sink=finding.get("sink"),
+                dataflow_path=json.dumps(finding["dataflow_path"], ensure_ascii=False) if finding.get("dataflow_path") else None,
+                code_context=finding.get("code_context"),
+                status="not_fixed",
             )
         )
 

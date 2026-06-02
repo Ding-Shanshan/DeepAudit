@@ -55,11 +55,13 @@ async function mapWithConcurrency<T, R>(
 
 async function fetchAuditIssues(taskId: string) {
   const res = await withTimeout(
-    apiClient.get(`/tasks/${taskId}/issues`),
+    apiClient.get(`/tasks/${taskId}/issues`, { params: { skip: 0, limit: 200 } }),
     PROJECT_DETAIL_REQUEST_TIMEOUT_MS,
     `GET /tasks/${taskId}/issues`
   );
-  return res.data;
+  const data = res.data;
+  // Handle both old (array) and new (paginated object) response formats
+  return Array.isArray(data) ? data : (data.items || []);
 }
 
 async function fetchAgentFindings(taskId: string): Promise<AgentFinding[]> {

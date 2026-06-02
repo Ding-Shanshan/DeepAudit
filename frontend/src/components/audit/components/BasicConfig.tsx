@@ -10,6 +10,7 @@ import {
 import { GitBranch, Zap, Info } from "lucide-react";
 import type { Project, CreateAuditTaskForm } from "@/shared/types";
 import { isRepositoryProject, isZipProject, getRepositoryPlatformLabel } from "@/shared/utils/projectUtils";
+import { safeJsonParseArray } from "@/shared/utils/utils";
 import ZipFileSection from "./ZipFileSection";
 import type { ZipFileMeta } from "@/shared/utils/zipStorage";
 
@@ -117,9 +118,7 @@ function ProjectInfoCard({ project }: { project: Project }) {
   let languages: string[] = [];
 
   try {
-    if (project.programming_languages) {
-      languages = JSON.parse(project.programming_languages);
-    }
+    languages = safeJsonParseArray(project.programming_languages);
   } catch {
     // ignore
   }
@@ -133,7 +132,7 @@ function ProjectInfoCard({ project }: { project: Project }) {
             选中项目：{project.name}
           </p>
           <div className="text-blue-800 space-y-1 font-bold">
-            <p>项目类型：{isRepo ? "远程仓库" : "归档上传"}</p>
+            <p>项目类型：{isRepo ? "远程仓库" : "本地上传"}</p>
             {project.description && <p>描述：{project.description}</p>}
             {isRepo && (
               <>

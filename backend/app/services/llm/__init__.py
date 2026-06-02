@@ -18,6 +18,7 @@ from .types import (
     LLMResponse,
     LLMUsage,
     LLMError,
+    ToolCall,
 )
 from .prompt_cache import (
     PromptCacheManager,
@@ -40,6 +41,7 @@ __all__ = [
     "LLMResponse",
     "LLMUsage",
     "LLMError",
+    "ToolCall",
     # Prompt Cache
     "PromptCacheManager",
     "CacheConfig",

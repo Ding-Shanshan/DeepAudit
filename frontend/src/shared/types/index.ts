@@ -91,12 +91,17 @@ export interface AuditIssue {
   suggestion?: string;
   code_snippet?: string;
   ai_explanation?: string;
-  status: 'open' | 'pending_review' | 'resolved' | 'false_positive';
+  status: 'fixed' | 'not_fixed' | 'false_positive' | 'suspicious';
   resolved_by?: string;
   resolved_at?: string;
   created_at: string;
   task?: AuditTask;
   resolver?: Profile;
+  ai_suggestion?: string;  // AI排查结果 (JSON)
+  source?: string | null;  // 污点源描述
+  sink?: string | null;    // 危险操作描述
+  dataflow_path?: string | null;  // JSON string of DataFlowStep[]
+  code_context?: string | null;   // 上下文代码
 }
 
 export interface InstantAnalysis {
@@ -146,6 +151,7 @@ export type LatestProblem = {
   line_end?: number | null;
   category?: string | null;
   status?: string;
+  ai_suggestion?: string | null;  // AI排查结果 (JSON)
 };
 
 export type UnifiedTask =
@@ -170,6 +176,9 @@ export interface CreateAuditTaskForm {
   exclude_patterns: string[];
   rule_set_id?: string;
   prompt_template_id?: string;
+  functionWhitelist?: string[];
+  vulnerabilityWhitelist?: string[];
+  sanitizerFunctions?: string[];
   scan_config: {
     include_tests?: boolean;
     include_docs?: boolean;

@@ -35,6 +35,7 @@ import { api } from "@/shared/config/database";
 import { validateZipFile } from "@/features/projects/services";
 import type { Project, CreateProjectForm } from "@/shared/types";
 import { uploadZipFile, getZipFileInfo, type ZipFileMeta } from "@/shared/utils/zipStorage";
+import { safeJsonParseArray } from "@/shared/utils/utils";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
 import CreateTaskDialog from "@/components/audit/CreateTaskDialog";
@@ -79,7 +80,7 @@ export default function Projects() {
 
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
-  // 编辑对话框中的归档文件状态
+  // 编辑对话框中的本地文件状态
   const [editZipInfo, setEditZipInfo] = useState<ZipFileMeta | null>(null);
   const [editZipFile, setEditZipFile] = useState<File | null>(null);
   const [loadingEditZipInfo, setLoadingEditZipInfo] = useState(false);
@@ -194,7 +195,7 @@ export default function Projects() {
 
   const handleUploadAndCreate = async () => {
     if (!selectedFile) {
-      toast.error("请先选择归档文件");
+      toast.error("请先选择本地文件");
       return;
     }
 
@@ -215,14 +216,14 @@ export default function Projects() {
         repository_url: undefined
       } as any);
 
-      // 第二步：上传归档文件（使用真实的上传进度）
+      // 第二步：上传本地文件（使用真实的上传进度）
       try {
         await uploadZipFile(project.id, selectedFile, (percent) => {
           setUploadProgress(percent);
         });
 
         import('@/shared/utils/logger').then(({ logger }) => {
-          logger.logUserAction('上传归档文件创建项目', {
+          logger.logUserAction('上传本地文件创建项目', {
             projectName: project.name,
             fileName: selectedFile.name,
             fileSize: selectedFile.size,
@@ -230,14 +231,14 @@ export default function Projects() {
         });
 
         toast.success(`项目 "${project.name}" 已创建`, {
-          description: '归档文件已保存，您可以启动代码审计',
+          description: '本地文件已保存，您可以启动代码审计',
           duration: 4000
         });
       } catch (uploadError: any) {
         // 上传失败但项目已创建，提示用户可以在编辑中重新上传
-        console.error('上传归档文件失败:', uploadError);
-        toast.warning(`项目 "${project.name}" 已创建，但归档文件上传失败`, {
-          description: uploadError.message || '请在项目编辑中重新上传归档文件',
+        console.error('上传本地文件失败:', uploadError);
+        toast.warning(`项目 "${project.name}" 已创建，但本地文件上传失败`, {
+          description: uploadError.message || '请在项目编辑中重新上传本地文件',
           duration: 6000
         });
       }
@@ -263,7 +264,7 @@ export default function Projects() {
   const filteredProjects = projects.filter(project => {
     if (searchTerm && !project.name.toLowerCase().includes(searchTerm.toLowerCase()) && !project.description?.toLowerCase().includes(searchTerm.toLowerCase())) return false;
     if (filterLang !== 'all' && project.programming_languages) {
-      const langs = JSON.parse(project.programming_languages).map((l: string) => l.toLowerCase());
+      const langs = safeJsonParseArray(project.programming_languages).map((l: string) => l.toLowerCase());
       if (!langs.includes(filterLang.toLowerCase())) return false;
     } else if (filterLang !== 'all' && !project.programming_languages) {
       return false;
@@ -285,7 +286,7 @@ export default function Projects() {
       repository_url: project.repository_url || "",
       repository_type: project.repository_type || "github",
       default_branch: project.default_branch || "main",
-      programming_languages: project.programming_languages ? JSON.parse(project.programming_languages) : []
+      programming_languages: safeJsonParseArray(project.programming_languages)
     });
     setEditZipFile(null);
     setEditZipInfo(null);
@@ -297,7 +298,7 @@ export default function Projects() {
         const zipInfo = await getZipFileInfo(project.id);
         setEditZipInfo(zipInfo);
       } catch (error) {
-        console.error('加载归档文件信息失败:', error);
+        console.error('加载本地文件信息失败:', error);
       } finally {
         setLoadingEditZipInfo(false);
       }
@@ -319,10 +320,10 @@ export default function Projects() {
         try {
           const result = await uploadZipFile(projectToEdit.id, editZipFile);
           if (result.success) {
-            toast.success(`归档文件已更新: ${result.original_filename}`);
+            toast.success(`本地文件已更新: ${result.original_filename}`);
           }
         } catch (uploadError: any) {
-          toast.error(`归档文件上传失败: ${uploadError.message || '未知错误'}`);
+          toast.error(`本地文件上传失败: ${uploadError.message || '未知错误'}`);
         }
       }
 
@@ -738,7 +739,7 @@ export default function Projects() {
                         <td className="py-2.5 px-3">
                           <div className="flex flex-wrap gap-1">
                             {project.programming_languages ? (
-                              JSON.parse(project.programming_languages).slice(0, 3).map((lang: string) => (
+                              safeJsonParseArray(project.programming_languages).slice(0, 3).map((lang: string) => (
                                 <span key={lang} className="text-xs font-sans font-bold border border-primary/30 px-1.5 py-0.5 bg-primary/10 text-primary rounded">
                                   {lang.toUpperCase()}
                                 </span>
@@ -746,9 +747,9 @@ export default function Projects() {
                             ) : (
                               <span className="text-muted-foreground">-</span>
                             )}
-                            {project.programming_languages && JSON.parse(project.programming_languages).length > 3 && (
+                            {project.programming_languages && safeJsonParseArray(project.programming_languages).length > 3 && (
                               <span className="text-xs font-sans font-bold border border-border px-1.5 py-0.5 bg-muted text-muted-foreground rounded">
-                                +{JSON.parse(project.programming_languages).length - 3}
+                                +{safeJsonParseArray(project.programming_languages).length - 3}
                               </span>
                             )}
                           </div>
@@ -818,7 +819,7 @@ export default function Projects() {
               编辑项目配置
               {projectToEdit && (
                 <Badge className={`ml-2 ${editForm.source_type === 'repository' ? 'cyber-badge-info' : 'cyber-badge-warning'}`}>
-                  {editForm.source_type === 'repository' ? '远程仓库' : '归档上传'}
+                  {editForm.source_type === 'repository' ? '远程仓库' : '本地上传'}
                 </Badge>
               )}
             </DialogTitle>
@@ -921,20 +922,20 @@ export default function Projects() {
               <div className="space-y-4">
                 <h3 className="font-sans font-bold uppercase text-sm text-muted-foreground border-b border-border pb-2 flex items-center gap-2">
                   <Upload className="w-4 h-4" />
-                  归档文件管理
+                  本地文件管理
                 </h3>
 
                 {loadingEditZipInfo ? (
                   <div className="flex items-center space-x-3 p-4 bg-secondary/8 border border-secondary/25 rounded">
                     <div className="loading-spinner w-5 h-5"></div>
-                    <p className="text-sm text-secondary font-bold font-sans">正在加载归档文件信息...</p>
+                    <p className="text-sm text-secondary font-bold font-sans">正在加载本地文件信息...</p>
                   </div>
                 ) : editZipInfo?.has_file ? (
                   <div className="bg-primary/10 border border-primary/25 p-4 rounded">
                     <div className="flex items-start space-x-3">
                       <FileText className="w-5 h-5 text-primary mt-0.5" />
                       <div className="flex-1 text-sm font-sans">
-                        <p className="font-bold text-emerald-300 mb-1 uppercase">当前存储的归档文件</p>
+                        <p className="font-bold text-emerald-300 mb-1 uppercase">当前存储的本地文件</p>
                         <p className="text-primary/80 text-xs">
                           文件名: {editZipInfo.original_filename}
                           {editZipInfo.file_size && (
@@ -957,9 +958,9 @@ export default function Projects() {
                     <div className="flex items-start space-x-3">
                       <AlertCircle className="w-5 h-5 text-warning mt-0.5" />
                       <div className="text-sm font-sans">
-                        <p className="font-bold text-warning mb-1 uppercase">暂无归档文件</p>
+                        <p className="font-bold text-warning mb-1 uppercase">暂无本地文件</p>
                         <p className="text-warning/80 text-xs">
-                          此项目还没有上传归档文件，请上传文件以便进行代码审计。
+                          此项目还没有上传本地文件，请上传文件以便进行代码审计。
                         </p>
                       </div>
                     </div>
@@ -969,7 +970,7 @@ export default function Projects() {
                 {/* 上传新文件 */}
                 <div className="space-y-2">
                   <Label className="font-sans font-bold uppercase text-xs text-muted-foreground">
-                    {editZipInfo?.has_file ? '更新归档文件' : '上传归档文件'}
+                    {editZipInfo?.has_file ? '更新本地文件' : '上传本地文件'}
                   </Label>
                   <input
                     ref={editZipInputRef}
@@ -1016,7 +1017,7 @@ export default function Projects() {
                       className="cyber-btn-outline w-full"
                     >
                       <Upload className="w-4 h-4 mr-2" />
-                      {editZipInfo?.has_file ? '选择新文件替换' : '选择归档文件'}
+                      {editZipInfo?.has_file ? '选择新文件替换' : '选择本地文件'}
                     </Button>
                   )}
                 </div>

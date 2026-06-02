@@ -56,10 +56,17 @@ class AuditIssue(Base):
     code_snippet = Column(Text, nullable=True)  # 问题代码片段
     ai_explanation = Column(Text, nullable=True)  # AI解释（JSON格式的xai字段）
     
-    status = Column(String, default="open")  # open, pending_review, resolved, false_positive
+    status = Column(String, default="not_fixed", server_default="not_fixed")  # fixed, not_fixed, false_positive, suspicious
     resolved_by = Column(String, ForeignKey("users.id"), nullable=True)
     resolved_at = Column(DateTime(timezone=True), nullable=True)
-    
+    ai_suggestion = Column(Text, nullable=True)  # AI排查结果 (JSON)
+
+    # 数据流路径字段（与 AgentFinding 一致）
+    source = Column(Text, nullable=True)          # 污点源描述
+    sink = Column(Text, nullable=True)            # 危险操作/汇描述
+    dataflow_path = Column(Text, nullable=True)   # 数据流路径 JSON (DataFlowStep[])
+    code_context = Column(Text, nullable=True)    # 上下文代码
+
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     # Relationships

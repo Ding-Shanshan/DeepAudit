@@ -280,12 +280,44 @@ class AgentConfig(BaseSettings):
     # ============ Security ============
     allowed_file_extensions: Set[str] = Field(
         default={
-            ".py", ".js", ".ts", ".jsx", ".tsx", ".java", ".go", ".rb", ".php",
-            ".c", ".cpp", ".h", ".hpp", ".cs", ".swift", ".kt", ".rs", ".scala",
-            ".vue", ".svelte", ".html", ".css", ".scss", ".sass", ".less",
-            ".json", ".yaml", ".yml", ".xml", ".toml", ".ini", ".conf",
-            ".sql", ".graphql", ".proto", ".sh", ".bash", ".zsh", ".ps1",
-            ".md", ".txt", ".rst", ".env.example", ".gitignore",
+            # JavaScript / TypeScript
+            ".py", ".pyi", ".pyw",
+            ".js", ".jsx", ".mjs", ".cjs",
+            ".ts", ".tsx", ".mts", ".cts",
+            ".java", ".kt", ".kts", ".scala", ".groovy",
+            ".go",
+            ".rb", ".erb", ".haml",
+            ".php", ".phtml",
+            ".cs",
+            ".c", ".cpp", ".cc", ".cxx", ".h", ".hpp", ".hh", ".hxx", ".cu", ".cuh",
+            ".swift", ".m", ".mm",
+            ".rs",
+            ".sh", ".bash", ".zsh", ".fish", ".ps1", ".bat", ".cmd",
+            ".vue", ".svelte", ".astro",
+            ".html", ".htm", ".xhtml",
+            ".css", ".scss", ".sass", ".less", ".styl",
+            ".sql", ".graphql", ".gql", ".proto",
+            ".dart", ".lua", ".pl", ".pm",
+            ".ex", ".exs", ".erl", ".hs", ".zig", ".nim",
+            ".r",
+            ".jsp", ".jspx", ".asp", ".aspx",
+            ".sol",
+            # Config / Data
+            ".json", ".json5", ".jsonc",
+            ".yaml", ".yml", ".toml",
+            ".env", ".ini", ".cfg", ".conf",
+            ".xml", ".svg",
+            ".cmake", ".make", ".mk",
+            ".dockerfile",
+            ".tf", ".tfvars",
+            ".gradle", ".properties",
+            ".lock", ".pip",
+            ".csv",
+            # Docs
+            ".md", ".mdx", ".txt", ".rst",
+            ".editorconfig",
+            # Special
+            ".gitignore",
         },
         description="Allowed file extensions for analysis"
     )

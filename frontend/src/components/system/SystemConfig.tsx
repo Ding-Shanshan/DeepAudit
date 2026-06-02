@@ -111,6 +111,15 @@ export function SystemConfig() {
         console.log('[SystemConfig] 解析后的配置:', newConfig);
         setConfig(newConfig);
 
+        // 根据已保存的 token 自动设置仓库类型
+        if (newConfig.giteaToken) {
+          setSelectedRepoType('gitea');
+        } else if (newConfig.gitlabToken) {
+          setSelectedRepoType('gitlab');
+        } else if (newConfig.githubToken) {
+          setSelectedRepoType('github');
+        }
+
         console.log('✓ 配置已加载:', {
           provider: llmConfig.llmProvider,
           hasApiKey: !!llmConfig.llmApiKey,
@@ -261,7 +270,7 @@ export function SystemConfig() {
       if (savedConfig) {
         const llmConfig = savedConfig.llmConfig || {};
         const otherConfig = savedConfig.otherConfig || {};
-        setConfig({
+        const newConfig = {
           llmProvider: llmConfig.llmProvider || config.llmProvider,
           llmApiKey: llmConfig.llmApiKey || '',
           llmModel: llmConfig.llmModel || '',
@@ -282,7 +291,17 @@ export function SystemConfig() {
           llmConcurrency: otherConfig.llmConcurrency || 3,
           llmGapMs: otherConfig.llmGapMs || 2000,
           outputLanguage: otherConfig.outputLanguage || 'zh-CN',
-        });
+        };
+        setConfig(newConfig);
+
+        // 保存后也根据返回的 token 恢复仓库类型选择
+        if (newConfig.giteaToken) {
+          setSelectedRepoType('gitea');
+        } else if (newConfig.gitlabToken) {
+          setSelectedRepoType('gitlab');
+        } else if (newConfig.githubToken) {
+          setSelectedRepoType('github');
+        }
       }
 
       setHasChanges(false);
@@ -615,37 +634,76 @@ export function SystemConfig() {
             {selectedRepoType === 'github' && (
               <div className="space-y-2">
                 <Label className="text-xs font-medium text-muted-foreground uppercase">Token</Label>
-                <Input
-                  type="password"
-                  value={config.githubToken}
-                  onChange={(e) => updateConfig('githubToken', e.target.value)}
-                  placeholder="请填写仓库token"
-                  className="h-10 cyber-input"
-                />
+                <div className="flex gap-2">
+                  <Input
+                    type="password"
+                    value={config.githubToken === '__CLEAR__' ? '' : config.githubToken}
+                    onChange={(e) => updateConfig('githubToken', e.target.value)}
+                    placeholder="请填写仓库token"
+                    className="h-10 cyber-input"
+                  />
+                  {config.githubToken && config.githubToken !== '__CLEAR__' && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => updateConfig('githubToken', '__CLEAR__')}
+                      className="cyber-btn-outline h-10 whitespace-nowrap"
+                      title="清除Token"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  )}
+                </div>
               </div>
             )}
             {selectedRepoType === 'gitlab' && (
               <div className="space-y-2">
                 <Label className="text-xs font-medium text-muted-foreground uppercase">Token</Label>
-                <Input
-                  type="password"
-                  value={config.gitlabToken}
-                  onChange={(e) => updateConfig('gitlabToken', e.target.value)}
-                  placeholder="请填写仓库token"
-                  className="h-10 cyber-input"
-                />
+                <div className="flex gap-2">
+                  <Input
+                    type="password"
+                    value={config.gitlabToken === '__CLEAR__' ? '' : config.gitlabToken}
+                    onChange={(e) => updateConfig('gitlabToken', e.target.value)}
+                    placeholder="请填写仓库token"
+                    className="h-10 cyber-input"
+                  />
+                  {config.gitlabToken && config.gitlabToken !== '__CLEAR__' && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => updateConfig('gitlabToken', '__CLEAR__')}
+                      className="cyber-btn-outline h-10 whitespace-nowrap"
+                      title="清除Token"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  )}
+                </div>
               </div>
             )}
             {selectedRepoType === 'gitea' && (
               <div className="space-y-2">
                 <Label className="text-xs font-medium text-muted-foreground uppercase">Token</Label>
-                <Input
-                  type="password"
-                  value={config.giteaToken}
-                  onChange={(e) => updateConfig('giteaToken', e.target.value)}
-                  placeholder="请填写仓库token"
-                  className="h-10 cyber-input"
-                />
+                <div className="flex gap-2">
+                  <Input
+                    type="password"
+                    value={config.giteaToken === '__CLEAR__' ? '' : config.giteaToken}
+                    onChange={(e) => updateConfig('giteaToken', e.target.value)}
+                    placeholder="请填写仓库token"
+                    className="h-10 cyber-input"
+                  />
+                  {config.giteaToken && config.giteaToken !== '__CLEAR__' && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => updateConfig('giteaToken', '__CLEAR__')}
+                      className="cyber-btn-outline h-10 whitespace-nowrap"
+                      title="清除Token"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  )}
+                </div>
               </div>
             )}
           </div>

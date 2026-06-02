@@ -185,8 +185,13 @@ Action Input: {"target_path": ".", "rules": "auto"}
             "file_path": "path/to/file.py",
             "line_start": 42,
             "code_snippet": "危险代码片段",
-            "source": "污点来源",
-            "sink": "危险函数",
+            "source": "污点来源（用户输入点，如 $_GET['id']）",
+            "sink": "危险函数（如 mysql_query()）",
+            "dataflow_path": [
+                {"step": 1, "type": "source", "file": "app/views.py", "line": 10, "function": "get_user", "code": "id = request.GET['id']", "label": "用户输入", "variable": "id", "operation": "input"},
+                {"step": 2, "type": "propagation", "file": "app/views.py", "line": 12, "function": "get_user", "code": "query = 'SELECT * FROM users WHERE id=' + id", "label": "拼入SQL", "variable": "query", "operation": "assignment"},
+                {"step": 3, "type": "sink", "file": "app/views.py", "line": 13, "function": "get_user", "code": "cursor.execute(query)", "label": "执行SQL", "variable": "query", "operation": "call"}
+            ],
             "suggestion": "修复建议",
             "confidence": 0.9,
             "needs_verification": true
@@ -195,6 +200,25 @@ Action Input: {"target_path": ".", "rules": "auto"}
     "summary": "分析总结"
 }
 ```
+
+## 🔴 数据流路径要求（强制执行！）
+
+对以下类型的漏洞，**必须**提供 `source`、`sink` 和 `dataflow_path`：
+- SQL注入、XSS、命令注入、路径遍历、SSRF、反序列化、代码注入、XXE
+- 任何涉及"用户输入 → 危险操作"的数据流漏洞
+
+`dataflow_path` 每个步骤包含：
+- step: 序号（从1开始）
+- type: source(污点源) | propagation(传播) | sanitization(过滤/净化) | sink(危险触发点)
+- file: 文件路径
+- line: 行号
+- function: 函数名
+- code: 该行关键代码
+- label: 人可读的操作描述（如"用户输入"、"拼入SQL"）
+- variable: 跟踪的变量名
+- operation: input|assignment|parameter|return|call|sanitize
+
+**如果你无法确定完整数据流，至少提供 source 和 sink，并用 dataflow_analysis 工具辅助追踪。**
 
 ## 重点关注的漏洞类型
 - SQL 注入 (query, execute, raw SQL)
@@ -690,6 +714,9 @@ Final Answer: {{"findings": [...], "summary": "..."}}"""
             "file_path": "文件路径",
             "line_start": 行号,
             "code_snippet": "相关代码片段",
+            "source": "污点来源（用户输入点）",
+            "sink": "危险函数",
+            "dataflow_path": [{"step":1,"type":"source","file":"...","line":0,"function":"...","code":"...","label":"...","variable":"...","operation":"input"}],
             "suggestion": "修复建议"
         }
     ],
@@ -775,6 +802,7 @@ Final Answer:""",
                     "code_snippet": finding.get("code_snippet", ""),
                     "source": finding.get("source", ""),
                     "sink": finding.get("sink", ""),
+                    "dataflow_path": finding.get("dataflow_path") or finding.get("flow_path"),
                     "suggestion": finding.get("suggestion", ""),
                     "confidence": finding.get("confidence", 0.7),
                     "needs_verification": finding.get("needs_verification", True),

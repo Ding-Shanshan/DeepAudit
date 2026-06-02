@@ -21,7 +21,7 @@ import {
 import { api } from "@/shared/config/database";
 import type { Project, AuditTask, AuditIssue } from "@/shared/types";
 import type { AgentFinding, AgentTask } from "@/shared/api/agentTasks";
-import { getAgentTasks, updateAgentFinding } from "@/shared/api/agentTasks";
+import { getAgentTasks, updateAgentFinding, aiInvestigateFinding } from "@/shared/api/agentTasks";
 import { apiClient } from "@/shared/api/serverClient";
 import { toast } from "sonner";
 import CreateTaskDialog from "@/components/audit/CreateTaskDialog";
@@ -34,6 +34,7 @@ import {
 } from "@/shared/constants";
 import { ProjectIssuesTab } from "@/pages/project-detail/components/ProjectIssuesTab";
 import { ProjectTasksTab } from "@/pages/project-detail/components/ProjectTasksTab";
+import { safeJsonParseArray } from "@/shared/utils/utils";
 
 export default function ProjectDetail() {
   const { id } = useParams<{ id: string }>();
@@ -99,8 +100,11 @@ export default function ProjectDetail() {
 
   async function fetchAuditIssues(taskId: string): Promise<AuditIssue[]> {
     // Use apiClient directly so we can control timeout behavior at the call site
-    const res = await withTimeout(apiClient.get(`/tasks/${taskId}/issues`), REQUEST_TIMEOUT_MS, `GET /tasks/${taskId}/issues`);
-    return res.data;
+    // Backend returns {total, items, skip, limit} — extract items
+    const res = await withTimeout(apiClient.get(`/tasks/${taskId}/issues`, { params: { skip: 0, limit: 200 } }), REQUEST_TIMEOUT_MS, `GET /tasks/${taskId}/issues`);
+    const data = res.data;
+    // Handle both old (array) and new (paginated object) response formats
+    return Array.isArray(data) ? data : (data.items || []);
   }
 
   async function fetchAgentFindings(taskId: string): Promise<AgentFinding[]> {
@@ -267,6 +271,7 @@ export default function ProjectDetail() {
       line_number: i.line_number ?? null,
       category: (i as any).issue_type ?? null,
       status: i.status ?? null,
+      ai_suggestion: (i as any).ai_suggestion ?? null,
     }));
 
     const agent: LatestProblem[] = latestFindings.map((f) => {
@@ -289,6 +294,7 @@ export default function ProjectDetail() {
         line_end: ((f.line_end ?? parsed?.line_end ?? null) as any),
         category: (f as any).vulnerability_type ?? null,
         status: f.status ?? null,
+        ai_suggestion: (f as any).ai_suggestion ?? null,
       };
     });
 
@@ -323,6 +329,69 @@ export default function ProjectDetail() {
     } catch (error) {
       console.error("Failed to update status:", error);
       toast.error("状态更新失败");
+    }
+  };
+
+  // AI排查
+  const handleAiInvestigate = async (problem: LatestProblem) => {
+    try {
+      if (problem.kind === "agent") {
+        await aiInvestigateFinding(problem.task_id, problem.id);
+      } else {
+        await api.aiInvestigateIssue(problem.task_id, problem.id);
+      }
+      toast.success("AI排查已启动，请稍候刷新查看结果");
+      // 5秒后自动刷新
+      setTimeout(() => loadLatestIssues(), 5000);
+    } catch (error: any) {
+      console.error("AI排查启动失败:", error);
+      toast.error(error?.response?.data?.detail || "AI排查启动失败");
+    }
+  };
+
+  // 批量AI排查
+  const [aiBatchInProgress, setAiBatchInProgress] = useState(false);
+  const [aiBatchProgressData, setAiBatchProgress] = useState({ completed: 0, total: 0 });
+
+  const handleBatchAiInvestigate = async () => {
+    if (!id) return;
+    try {
+      const res = await api.aiInvestigateProjectBatch(id);
+      if (!res.batch_id || res.total === 0) {
+        toast.info(res.message || "没有需要排查的问题");
+        return;
+      }
+      setAiBatchInProgress(true);
+      setAiBatchProgress({ completed: 0, total: res.total });
+      toast.success(`批量AI排查已启动，共 ${res.total} 个问题`);
+
+      const pollInterval = setInterval(async () => {
+        try {
+          const status = await api.getAiInvestigateProjectBatchStatus(id, res.batch_id);
+          setAiBatchProgress({ completed: status.completed, total: status.total });
+          if (status.status === "completed") {
+            clearInterval(pollInterval);
+            setAiBatchInProgress(false);
+            toast.success("批量AI排查完成");
+            await loadLatestIssues();
+          }
+        } catch {
+          // 轮询失败，继续
+        }
+      }, 3000);
+
+      // 120秒超时保护
+      setTimeout(() => {
+        clearInterval(pollInterval);
+        if (aiBatchInProgress) {
+          setAiBatchInProgress(false);
+          loadLatestIssues();
+        }
+      }, 120000);
+    } catch (error: any) {
+      console.error("批量AI排查启动失败:", error);
+      toast.error(error?.response?.data?.detail || "批量AI排查启动失败");
+      setAiBatchInProgress(false);
     }
   };
 
@@ -507,7 +576,7 @@ export default function ProjectDetail() {
             <div className="flex items-center justify-between">
               <span className="text-sm text-muted-foreground uppercase">项目语言</span>
               <div className="flex flex-wrap gap-2">
-                {JSON.parse(project.programming_languages).map((lang: string) => (
+                {safeJsonParseArray(project.programming_languages).map((lang: string) => (
                   <Badge key={lang} className="cyber-badge-primary">
                     {lang}
                   </Badge>
@@ -545,6 +614,9 @@ export default function ProjectDetail() {
             latestFindings={latestFindings}
             formatDate={formatDate}
             onStatusChange={handleStatusChange}
+            onAiInvestigate={handleAiInvestigate}
+            onBatchAiInvestigate={handleBatchAiInvestigate}
+            aiBatchProgress={{ completed: aiBatchProgressData.completed, total: aiBatchProgressData.total, inProgress: aiBatchInProgress }}
           />
         </TabsContent>
 

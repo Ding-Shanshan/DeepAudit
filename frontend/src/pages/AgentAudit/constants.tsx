@@ -1,8 +1,6 @@
 /**
- * Agent Audit Constants
- * Shared constants for the Agent Audit page
- * Cassette Futurism / Terminal Retro aesthetic
- * Enhanced color palette for better visibility
+ * Agent Audit 常量定义
+ * 审计页面共享常量配置
  */
 
 import React from "react";
@@ -10,82 +8,94 @@ import {
   Brain, Wrench, Target, Bug, Zap, Terminal,
   AlertTriangle, Shield, Search, FileCode,
   CheckCircle2, XCircle, Clock, Loader2, Square, Bot,
-  Cpu, Scan, FileSearch, ShieldCheck
+  Cpu, Scan, FileSearch, ShieldCheck,
+  // 阶段图标
+  Settings2, Eye, Microscope, ShieldAlert, FileText
 } from "lucide-react";
 
-// ============ Severity Colors (Enhanced contrast) ============
+// ============ 严重等级配色 ============
 
 export const SEVERITY_COLORS: Record<string, string> = {
-  critical: "text-rose-700 dark:text-rose-300 bg-destructive/12 border border-rose-500/40",
-  high: "text-orange-700 dark:text-orange-300 bg-orange-500/20 border border-orange-500/40",
-  medium: "text-amber-700 dark:text-warning bg-amber-500/20 border border-amber-500/40",
-  low: "text-sky-700 dark:text-secondary bg-secondary/15 border border-sky-500/40",
+  critical: "text-rose-700 bg-rose-500/10 border border-rose-500/40",
+  high: "text-orange-700 bg-orange-500/15 border border-orange-500/40",
+  medium: "text-amber-700 bg-amber-500/15 border border-amber-500/40",
+  low: "text-sky-700 bg-sky-500/15 border border-sky-500/40",
   info: "text-foreground bg-muted/20 border border-border",
 };
 
-// ============ Action Verbs for Animation ============
+// ============ 动态动词（状态动画） ============
 
 export const ACTION_VERBS = [
-  "Analyzing", "Scanning", "Probing", "Investigating",
-  "Examining", "Auditing", "Testing", "Exploring",
-  "Processing", "Evaluating", "Tracing", "Mapping"
+  "分析中", "扫描中", "探测中", "调查中",
+  "检查中", "审计中", "测试中", "探索中",
+  "处理中", "评估中", "追踪中", "映射中"
 ];
 
-// ============ Log Type Configurations (Enhanced colors) ============
+// ============ 日志类型配置 ============
 
 export const LOG_TYPE_CONFIG: Record<string, {
   icon: React.ReactNode;
   borderColor: string;
   bgColor: string;
+  label: string;
 }> = {
   thinking: {
-    icon: React.createElement(Brain, { className: "w-4 h-4 text-violet-600 dark:text-secondary" }),
-    borderColor: "border-l-violet-500",
-    bgColor: "bg-violet-500/10"
+    icon: React.createElement(Brain, { className: "w-4 h-4 text-violet-600" }),
+    borderColor: "border-l-violet-400",
+    bgColor: "bg-violet-50/60",
+    label: "思考"
   },
   tool: {
-    icon: React.createElement(Wrench, { className: "w-4 h-4 text-amber-600 dark:text-warning" }),
-    borderColor: "border-l-amber-500",
-    bgColor: "bg-warning/8"
+    icon: React.createElement(Wrench, { className: "w-4 h-4 text-amber-600" }),
+    borderColor: "border-l-amber-400",
+    bgColor: "bg-amber-50/60",
+    label: "工具"
   },
   phase: {
-    icon: React.createElement(Target, { className: "w-4 h-4 text-teal-600 dark:text-teal-400" }),
-    borderColor: "border-l-teal-500",
-    bgColor: "bg-teal-500/10"
+    icon: React.createElement(Target, { className: "w-4 h-4 text-indigo-600" }),
+    borderColor: "border-l-indigo-400",
+    bgColor: "bg-indigo-50/60",
+    label: "阶段"
   },
   finding: {
-    icon: React.createElement(Bug, { className: "w-4 h-4 text-rose-600 dark:text-destructive" }),
+    icon: React.createElement(Bug, { className: "w-4 h-4 text-rose-600" }),
     borderColor: "border-l-rose-500",
-    bgColor: "bg-destructive/8"
+    bgColor: "bg-rose-50/60",
+    label: "漏洞"
   },
   dispatch: {
-    icon: React.createElement(Zap, { className: "w-4 h-4 text-sky-600 dark:text-secondary" }),
-    borderColor: "border-l-sky-500",
-    bgColor: "bg-secondary/8"
+    icon: React.createElement(Zap, { className: "w-4 h-4 text-sky-600" }),
+    borderColor: "border-l-sky-400",
+    bgColor: "bg-sky-50/60",
+    label: "调度"
   },
   info: {
-    icon: React.createElement(Terminal, { className: "w-4 h-4 text-muted-foreground" }),
-    borderColor: "border-l-muted-foreground",
-    bgColor: "bg-muted/10"
+    icon: React.createElement(Terminal, { className: "w-4 h-4 text-slate-500" }),
+    borderColor: "border-l-slate-300",
+    bgColor: "bg-white",
+    label: "信息"
   },
   error: {
-    icon: React.createElement(AlertTriangle, { className: "w-4 h-4 text-red-600 dark:text-red-400" }),
+    icon: React.createElement(AlertTriangle, { className: "w-4 h-4 text-red-600" }),
     borderColor: "border-l-red-500",
-    bgColor: "bg-red-500/15"
+    bgColor: "bg-red-50/60",
+    label: "错误"
   },
   user: {
-    icon: React.createElement(Shield, { className: "w-4 h-4 text-indigo-600 dark:text-indigo-400" }),
-    borderColor: "border-l-indigo-500",
-    bgColor: "bg-indigo-500/10"
+    icon: React.createElement(Shield, { className: "w-4 h-4 text-indigo-600" }),
+    borderColor: "border-l-indigo-400",
+    bgColor: "bg-indigo-50/60",
+    label: "用户"
   },
   progress: {
-    icon: React.createElement(Loader2, { className: "w-4 h-4 text-secondary dark:text-secondary animate-spin" }),
-    borderColor: "border-l-cyan-500",
-    bgColor: "bg-secondary/10"
+    icon: React.createElement(Loader2, { className: "w-4 h-4 text-emerald-600 animate-spin" }),
+    borderColor: "border-l-emerald-400",
+    bgColor: "bg-emerald-50/60",
+    label: "进度"
   },
 };
 
-// ============ Agent Status Configurations ============
+// ============ Agent 状态配置 ============
 
 export const AGENT_STATUS_CONFIG: Record<string, {
   icon: React.ReactNode;
@@ -94,63 +104,68 @@ export const AGENT_STATUS_CONFIG: Record<string, {
   animate?: boolean;
 }> = {
   running: {
-    icon: React.createElement("div", { className: "w-2 h-2 rounded-full bg-primary dark:bg-primary" }),
-    color: "text-primary dark:text-primary",
-    text: "Running",
+    icon: React.createElement("div", { className: "w-2 h-2 rounded-full bg-emerald-500" }),
+    color: "text-emerald-600",
+    text: "运行中",
     animate: true
   },
   completed: {
-    icon: React.createElement(CheckCircle2, { className: "w-3 h-3 text-primary dark:text-primary" }),
-    color: "text-primary dark:text-primary",
-    text: "Completed"
+    icon: React.createElement(CheckCircle2, { className: "w-3 h-3 text-indigo-600" }),
+    color: "text-indigo-600",
+    text: "已完成"
   },
   failed: {
-    icon: React.createElement(XCircle, { className: "w-3 h-3 text-rose-600 dark:text-destructive" }),
-    color: "text-rose-600 dark:text-destructive",
-    text: "Failed"
+    icon: React.createElement(XCircle, { className: "w-3 h-3 text-rose-600" }),
+    color: "text-rose-600",
+    text: "失败"
   },
   waiting: {
-    icon: React.createElement(Clock, { className: "w-3 h-3 text-amber-600 dark:text-warning" }),
-    color: "text-amber-600 dark:text-warning",
-    text: "Waiting"
+    icon: React.createElement(Clock, { className: "w-3 h-3 text-amber-600" }),
+    color: "text-amber-600",
+    text: "等待中"
   },
   created: {
-    icon: React.createElement("div", { className: "w-2 h-2 rounded-full bg-muted" }),
-    color: "text-muted-foreground",
-    text: "Created"
+    icon: React.createElement("div", { className: "w-2 h-2 rounded-full bg-slate-400" }),
+    color: "text-slate-500",
+    text: "已创建"
   },
 };
 
-// ============ Agent Type Configurations ============
+// ============ Agent 类型配置 ============
 
 export const AGENT_TYPE_CONFIG: Record<string, {
   icon: React.ReactNode;
   label: string;
   color: string;
+  borderColor: string;
 }> = {
   orchestrator: {
-    icon: React.createElement(Cpu, { className: "w-4 h-4 text-violet-600 dark:text-secondary" }),
-    label: "Orchestrator",
-    color: "violet"
+    icon: React.createElement(Cpu, { className: "w-4 h-4 text-violet-600" }),
+    label: "编排器",
+    color: "violet",
+    borderColor: "border-l-violet-500"
   },
   recon: {
-    icon: React.createElement(Scan, { className: "w-4 h-4 text-teal-600 dark:text-teal-400" }),
-    label: "Reconnaissance",
-    color: "teal"
+    icon: React.createElement(Scan, { className: "w-4 h-4 text-sky-600" }),
+    label: "侦察",
+    color: "sky",
+    borderColor: "border-l-sky-500"
   },
   analysis: {
-    icon: React.createElement(FileSearch, { className: "w-4 h-4 text-amber-600 dark:text-warning" }),
-    label: "Analysis",
-    color: "amber"
+    icon: React.createElement(FileSearch, { className: "w-4 h-4 text-amber-600" }),
+    label: "分析",
+    color: "amber",
+    borderColor: "border-l-amber-500"
   },
   verification: {
-    icon: React.createElement(ShieldCheck, { className: "w-4 h-4 text-primary dark:text-primary" }),
-    label: "Verification",
-    color: "emerald"
+    icon: React.createElement(ShieldCheck, { className: "w-4 h-4 text-emerald-600" }),
+    label: "验证",
+    color: "emerald",
+    borderColor: "border-l-emerald-500"
   },
 };
 
-// ============ Task Status Configurations ============
+// ============ 任务状态配置 ============
 
 export const TASK_STATUS_CONFIG: Record<string, {
   bg: string;
@@ -158,29 +173,29 @@ export const TASK_STATUS_CONFIG: Record<string, {
   text: string;
 }> = {
   pending: {
-    bg: "bg-muted",
+    bg: "bg-slate-400",
     icon: React.createElement(Clock, { className: "w-3 h-3" }),
-    text: "PENDING"
+    text: "待处理"
   },
   running: {
-    bg: "bg-emerald-600",
+    bg: "bg-emerald-500",
     icon: React.createElement(Loader2, { className: "w-3 h-3 animate-spin" }),
-    text: "RUNNING"
+    text: "运行中"
   },
   completed: {
-    bg: "bg-emerald-600",
+    bg: "bg-indigo-600",
     icon: React.createElement(CheckCircle2, { className: "w-3 h-3" }),
-    text: "COMPLETED"
+    text: "已完成"
   },
   failed: {
-    bg: "bg-rose-600",
+    bg: "bg-rose-500",
     icon: React.createElement(XCircle, { className: "w-3 h-3" }),
-    text: "FAILED"
+    text: "失败"
   },
   cancelled: {
-    bg: "bg-amber-600",
+    bg: "bg-amber-500",
     icon: React.createElement(Square, { className: "w-3 h-3" }),
-    text: "CANCELLED"
+    text: "已取消"
   },
 };
 

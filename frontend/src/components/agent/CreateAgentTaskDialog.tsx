@@ -30,7 +30,6 @@ import {
   Loader2,
   Play,
   Sparkles,
-  FolderOpen,
 } from "lucide-react";
 import { toast } from "sonner";
 import { api } from "@/shared/config/database";
@@ -40,7 +39,7 @@ import { isRepositoryProject, isZipProject } from "@/shared/utils/projectUtils";
 import { getZipFileInfo, type ZipFileMeta } from "@/shared/utils/zipStorage";
 import { validateZipFile } from "@/features/projects/services/repoZipScan";
 import type { Project } from "@/shared/types";
-import FileSelectionDialog from "@/components/audit/FileSelectionDialog";
+import WhitelistConfig from "@/components/audit/components/WhitelistConfig";
 
 interface CreateAgentTaskDialogProps {
   open: boolean;
@@ -62,6 +61,9 @@ export default function CreateAgentTaskDialog({
   const [branches, setBranches] = useState<string[]>([]);
   const [loadingBranches, setLoadingBranches] = useState(false);
   const [excludePatterns, setExcludePatterns] = useState<string[]>([]);
+  const [functionWhitelist, setFunctionWhitelist] = useState<string[]>([]);
+  const [vulnerabilityWhitelist, setVulnerabilityWhitelist] = useState<string[]>([]);
+  const [sanitizerFunctions, setSanitizerFunctions] = useState<string[]>([]);
   const [creating, setCreating] = useState(false);
   const [scheduleEnabled, setScheduleEnabled] = useState(false);
   const [scheduleInterval, setScheduleInterval] = useState("1");
@@ -71,10 +73,6 @@ export default function CreateAgentTaskDialog({
   // ZIP 文件状态
   const [zipFile, setZipFile] = useState<File | null>(null);
   const [storedZipInfo, setStoredZipInfo] = useState<ZipFileMeta | null>(null);
-
-  // 文件选择状态
-  const [selectedFiles, setSelectedFiles] = useState<string[] | undefined>();
-  const [showFileSelection, setShowFileSelection] = useState(false);
 
   const selectedProject = projects.find((p) => p.id === selectedProjectId);
 
@@ -96,9 +94,11 @@ export default function CreateAgentTaskDialog({
       setTaskName("");
       setBranch("main");
       setExcludePatterns([]);
+      setFunctionWhitelist([]);
+      setVulnerabilityWhitelist([]);
+      setSanitizerFunctions([]);
       setZipFile(null);
       setStoredZipInfo(null);
-      setSelectedFiles(undefined);
       setScheduleEnabled(false);
       setScheduleInterval("1");
       setScheduleUnit("day");
@@ -194,8 +194,10 @@ export default function CreateAgentTaskDialog({
         name: taskName.trim(),
         branch_name: isRepositoryProject(selectedProject) ? branch : undefined,
         exclude_patterns: excludePatterns,
-        target_files: selectedFiles,
         verification_level: "sandbox",
+        functionWhitelist,
+        vulnerabilityWhitelist,
+        sanitizerFunctions,
       });
 
       let scheduleError: string | null = null;
@@ -218,8 +220,11 @@ export default function CreateAgentTaskDialog({
             time_window_start: windowStart,
             time_window_end: windowEnd,
             timezone: "Asia/Shanghai",
-            file_paths: selectedFiles || [],
+            file_paths: [],
             exclude_patterns: excludePatterns,
+            functionWhitelist,
+            vulnerabilityWhitelist,
+            sanitizerFunctions,
             is_active: true,
           });
         } catch (error) {
@@ -376,67 +381,17 @@ export default function CreateAgentTaskDialog({
 
                 <div className="h-px bg-border" />
 
-                {/* 白名单配置 */}
-                <div className="space-y-2">
-                  <Label className="text-xs text-muted-foreground">白名单配置</Label>
-
-                  {selectedFiles ? (
-                    <div className="p-2 rounded-sm border border-border bg-muted/20 space-y-1.5">
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs">已选 {selectedFiles.length} 个文件</span>
-                        <div className="flex gap-2">
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => setSelectedFiles(undefined)}
-                            className="h-6 text-xs text-destructive hover:text-destructive"
-                          >
-                            重置
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => setShowFileSelection(true)}
-                            className="h-6 text-xs rounded-sm"
-                          >
-                            <FolderOpen className="w-3 h-3 mr-1" />
-                            重新选择
-                          </Button>
-                        </div>
-                      </div>
-                      <div className="flex flex-wrap gap-1 max-h-[80px] overflow-y-auto">
-                        {selectedFiles.slice(0, 20).map((f) => (
-                          <Badge
-                            key={f}
-                            variant="outline"
-                            className="text-xs px-1.5 py-0"
-                          >
-                            {f}
-                          </Badge>
-                        ))}
-                        {selectedFiles.length > 20 && (
-                          <Badge variant="outline" className="text-[11px] px-1.5 py-0 text-muted-foreground">
-                            +{selectedFiles.length - 20} 个文件
-                          </Badge>
-                        )}
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="p-2 rounded-sm border border-border bg-muted/20 flex items-center justify-between">
-                      <span className="text-xs text-muted-foreground">全部文件</span>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => setShowFileSelection(true)}
-                        disabled={!isRepositoryProject(selectedProject) && !(isZipProject(selectedProject) && storedZipInfo?.has_file)}
-                        className="h-6 text-xs rounded-sm"
-                      >
-                        <FolderOpen className="w-3 h-3 mr-1" />
-                        选择文件
-                      </Button>
-                    </div>
-                  )}
-                </div>
+                {/* 过滤与白名单配置 */}
+                <WhitelistConfig
+                  functionWhitelist={functionWhitelist}
+                  vulnerabilityWhitelist={vulnerabilityWhitelist}
+                  sanitizerFunctions={sanitizerFunctions}
+                  onChange={(field, values) => {
+                    if (field === 'functionWhitelist') setFunctionWhitelist(values);
+                    else if (field === 'vulnerabilityWhitelist') setVulnerabilityWhitelist(values);
+                    else if (field === 'sanitizerFunctions') setSanitizerFunctions(values);
+                  }}
+                />
 
                 {/* 时间配置 */}
                 <div className="space-y-2">
@@ -526,16 +481,6 @@ export default function CreateAgentTaskDialog({
           </div>
         </SheetContent>
       </Sheet>
-
-      {/* 文件选择对话框 */}
-      <FileSelectionDialog
-        open={showFileSelection}
-        onOpenChange={setShowFileSelection}
-        projectId={selectedProjectId}
-        branch={branch}
-        excludePatterns={excludePatterns}
-        onConfirm={setSelectedFiles}
-      />
     </>
   );
 }

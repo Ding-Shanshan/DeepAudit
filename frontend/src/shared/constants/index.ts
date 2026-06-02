@@ -34,6 +34,44 @@ export const SEVERITY_LEVELS = {
   LOW: 'low',
 } as const;
 
+// 问题状态（统一审核状态）
+export const ISSUE_STATUS = {
+  FIXED: 'fixed',
+  NOT_FIXED: 'not_fixed',
+  FALSE_POSITIVE: 'false_positive',
+  SUSPICIOUS: 'suspicious',
+} as const;
+
+// 状态中文标签
+export const ISSUE_STATUS_LABELS: Record<string, string> = {
+  fixed: "已修复",
+  not_fixed: "未修复",
+  false_positive: "误报",
+  suspicious: "存疑",
+  // 旧状态兼容（可能出现在未迁移的数据中）
+  open: "未修复",
+  new: "未修复",
+  resolved: "已修复",
+  pending_review: "存疑",
+  analyzing: "存疑",
+  verified: "未修复",
+  needs_review: "存疑",
+  wont_fix: "未修复",
+  duplicate: "误报",
+};
+
+// 状态徽章颜色样式
+export const ISSUE_STATUS_BADGE_CLASS: Record<string, string> = {
+  fixed: "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/25",
+  not_fixed: "bg-warning/15 text-warning dark:text-warning border-warning/25",
+  false_positive: "bg-gray-500/20 text-gray-600 dark:text-gray-400 border-gray-500/30",
+  suspicious: "bg-secondary/15 text-secondary dark:text-secondary border-secondary/25",
+  // 旧状态兼容
+  open: "bg-warning/15 text-warning dark:text-warning border-warning/25",
+  new: "bg-warning/15 text-warning dark:text-warning border-warning/25",
+  resolved: "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/25",
+};
+
 // 任务状态
 export const TASK_STATUS = {
   PENDING: 'pending',

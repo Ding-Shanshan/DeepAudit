@@ -18,6 +18,7 @@ from ..types import (
     LLMUsage,
     LLMProvider,
     LLMError,
+    ToolCall,
     DEFAULT_BASE_URLS,
 )
 from ..prompt_cache import prompt_cache_manager, estimate_tokens
@@ -217,6 +218,14 @@ class LiteLLMAdapter(BaseLLMAdapter):
             "max_tokens": request.max_tokens if request.max_tokens is not None else self.config.max_tokens,
         }
 
+        # 🔥 传递 tools 参数（用于 Agent 工具调用）
+        if request.tools:
+            kwargs["tools"] = request.tools
+
+        # 🔥 传递 response_format（强制 JSON 输出）
+        if request.response_format:
+            kwargs["response_format"] = request.response_format
+
         # Claude 不允许同时传 temperature 和 top_p
         # 对于使用自定义 base_url 的 OpenAI 兼容代理，也不传 top_p
         # 因为很多代理（如国产模型代理）不支持此参数，可能导致 500 错误
@@ -276,7 +285,7 @@ class LiteLLMAdapter(BaseLLMAdapter):
         # 解析响应
         if not response:
             raise LLMError("API 返回空响应", self.config.provider)
-            
+
         choice = response.choices[0] if response.choices else None
         if not choice:
             raise LLMError("API响应格式异常: 缺少choices字段", self.config.provider)
@@ -288,7 +297,7 @@ class LiteLLMAdapter(BaseLLMAdapter):
                 completion_tokens=response.usage.completion_tokens or 0,
                 total_tokens=response.usage.total_tokens or 0,
             )
-            
+
             # 🔥 更新 Prompt Cache 统计
             if cache_enabled and hasattr(response.usage, "cache_creation_input_tokens"):
                 prompt_cache_manager.update_stats(
@@ -297,11 +306,28 @@ class LiteLLMAdapter(BaseLLMAdapter):
                     total_input_tokens=response.usage.prompt_tokens or 0,
                 )
 
+        # 🔥 解析 tool_calls
+        tool_calls = None
+        message = choice.message
+        if hasattr(message, "tool_calls") and message.tool_calls:
+            tool_calls = [
+                ToolCall(
+                    id=tc.id,
+                    type=tc.type or "function",
+                    function={
+                        "name": tc.function.name,
+                        "arguments": tc.function.arguments,
+                    },
+                )
+                for tc in message.tool_calls
+            ]
+
         return LLMResponse(
-            content=choice.message.content or "",
+            content=message.content or "",
             model=response.model,
             usage=usage,
             finish_reason=choice.finish_reason,
+            tool_calls=tool_calls,
         )
 
     async def stream_complete(self, request: LLMRequest):

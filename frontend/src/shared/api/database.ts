@@ -72,7 +72,11 @@ export const api = {
         params.exclude_patterns = JSON.stringify(excludePatterns);
       }
       const res = await apiClient.get(`/projects/${id}/files`, { params });
-      return res.data;
+      // Defensive: ensure response is always an array
+      if (Array.isArray(res.data)) {
+        return res.data;
+      }
+      return [];
     } catch (e) {
       return [];
     }
@@ -81,7 +85,13 @@ export const api = {
   async getProjectBranches(id: string): Promise<{ branches: string[]; default_branch: string; error?: string }> {
     try {
       const res = await apiClient.get(`/projects/${id}/branches`);
-      return res.data;
+      // Defensive: ensure branches is always an array
+      const data = res.data;
+      if (data && Array.isArray(data.branches)) {
+        return data;
+      }
+      // Fallback if response shape is unexpected
+      return { branches: [data?.default_branch || "main"], default_branch: data?.default_branch || "main" };
     } catch (e) {
       return { branches: ["main"], default_branch: "main", error: String(e) };
     }
@@ -166,8 +176,15 @@ export const api = {
     try {
       const res = await apiClient.get(`/tasks/${id}`);
       return res.data;
-    } catch (e) {
-      return null;
+    } catch (e: any) {
+      // 区分真正的 "任务不存在" (404) vs 其他错误 (500/403/网络)
+      const status = e?.response?.status;
+      if (status === 404) {
+        // 任务确实不存在 — 前端应停止轮询
+        return null;
+      }
+      // 500/403/网络错误等 — 是临时问题，前端应继续轮询而非误报 "任务不存在"
+      throw { isTransient: true, status, message: e?.message || "请求失败" };
     }
   },
 
@@ -180,6 +197,9 @@ export const api = {
       branch_name: task.branch_name || "main",
       rule_set_id: task.scan_config?.rule_set_id,
       prompt_template_id: task.scan_config?.prompt_template_id,
+      functionWhitelist: task.functionWhitelist || [],
+      vulnerabilityWhitelist: task.vulnerabilityWhitelist || [],
+      sanitizerFunctions: task.sanitizerFunctions || [],
     };
     const res = await apiClient.post(`/projects/${task.project_id}/scan`, scanRequest);
     // Fetch the created task
@@ -199,8 +219,11 @@ export const api = {
 
   // ==================== AuditIssue 相关方法 ====================
 
-  async getAuditIssues(taskId: string): Promise<AuditIssue[]> {
-    const res = await apiClient.get(`/tasks/${taskId}/issues`);
+  async getAuditIssues(taskId: string, params?: { skip?: number; limit?: number }): Promise<{ total: number; items: AuditIssue[]; skip: number; limit: number }> {
+    const queryParams: Record<string, string> = {};
+    if (params?.skip !== undefined) queryParams.skip = String(params.skip);
+    if (params?.limit !== undefined) queryParams.limit = String(params.limit);
+    const res = await apiClient.get(`/tasks/${taskId}/issues`, { params: queryParams });
     return res.data;
   },
 
@@ -211,6 +234,33 @@ export const api = {
 
   async updateAuditIssue(taskId: string, issueId: string, updates: Partial<AuditIssue>): Promise<AuditIssue> {
     const res = await apiClient.patch(`/tasks/${taskId}/issues/${issueId}`, updates);
+    return res.data;
+  },
+
+  // ==================== AI排查相关方法 ====================
+
+  async aiInvestigateIssue(taskId: string, issueId: string): Promise<{message: string; issue_id: string; status: string}> {
+    const res = await apiClient.post(`/tasks/${taskId}/issues/${issueId}/ai-investigate`);
+    return res.data;
+  },
+
+  async aiInvestigateBatch(taskId: string): Promise<{message: string; batch_id: string; total: number}> {
+    const res = await apiClient.post(`/tasks/${taskId}/issues/ai-investigate-batch`);
+    return res.data;
+  },
+
+  async getAiInvestigateBatchStatus(taskId: string, batchId: string): Promise<{completed: number; total: number; current_issue: string; status: string}> {
+    const res = await apiClient.get(`/tasks/${taskId}/issues/ai-investigate-batch/${batchId}/status`);
+    return res.data;
+  },
+
+  async aiInvestigateProjectBatch(projectId: string): Promise<{message: string; batch_id: string; total: number}> {
+    const res = await apiClient.post(`/projects/${projectId}/issues/ai-investigate-batch`);
+    return res.data;
+  },
+
+  async getAiInvestigateProjectBatchStatus(projectId: string, batchId: string): Promise<{completed: number; total: number; current_issue: string; status: string}> {
+    const res = await apiClient.get(`/projects/${projectId}/issues/ai-investigate-batch/${batchId}/status`);
     return res.data;
   },
 

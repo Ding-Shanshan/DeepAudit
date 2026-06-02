@@ -11,7 +11,7 @@ const SUPPORTED_ARCHIVE_EXTENSIONS = [
 ];
 
 /**
- * 上传归档文件并启动扫描
+ * 上传本地文件并启动扫描
  */
 export async function scanZipFile(params: {
   projectId: string;
@@ -21,6 +21,9 @@ export async function scanZipFile(params: {
   filePaths?: string[];
   ruleSetId?: string;
   promptTemplateId?: string;
+  functionWhitelist?: string[];
+  vulnerabilityWhitelist?: string[];
+  sanitizerFunctions?: string[];
 }): Promise<string> {
   const formData = new FormData();
   formData.append("file", params.zipFile);
@@ -32,6 +35,9 @@ export async function scanZipFile(params: {
     exclude_patterns: params.excludePatterns || [],
     rule_set_id: params.ruleSetId,
     prompt_template_id: params.promptTemplateId,
+    functionWhitelist: params.functionWhitelist || [],
+    vulnerabilityWhitelist: params.vulnerabilityWhitelist || [],
+    sanitizerFunctions: params.sanitizerFunctions || [],
   };
   formData.append("scan_config", JSON.stringify(scanConfig));
 
@@ -54,6 +60,9 @@ export async function scanStoredZipFile(params: {
   filePaths?: string[];
   ruleSetId?: string;
   promptTemplateId?: string;
+  functionWhitelist?: string[];
+  vulnerabilityWhitelist?: string[];
+  sanitizerFunctions?: string[];
 }): Promise<string> {
   const scanRequest = {
     file_paths: params.filePaths,
@@ -61,6 +70,9 @@ export async function scanStoredZipFile(params: {
     exclude_patterns: params.excludePatterns || [],
     rule_set_id: params.ruleSetId,
     prompt_template_id: params.promptTemplateId,
+    functionWhitelist: params.functionWhitelist || [],
+    vulnerabilityWhitelist: params.vulnerabilityWhitelist || [],
+    sanitizerFunctions: params.sanitizerFunctions || [],
   };
   const res = await apiClient.post(`/scan/scan-stored-zip`, scanRequest, {
     params: { project_id: params.projectId },
@@ -73,7 +85,7 @@ export function validateZipFile(file: File): { valid: boolean; error?: string } 
   const normalizedName = file.name.toLowerCase();
   const isSupported = SUPPORTED_ARCHIVE_EXTENSIONS.some((ext) => normalizedName.endsWith(ext));
   if (!isSupported) {
-    return { valid: false, error: '请上传 zip、rar、7z、tar、gz、tgz、tar.gz 等归档文件' };
+    return { valid: false, error: '请上传 zip、rar、7z、tar、gz、tgz、tar.gz 等本地文件' };
   }
 
   const maxSize = 2 * 1024 * 1024 * 1024;

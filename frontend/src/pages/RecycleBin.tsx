@@ -23,6 +23,7 @@ import { api } from "@/shared/config/database";
 import type { Project } from "@/shared/types";
 import { toast } from "sonner";
 import { isRepositoryProject, getSourceTypeBadge } from "@/shared/utils/projectUtils";
+import { safeJsonParseArray } from "@/shared/utils/utils";
 
 export default function RecycleBin() {
   const [deletedProjects, setDeletedProjects] = useState<Project[]>([]);
@@ -208,14 +209,14 @@ export default function RecycleBin() {
                 {/* Programming Languages */}
                 {project.programming_languages && (
                   <div className="flex flex-wrap gap-2">
-                    {JSON.parse(project.programming_languages).slice(0, 4).map((lang: string) => (
+                    {safeJsonParseArray(project.programming_languages).slice(0, 4).map((lang: string) => (
                       <Badge key={lang} className="cyber-badge-muted text-xs">
                         {lang}
                       </Badge>
                     ))}
-                    {JSON.parse(project.programming_languages).length > 4 && (
+                    {safeJsonParseArray(project.programming_languages).length > 4 && (
                       <Badge className="cyber-badge-muted text-xs">
-                        +{JSON.parse(project.programming_languages).length - 4}
+                        +{safeJsonParseArray(project.programming_languages).length - 4}
                       </Badge>
                     )}
                   </div>

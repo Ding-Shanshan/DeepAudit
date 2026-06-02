@@ -427,6 +427,7 @@ Please analyze the following code:
         temperature: Optional[float] = None,
         max_tokens: Optional[int] = None,
         tools: Optional[List[Dict[str, Any]]] = None,
+        response_format: Optional[Dict[str, Any]] = None,
     ) -> Dict[str, Any]:
         """
         🔥 Agent 使用的聊天完成接口（支持工具调用）
@@ -436,6 +437,7 @@ Please analyze the following code:
             temperature: 温度参数（None 时使用用户配置）
             max_tokens: 最大token数（None 时使用用户配置）
             tools: 工具描述列表（可选）
+            response_format: 响应格式（可选，如 {"type": "json_object"}）
 
         Returns:
             包含 content、usage 和 tool_calls 的字典
@@ -455,6 +457,7 @@ Please analyze the following code:
             temperature=actual_temperature,
             max_tokens=actual_max_tokens,
             tools=tools,
+            response_format=response_format,
         )
 
         adapter = LLMFactory.create_adapter(self.config)
@@ -471,7 +474,14 @@ Please analyze the following code:
 
         # 添加工具调用信息
         if response.tool_calls:
-            result["tool_calls"] = response.tool_calls
+            result["tool_calls"] = [
+                {
+                    "id": tc.id,
+                    "type": tc.type,
+                    "function": tc.function,
+                }
+                for tc in response.tool_calls
+            ]
 
         return result
 

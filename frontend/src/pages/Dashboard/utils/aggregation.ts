@@ -21,7 +21,7 @@ import type {
 
 /** 判断问题是否未解决 */
 function isUnresolved(status: string): boolean {
-  return status !== 'resolved' && status !== 'false_positive';
+  return status !== 'fixed' && status !== 'false_positive';
 }
 
 /** 获取今日日期字符串 (YYYY-MM-DD) */
@@ -252,12 +252,12 @@ export function calculateVulnerabilityTypes(
 /** 计算解决进度 */
 export function calculateResolutionProgress(unifiedIssues: UnifiedIssue[]): ResolutionProgress {
   const total = unifiedIssues.length;
-  const resolved = unifiedIssues.filter(i => i.status === 'resolved').length;
+  const resolved = unifiedIssues.filter(i => i.status === 'fixed').length;
   const percentage = total > 0 ? Math.round((resolved / total) * 100) : 0;
 
   // 近7天解决趋势
   const trend: Array<{ date: string; count: number }> = [];
-  const resolvedIssues = unifiedIssues.filter(i => i.status === 'resolved');
+  const resolvedIssues = unifiedIssues.filter(i => i.status === 'fixed');
 
   // 生成近7天的日期
   for (let i = 6; i >= 0; i--) {

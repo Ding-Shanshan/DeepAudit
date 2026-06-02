@@ -142,6 +142,9 @@ export interface CreateAgentTaskRequest {
   max_iterations?: number;
   token_budget?: number;
   timeout_seconds?: number;
+  functionWhitelist?: string[];
+  vulnerabilityWhitelist?: string[];
+  sanitizerFunctions?: string[];
 }
 
 export interface AgentTaskSummary {

@@ -92,8 +92,8 @@ const FORMAT_CONFIG: Record<ReportFormat, {
     icon: <FileText className="w-5 h-5" />,
     extension: ".md",
     mime: "text/markdown",
-    color: "text-sky-600 dark:text-secondary",
-    bgColor: "bg-sky-100 dark:bg-sky-500/10 border-sky-300 dark:border-sky-500/30",
+    color: "text-sky-600",
+    bgColor: "bg-sky-100 border-sky-300",
   },
   json: {
     label: "JSON",
@@ -101,8 +101,8 @@ const FORMAT_CONFIG: Record<ReportFormat, {
     icon: <FileJson className="w-5 h-5" />,
     extension: ".json",
     mime: "application/json",
-    color: "text-amber-600 dark:text-warning",
-    bgColor: "bg-amber-100 dark:bg-amber-500/10 border-amber-300 dark:border-amber-500/30",
+    color: "text-amber-600",
+    bgColor: "bg-amber-100 border-amber-300",
   },
   html: {
     label: "HTML",
@@ -110,8 +110,8 @@ const FORMAT_CONFIG: Record<ReportFormat, {
     icon: <FileCode className="w-5 h-5" />,
     extension: ".html",
     mime: "text/html",
-    color: "text-emerald-600 dark:text-primary",
-    bgColor: "bg-emerald-100 dark:bg-primary/8 border-emerald-300 dark:border-primary/25",
+    color: "text-emerald-600",
+    bgColor: "bg-emerald-100 border-emerald-300",
   },
 };
 
@@ -127,10 +127,10 @@ const DEFAULT_EXPORT_OPTIONS: ExportOptions = {
 
 function getSeverityColor(severity: string): string {
   const colors: Record<string, string> = {
-    critical: "text-rose-600 dark:text-destructive",
-    high: "text-orange-600 dark:text-orange-400",
-    medium: "text-amber-600 dark:text-warning",
-    low: "text-sky-600 dark:text-secondary",
+    critical: "text-rose-600",
+    high: "text-orange-600",
+    medium: "text-amber-600",
+    low: "text-sky-600",
     info: "text-muted-foreground",
   };
   return colors[severity.toLowerCase()] || colors.info;
@@ -146,10 +146,10 @@ function formatBytes(bytes: number): string {
 
 // 获取安全评分颜色
 function getScoreColor(score: number): { text: string; bg: string; glow: string } {
-  if (score >= 80) return { text: "text-emerald-600 dark:text-primary", bg: "stroke-emerald-500", glow: "" };
-  if (score >= 60) return { text: "text-amber-600 dark:text-warning", bg: "stroke-amber-500", glow: "" };
-  if (score >= 40) return { text: "text-orange-600 dark:text-orange-400", bg: "stroke-orange-500", glow: "" };
-  return { text: "text-rose-600 dark:text-destructive", bg: "stroke-rose-500", glow: "" };
+  if (score >= 80) return { text: "text-emerald-600", bg: "stroke-emerald-500", glow: "" };
+  if (score >= 60) return { text: "text-amber-600", bg: "stroke-amber-500", glow: "" };
+  if (score >= 40) return { text: "text-orange-600", bg: "stroke-orange-500", glow: "" };
+  return { text: "text-rose-600", bg: "stroke-rose-500", glow: "" };
 }
 
 // ============ Sub Components ============
@@ -516,7 +516,7 @@ const MarkdownPreview = memo(function MarkdownPreview({
                     <div className="w-2.5 h-2.5 rounded-full bg-emerald-500/80" />
                   </div>
                   <span className="text-xs text-muted-foreground uppercase tracking-wider font-sans ml-2">
-                    {codeLanguage || "code"}
+                    {codeLanguage || "代码"}
                   </span>
                 </div>
                 <Terminal className="w-3.5 h-3.5 text-muted-foreground" />

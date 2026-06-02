@@ -2,7 +2,7 @@
  * Create Task Dialog
  */
 
-import { useState, useEffect, useMemo, useRef } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Sheet,
@@ -26,7 +26,6 @@ import { BranchSelector } from "@/components/ui/branch-selector";
 import {
   GitBranch,
   Upload,
-  FolderOpen,
   Package,
   Shield,
   Loader2,
@@ -42,7 +41,7 @@ import { createAgentTask } from "@/shared/api/agentTasks";
 
 import { useProjects } from "./hooks/useTaskForm";
 import { useZipFile } from "./hooks/useZipFile";
-import FileSelectionDialog from "./FileSelectionDialog";
+import WhitelistConfig from "./components/WhitelistConfig";
 
 import { runRepositoryAudit } from "@/features/projects/services/repoScan";
 import {
@@ -57,7 +56,7 @@ interface CreateTaskDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onTaskCreated: () => void;
-  onFastScanStarted?: (taskId: string) => void;
+  onFastScanStarted?: (taskId: string, taskType?: "repository" | "zip") => void;
   preselectedProjectId?: string;
 }
 
@@ -77,8 +76,6 @@ export default function CreateTaskDialog({
   const [branches, setBranches] = useState<string[]>([]);
   const [loadingBranches, setLoadingBranches] = useState(false);
   const [excludePatterns, setExcludePatterns] = useState(DEFAULT_EXCLUDES);
-  const [selectedFiles, setSelectedFiles] = useState<string[] | undefined>();
-  const [showFileSelection, setShowFileSelection] = useState(false);
   const [creating, setCreating] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [scheduleEnabled, setScheduleEnabled] = useState(false);
@@ -92,6 +89,10 @@ export default function CreateTaskDialog({
   const [promptTemplates, setPromptTemplates] = useState<PromptTemplate[]>([]);
   const [selectedRuleSetId, setSelectedRuleSetId] = useState<string>("");
   const [selectedPromptTemplateId, setSelectedPromptTemplateId] = useState<string>("");
+
+  const [functionWhitelist, setFunctionWhitelist] = useState<string[]>([]);
+  const [vulnerabilityWhitelist, setVulnerabilityWhitelist] = useState<string[]>([]);
+  const [sanitizerFunctions, setSanitizerFunctions] = useState<string[]>([]);
 
   const { projects, loading, loadProjects } = useProjects();
   const selectedProject = projects.find((p) => p.id === selectedProjectId);
@@ -170,18 +171,12 @@ export default function CreateTaskDialog({
       setSelectedRuleSetId(defaultRuleSet?.id || ruleSets[0]?.id || "");
       const defaultPrompt = promptTemplates.find(p => p.is_default);
       setSelectedPromptTemplateId(defaultPrompt?.id || promptTemplates[0]?.id || "");
+      setFunctionWhitelist([]);
+      setVulnerabilityWhitelist([]);
+      setSanitizerFunctions([]);
       zipState.reset();
     }
   }, [open, preselectedProjectId, ruleSets, promptTemplates]);
-
-  const excludePatternsRef = useRef(excludePatterns);
-  useEffect(() => {
-    if (excludePatternsRef.current !== excludePatterns && selectedFiles) {
-      setSelectedFiles(undefined);
-      toast.info("排除模式已更改，请重新选择文件");
-    }
-    excludePatternsRef.current = excludePatterns;
-  }, [excludePatterns]);
 
   const createScheduleIfEnabled = async (project: Project) => {
     if (!scheduleEnabled) {
@@ -213,10 +208,13 @@ export default function CreateTaskDialog({
       time_window_start: windowStart,
       time_window_end: windowEnd,
       timezone: "Asia/Shanghai",
-      file_paths: selectedFiles || [],
+      file_paths: [],
       exclude_patterns: excludePatterns,
       rule_set_id: auditMode === "fast" ? selectedRuleSetId || null : null,
       prompt_template_id: auditMode === "fast" ? selectedPromptTemplateId || null : null,
+      functionWhitelist,
+      vulnerabilityWhitelist,
+      sanitizerFunctions,
       is_active: true,
     });
 
@@ -254,8 +252,10 @@ export default function CreateTaskDialog({
           name: taskName.trim(),
           branch_name: isRepositoryProject(selectedProject) ? branch : undefined,
           exclude_patterns: excludePatterns,
-          target_files: selectedFiles,
           verification_level: "sandbox",
+          functionWhitelist,
+          vulnerabilityWhitelist,
+          sanitizerFunctions,
         });
 
         let scheduleError: string | null = null;
@@ -290,9 +290,11 @@ export default function CreateTaskDialog({
             projectId: selectedProject.id,
             excludePatterns,
             createdBy: "local-user",
-            filePaths: selectedFiles,
             ruleSetId: selectedRuleSetId || undefined,
             promptTemplateId: selectedPromptTemplateId || undefined,
+            functionWhitelist,
+            vulnerabilityWhitelist,
+            sanitizerFunctions,
           });
         } else if (zipState.zipFile) {
           taskId = await scanZipFile({
@@ -302,6 +304,9 @@ export default function CreateTaskDialog({
             createdBy: "local-user",
             ruleSetId: selectedRuleSetId || undefined,
             promptTemplateId: selectedPromptTemplateId || undefined,
+            functionWhitelist,
+            vulnerabilityWhitelist,
+            sanitizerFunctions,
           });
         } else {
           toast.error("请上传 ZIP 文件");
@@ -318,9 +323,11 @@ export default function CreateTaskDialog({
           branch,
           exclude: excludePatterns,
           createdBy: "local-user",
-          filePaths: selectedFiles,
           ruleSetId: selectedRuleSetId || undefined,
           promptTemplateId: selectedPromptTemplateId || undefined,
+          functionWhitelist,
+          vulnerabilityWhitelist,
+          sanitizerFunctions,
         });
       }
 
@@ -334,7 +341,7 @@ export default function CreateTaskDialog({
       onOpenChange(false);
       onTaskCreated();
       if (onFastScanStarted) {
-        onFastScanStarted(taskId);
+        onFastScanStarted(taskId, isZipProject(selectedProject) ? "zip" : "repository");
       }
       if (scheduleError) {
         toast.warning(`扫描任务已启动，但定时计划创建失败: ${scheduleError}`);
@@ -345,7 +352,6 @@ export default function CreateTaskDialog({
       }
 
       setSelectedProjectId("");
-      setSelectedFiles(undefined);
       setExcludePatterns(DEFAULT_EXCLUDES);
       setScheduleEnabled(false);
     } catch (error) {
@@ -416,7 +422,7 @@ export default function CreateTaskDialog({
                 <SelectContent className="max-h-[240px]">
                   {projects.length === 0 ? (
                     <div className="py-8 text-center text-muted-foreground text-xs">
-                      <Package className="w-5 h-5 mx-auto mb-2 opacity-50" />
+                      <Package className="w-4 h-4 mx-auto mb-2 opacity-50" />
                       暂无可用项目
                     </div>
                   ) : (
@@ -438,8 +444,10 @@ export default function CreateTaskDialog({
             {/* 项目配置（选择项目后显示） */}
             {selectedProject && (
               <>
+                <div className="h-px bg-border" />
+
                 {/* 仓库项目：分支选择 */}
-                {isRepositoryProject(selectedProject) ? (
+                {isRepositoryProject(selectedProject) && (
                   <div className="flex items-center gap-3">
                     <GitBranch className="w-4 h-4 text-muted-foreground" />
                     <Label className="text-xs text-muted-foreground w-12">分支</Label>
@@ -458,8 +466,10 @@ export default function CreateTaskDialog({
                       />
                     )}
                   </div>
-                ) : (
-                  /* ZIP 项目：文件显示 + 更换 */
+                )}
+
+                {/* ZIP 项目：文件显示 + 更换 */}
+                {isZipProject(selectedProject) && (
                   <div className="flex items-center gap-3 h-9 px-3 rounded-sm border border-border bg-muted/30">
                     <Package className="w-4 h-4 text-muted-foreground" />
                     <span className="text-xs flex-1 truncate">
@@ -587,72 +597,17 @@ export default function CreateTaskDialog({
                 <div className="h-px bg-border" />
 
                 {/* 白名单配置 */}
-                <div className="space-y-2">
-                  <Label className="text-xs text-muted-foreground">白名单配置</Label>
-
-                  {selectedFiles ? (
-                    <div className="p-2 rounded-sm border border-border bg-muted/20 space-y-1.5">
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs">已选 {selectedFiles.length} 个文件</span>
-                        <div className="flex gap-2">
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => setSelectedFiles(undefined)}
-                            className="h-6 text-xs text-destructive hover:text-destructive"
-                          >
-                            重置
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => setShowFileSelection(true)}
-                            className="h-6 text-xs rounded-sm"
-                          >
-                            <FolderOpen className="w-3 h-3 mr-1" />
-                            重新选择
-                          </Button>
-                        </div>
-                      </div>
-                      <div className="flex flex-wrap gap-1 max-h-[80px] overflow-y-auto">
-                        {selectedFiles.slice(0, 20).map((f) => (
-                          <Badge
-                            key={f}
-                            variant="outline"
-                            className="text-xs px-1.5 py-0"
-                          >
-                            {f}
-                          </Badge>
-                        ))}
-                        {selectedFiles.length > 20 && (
-                          <Badge variant="outline" className="text-xs px-1.5 py-0 text-muted-foreground">
-                            +{selectedFiles.length - 20} 个文件
-                          </Badge>
-                        )}
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="p-2 rounded-sm border border-border bg-muted/20 flex items-center justify-between">
-                      <span className="text-xs text-muted-foreground">全部文件</span>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => setShowFileSelection(true)}
-                        disabled={(() => {
-                          const isRepo = isRepositoryProject(selectedProject);
-                          const isZip = isZipProject(selectedProject);
-                          const hasStoredZip = zipState.storedZipInfo?.has_file;
-                          const useStored = zipState.useStoredZip;
-                          return !isRepo && !(isZip && useStored && hasStoredZip);
-                        })()}
-                        className="h-6 text-xs rounded-sm"
-                      >
-                        <FolderOpen className="w-3 h-3 mr-1" />
-                        选择文件
-                      </Button>
-                    </div>
-                  )}
-                </div>
+                {/* 过滤与白名单配置 */}
+                <WhitelistConfig
+                  functionWhitelist={functionWhitelist}
+                  vulnerabilityWhitelist={vulnerabilityWhitelist}
+                  sanitizerFunctions={sanitizerFunctions}
+                  onChange={(field, values) => {
+                    if (field === 'functionWhitelist') setFunctionWhitelist(values);
+                    else if (field === 'vulnerabilityWhitelist') setVulnerabilityWhitelist(values);
+                    else if (field === 'sanitizerFunctions') setSanitizerFunctions(values);
+                  }}
+                />
 
                 {/* 时间配置 */}
                 <div className="space-y-2">
@@ -747,15 +702,6 @@ export default function CreateTaskDialog({
           </div>
         </SheetContent>
       </Sheet>
-
-      <FileSelectionDialog
-        open={showFileSelection}
-        onOpenChange={setShowFileSelection}
-        projectId={selectedProjectId}
-        branch={branch}
-        excludePatterns={excludePatterns}
-        onConfirm={setSelectedFiles}
-      />
     </>
   );
 }

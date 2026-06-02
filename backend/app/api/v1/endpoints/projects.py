@@ -11,14 +11,22 @@ import os
 import tempfile
 import uuid
 import json
+import logging
+
+logger = logging.getLogger(__name__)
 
 from app.api import deps
 from app.db.session import get_db, AsyncSessionLocal
 from app.models.project import Project
 from app.models.user import User
+from app.models.user_config import UserConfig
 from app.models.audit import AuditTask, AuditIssue
 from app.models.agent_task import AgentTask, AgentTaskStatus, AgentFinding
-from app.models.user_config import UserConfig
+from app.services.ai_investigation import (
+    execute_batch_investigation,
+    get_batch_progress,
+    set_batch_progress,
+)
 from app.core.config import settings
 from app.services.archive_utils import extract_archive_recursive, is_supported_archive
 from app.services.quick_scan import collect_source_files
@@ -207,8 +215,8 @@ async def get_stats(
     )
     total_issues = len(issues) + len(agent_findings)
     resolved_issues = (
-        len([i for i in issues if i.status == "resolved"]) +
-        len([f for f in agent_findings if f.status in ("fixed", "wont_fix", "false_positive")])
+        len([i for i in issues if i.status == "fixed"]) +
+        len([f for f in agent_findings if f.status == "fixed"])
     )
 
     # 计算平均质量分（只统计已完成且有质量分的任务）
@@ -410,9 +418,9 @@ async def permanently_delete_project(
     if project.source_type == "zip":
         try:
             await delete_project_zip(id)
-            print(f"[Project] 已删除项目 {id} 的归档文件")
+            print(f"[Project] 已删除项目 {id} 的本地文件")
         except Exception as e:
-            print(f"[Warning] 删除归档文件失败: {e}")
+            print(f"[Warning] 删除本地文件失败: {e}")
 
     await db.delete(project)
     await db.commit()
@@ -468,7 +476,7 @@ async def get_project_files(
                 )
             ]
         except Exception as e:
-            raise HTTPException(status_code=500, detail=f"无法读取项目归档: {str(e)}")
+            raise HTTPException(status_code=500, detail=f"无法读取项目本地文件: {str(e)}")
         finally:
             shutil.rmtree(extract_dir, ignore_errors=True)
             
@@ -531,6 +539,9 @@ class ScanRequest(BaseModel):
     branch_name: Optional[str] = None
     rule_set_id: Optional[str] = None
     prompt_template_id: Optional[str] = None
+    functionWhitelist: Optional[List[str]] = None
+    vulnerabilityWhitelist: Optional[List[str]] = None
+    sanitizerFunctions: Optional[List[str]] = None
 
 
 @router.post("/{id}/scan")
@@ -611,6 +622,9 @@ async def scan_project(
             'exclude_patterns': scan_request.exclude_patterns or [],
             'rule_set_id': scan_request.rule_set_id,
             'prompt_template_id': scan_request.prompt_template_id,
+            'functionWhitelist': scan_request.functionWhitelist or [],
+            'vulnerabilityWhitelist': scan_request.vulnerabilityWhitelist or [],
+            'sanitizerFunctions': scan_request.sanitizerFunctions or [],
         }
 
     # Trigger Background Task
@@ -619,7 +633,7 @@ async def scan_project(
     return {"task_id": task.id, "status": "started"}
 
 
-# ============ 归档文件管理端点 ============
+# ============ 本地文件管理端点 ============
 
 class ZipFileMetaResponse(BaseModel):
     has_file: bool
@@ -635,13 +649,13 @@ async def get_project_zip_info(
     current_user: User = Depends(deps.get_current_user),
 ) -> Any:
     """
-    获取项目归档文件信息
+    获取项目本地文件信息
     """
     project = await db.get(Project, id)
     if not project:
         raise HTTPException(status_code=404, detail="项目不存在")
     
-    # 检查是否有归档文件
+    # 检查是否有本地文件
     has_file = await has_project_zip(id)
     if not has_file:
         return {"has_file": False}
@@ -667,7 +681,7 @@ async def upload_project_zip(
     current_user: User = Depends(deps.get_current_user),
 ) -> Any:
     """
-    上传或更新项目归档文件
+    上传或更新项目本地文件
     """
     project = await db.get(Project, id)
     if not project:
@@ -679,10 +693,10 @@ async def upload_project_zip(
     
     # 检查项目类型
     if project.source_type != "zip":
-        raise HTTPException(status_code=400, detail="仅归档类型项目可以上传源代码归档")
+        raise HTTPException(status_code=400, detail="仅本地文件类型项目可以上传源代码文件")
     
     if not file.filename or not is_supported_archive(file.filename):
-        raise HTTPException(status_code=400, detail="请上传 zip、rar、7z、tar、gz、tar.gz 等归档文件")
+        raise HTTPException(status_code=400, detail="请上传 zip、rar、7z、tar、gz、tar.gz 等本地文件")
     
     # 保存到临时文件
     temp_file_id = str(uuid.uuid4())
@@ -704,7 +718,7 @@ async def upload_project_zip(
         meta = await save_project_zip(id, temp_file_path, file.filename)
         
         return {
-            "message": "归档文件上传成功",
+            "message": "本地文件上传成功",
             "original_filename": meta["original_filename"],
             "file_size": meta["file_size"],
             "uploaded_at": meta["uploaded_at"]
@@ -722,7 +736,7 @@ async def delete_project_zip_file(
     current_user: User = Depends(deps.get_current_user),
 ) -> Any:
     """
-    删除项目归档文件
+    删除项目本地文件
     """
     project = await db.get(Project, id)
     if not project:
@@ -735,9 +749,9 @@ async def delete_project_zip_file(
     deleted = await delete_project_zip(id)
     
     if deleted:
-        return {"message": "归档文件已删除"}
+        return {"message": "本地文件已删除"}
     else:
-        return {"message": "没有找到归档文件"}
+        return {"message": "没有找到本地文件"}
 
 
 # ============ 分支管理端点 ============
@@ -834,3 +848,135 @@ async def get_project_branches(
             "default_branch": project.default_branch or "main",
             "error": str(e)
         }
+
+
+# ============ 项目级批量AI排查 ============
+
+async def _get_user_config(db: AsyncSession, user_id: str) -> Optional[dict]:
+    """获取用户 LLM 配置"""
+    if not user_id:
+        return None
+    try:
+        from app.api.v1.endpoints.config import decrypt_config, SENSITIVE_LLM_FIELDS, SENSITIVE_OTHER_FIELDS
+        result = await db.execute(select(UserConfig).where(UserConfig.user_id == user_id))
+        config = result.scalar_one_or_none()
+        if config and config.llm_config:
+            user_llm_config = json.loads(config.llm_config) if config.llm_config else {}
+            user_other_config = json.loads(config.other_config) if config.other_config else {}
+            user_llm_config = decrypt_config(user_llm_config, SENSITIVE_LLM_FIELDS)
+            user_other_config = decrypt_config(user_other_config, SENSITIVE_OTHER_FIELDS)
+            return {"llmConfig": user_llm_config, "otherConfig": user_other_config}
+    except Exception as e:
+        logger.warning(f"获取用户配置失败: {e}")
+    return None
+
+
+@router.post("/{project_id}/issues/ai-investigate-batch")
+async def ai_investigate_project_batch(
+    project_id: str,
+    background_tasks: BackgroundTasks,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(deps.get_current_user),
+) -> Any:
+    """
+    对项目下所有未排查的问题进行批量 AI 排查（包含 audit + agent 问题）
+    """
+    # 验证项目和权限
+    project = await db.get(Project, project_id)
+    if not project:
+        raise HTTPException(status_code=404, detail="项目不存在")
+    if project.owner_id != current_user.id:
+        raise HTTPException(status_code=403, detail="无权操作")
+
+    # 获取项目所有已完成任务的 AuditIssue（未排查）
+    audit_tasks_result = await db.execute(
+        select(AuditTask.id).where(
+            AuditTask.project_id == project_id,
+            AuditTask.status == "completed"
+        )
+    )
+    audit_task_ids = [t.id for t in audit_tasks_result.all()]
+
+    audit_issues_result = await db.execute(
+        select(AuditIssue).where(
+            AuditIssue.task_id.in_(audit_task_ids),
+            (AuditIssue.ai_suggestion == None) | (AuditIssue.ai_suggestion == "")
+        )
+    )
+    audit_issues = audit_issues_result.scalars().all()
+
+    # 获取项目所有已完成 AgentFinding（未排查）
+    agent_tasks_result = await db.execute(
+        select(AgentTask.id).where(
+            AgentTask.project_id == project_id,
+            AgentTask.status == AgentTaskStatus.COMPLETED
+        )
+    )
+    agent_task_ids = [t.id for t in agent_tasks_result.all()]
+
+    agent_findings_result = await db.execute(
+        select(AgentFinding).where(
+            AgentFinding.task_id.in_(agent_task_ids),
+            (AgentFinding.ai_suggestion == None) | (AgentFinding.ai_suggestion == "")
+        )
+    )
+    agent_findings = agent_findings_result.scalars().all()
+
+    # 合并所有未排查问题
+    issue_ids = [i.id for i in audit_issues] + [f.id for f in agent_findings]
+    issue_types = ["audit"] * len(audit_issues) + ["agent"] * len(agent_findings)
+
+    total = len(issue_ids)
+    if total == 0:
+        return {"message": "没有需要排查的问题", "batch_id": None, "total": 0}
+
+    # 标记所有为排查中
+    for issue in audit_issues:
+        issue.ai_suggestion = json.dumps({
+            "verdict": "analyzing",
+            "analyzed_at": datetime.now(timezone.utc).isoformat(),
+        }, ensure_ascii=False)
+    for finding in agent_findings:
+        finding.ai_suggestion = json.dumps({
+            "verdict": "analyzing",
+            "analyzed_at": datetime.now(timezone.utc).isoformat(),
+        }, ensure_ascii=False)
+    await db.commit()
+
+    batch_id = str(uuid.uuid4())[:8]
+    set_batch_progress(batch_id, {
+        "total": total,
+        "completed": 0,
+        "current_issue": "",
+        "status": "running",
+    })
+
+    user_config = await _get_user_config(db, current_user.id)
+
+    background_tasks.add_task(
+        execute_batch_investigation,
+        batch_id,
+        issue_ids,
+        issue_types,
+        user_config,
+    )
+
+    return {
+        "message": "批量AI排查已启动",
+        "batch_id": batch_id,
+        "total": total,
+    }
+
+
+@router.get("/{project_id}/issues/ai-investigate-batch/{batch_id}/status")
+async def get_project_batch_status(
+    project_id: str,
+    batch_id: str,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(deps.get_current_user),
+) -> Any:
+    """查询项目级批量 AI 排查进度"""
+    progress = get_batch_progress(batch_id)
+    if not progress:
+        raise HTTPException(status_code=404, detail="批量排查任务不存在")
+    return progress
