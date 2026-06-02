@@ -34,6 +34,10 @@ class VulnerabilityReportInput(BaseModel):
     code_snippet: Optional[str] = Field(default=None, description="相关代码片段")
     source: Optional[str] = Field(default=None, description="污点来源（用户输入点）")
     sink: Optional[str] = Field(default=None, description="危险函数（漏洞触发点）")
+    dataflow_path: Optional[List[Dict[str, Any]]] = Field(
+        default=None,
+        description="数据流路径步骤列表，每个步骤包含: step(序号), type(source/propagation/sanitization/sink), file(文件路径), line(行号), function(函数名), code(关键代码行), label(操作描述), variable(跟踪变量名), operation(input/assignment/parameter/return/call/sanitize)"
+    )
     poc: Optional[str] = Field(default=None, description="概念验证/利用方法")
     impact: Optional[str] = Field(default=None, description="影响分析")
     recommendation: Optional[str] = Field(default=None, description="修复建议")
@@ -87,6 +91,7 @@ class CreateVulnerabilityReportTool(AgentTool):
 - line_start/line_end: 行号范围
 - code_snippet: 代码片段
 - source/sink: 数据流信息
+- dataflow_path: 数据流路径步骤列表(可选)，每步包含: step(序号), type(source|propagation|sanitization|sink), file(文件路径), line(行号), function(函数名), code(关键代码行), label(人可读操作描述), variable(跟踪的变量名), operation(input|assignment|parameter|return|call|sanitize)
 - poc: 概念验证
 - impact: 影响分析
 - recommendation: 修复建议
@@ -110,6 +115,7 @@ class CreateVulnerabilityReportTool(AgentTool):
         code_snippet: Optional[str] = None,
         source: Optional[str] = None,
         sink: Optional[str] = None,
+        dataflow_path: Optional[List[Dict[str, Any]]] = None,
         poc: Optional[str] = None,
         impact: Optional[str] = None,
         recommendation: Optional[str] = None,
@@ -188,6 +194,7 @@ class CreateVulnerabilityReportTool(AgentTool):
             "code_snippet": code_snippet,
             "source": source,
             "sink": sink,
+            "dataflow_path": dataflow_path,
             "poc": poc,
             "impact": impact,
             "recommendation": recommendation or self._get_default_recommendation(vulnerability_type),
