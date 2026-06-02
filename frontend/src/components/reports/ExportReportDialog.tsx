@@ -73,7 +73,7 @@ export default function ExportReportDialog({
                 {/* Header */}
                 <div className="px-6 pt-5 pb-0">
                     <DialogHeader>
-                        <DialogTitle className="flex items-center gap-3 text-lg font-bold uppercase tracking-wider text-foreground">
+                        <DialogTitle className="flex items-center gap-3 text-lg font-semibold uppercase tracking-wider text-foreground">
                             <Download className="w-5 h-5 text-primary" />
                             导出审计报告
                         </DialogTitle>
@@ -164,7 +164,7 @@ export default function ExportReportDialog({
                                 </div>
                             </div>
                         </div>
-                        <div className="text-[10px] text-muted-foreground font-mono uppercase tracking-wider mt-2.5">
+                        <div className="text-[10px] text-muted-foreground font-sans uppercase tracking-wider mt-2.5">
                             报告封面预览
                         </div>
                     </div>
@@ -210,7 +210,7 @@ export default function ExportReportDialog({
                                     className="flex items-center gap-3 px-3.5 py-2.5 rounded-lg bg-muted/40 border border-border/50"
                                 >
                                     <item.icon className={`w-4 h-4 ${item.color} flex-shrink-0`} />
-                                    <span className="text-[11px] text-muted-foreground uppercase font-mono tracking-wider flex-shrink-0 w-16">
+                                    <span className="text-[11px] text-muted-foreground uppercase font-sans tracking-wider flex-shrink-0 w-16">
                                         {item.label}
                                     </span>
                                     <span className="text-sm font-bold text-foreground truncate">

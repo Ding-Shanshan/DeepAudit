@@ -392,14 +392,14 @@ export default function Projects() {
       <div className="flex items-center justify-center min-h-[60vh]">
         <div className="text-center space-y-4">
           <div className="loading-spinner mx-auto" />
-          <p className="text-muted-foreground font-mono text-sm uppercase tracking-wider">加载项目数据...</p>
+          <p className="text-muted-foreground font-sans text-sm uppercase tracking-wider">加载项目数据...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-4 px-6 pt-1 pb-6 bg-background min-h-screen font-mono relative">
+    <div className="space-y-4 px-6 pt-1 pb-6 bg-background min-h-screen font-sans relative">
       {/* Grid background */}
       <div className="absolute inset-0 cyber-grid-subtle pointer-events-none" />
 
@@ -408,7 +408,7 @@ export default function Projects() {
         <SheetContent side="right" className="!w-[min(90vw,600px)] sm:max-w-[600px] !sm:max-w-none flex flex-col p-0 gap-0 border-border">
           {/* Header */}
           <SheetHeader className="px-6 py-5 border-b border-border flex-shrink-0">
-            <SheetTitle className="font-mono text-lg text-foreground tracking-wide">
+            <SheetTitle className="font-sans text-lg text-foreground tracking-wide">
               新建项目
             </SheetTitle>
           </SheetHeader>
@@ -416,7 +416,7 @@ export default function Projects() {
           <div className="flex-1 overflow-y-auto">
             {/* 基本信息区 */}
             <div className="px-6 py-5 space-y-4 border-b border-border">
-              <h3 className="text-xs font-mono font-bold uppercase text-muted-foreground tracking-widest">基本信息</h3>
+              <h3 className="text-xs font-sans font-bold uppercase text-muted-foreground tracking-widest">基本信息</h3>
               <div className="space-y-1.5">
                 <Label htmlFor="name" className="text-sm text-foreground">项目名称 <span className="text-destructive">*</span></Label>
                 <Input
@@ -442,11 +442,11 @@ export default function Projects() {
 
             {/* 项目位置区 */}
             <div className="px-6 py-5 space-y-4">
-              <h3 className="text-xs font-mono font-bold uppercase text-muted-foreground tracking-widest">项目位置</h3>
+              <h3 className="text-xs font-sans font-bold uppercase text-muted-foreground tracking-widest">项目位置</h3>
               <div className="grid grid-cols-2 gap-0 border border-border rounded overflow-hidden">
                 <button
                   type="button"
-                  className={`flex items-center justify-center gap-2 py-2.5 text-sm font-mono transition-colors ${
+                  className={`flex items-center justify-center gap-2 py-2.5 text-sm font-sans transition-colors ${
                     createForm.source_type === 'repository'
                       ? 'bg-primary text-foreground font-bold'
                       : 'bg-muted/50 text-muted-foreground hover:bg-muted'
@@ -458,7 +458,7 @@ export default function Projects() {
                 </button>
                 <button
                   type="button"
-                  className={`flex items-center justify-center gap-2 py-2.5 text-sm font-mono transition-colors ${
+                  className={`flex items-center justify-center gap-2 py-2.5 text-sm font-sans transition-colors ${
                     createForm.source_type === 'zip'
                       ? 'bg-primary text-foreground font-bold'
                       : 'bg-muted/50 text-muted-foreground hover:bg-muted'
@@ -474,7 +474,7 @@ export default function Projects() {
             {/* 仓库地址表单 */}
             {createForm.source_type === 'repository' && (
               <div className="px-6 py-5 space-y-4 border-b border-border">
-                <h3 className="text-xs font-mono font-bold uppercase text-muted-foreground tracking-widest">仓库配置</h3>
+                <h3 className="text-xs font-sans font-bold uppercase text-muted-foreground tracking-widest">仓库配置</h3>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-1.5">
                     <Label htmlFor="repository_url" className="text-sm text-foreground">仓库地址</Label>
@@ -530,7 +530,7 @@ export default function Projects() {
             {/* 本地上传表单 */}
             {createForm.source_type === 'zip' && (
               <div className="px-6 py-5 space-y-4 border-b border-border">
-                <h3 className="text-xs font-mono font-bold uppercase text-muted-foreground tracking-widest">上传源码</h3>
+                <h3 className="text-xs font-sans font-bold uppercase text-muted-foreground tracking-widest">上传源码</h3>
 
                 {!selectedFile ? (
                   <div
@@ -586,7 +586,7 @@ export default function Projects() {
 
             {/* 技术栈区 - 公共 */}
             <div className="px-6 py-5 space-y-4">
-              <h3 className="text-xs font-mono font-bold uppercase text-muted-foreground tracking-widest">技术栈</h3>
+              <h3 className="text-xs font-sans font-bold uppercase text-muted-foreground tracking-widest">技术栈</h3>
               <Popover>
                 <PopoverTrigger asChild>
                   <div className="cyber-input flex items-center justify-between cursor-pointer min-h-[36px] px-3 py-1.5 gap-1">
@@ -597,7 +597,7 @@ export default function Projects() {
                         createForm.programming_languages.map((lang) => (
                           <Badge
                             key={lang}
-                            className="bg-primary/10 text-primary border border-primary/20 px-1.5 py-0 text-xs font-mono leading-5 hover:bg-primary/20 cursor-pointer"
+                            className="bg-primary/10 text-primary border border-primary/20 px-1.5 py-0 text-xs font-sans leading-5 hover:bg-primary/20 cursor-pointer"
                             onClick={(e) => {
                               e.stopPropagation();
                               setCreateForm({
@@ -618,7 +618,7 @@ export default function Projects() {
                 <PopoverContent className="w-[260px] p-1 cyber-dialog border-border" align="start">
                   {createForm.programming_languages.length > 0 && (
                     <button
-                      className="w-full text-left px-3 py-1.5 text-xs text-destructive hover:bg-destructive/10 rounded font-mono"
+                      className="w-full text-left px-3 py-1.5 text-xs text-destructive hover:bg-destructive/10 rounded font-sans"
                       onClick={() => setCreateForm({ ...createForm, programming_languages: [] })}
                     >
                       清除全部
@@ -653,7 +653,7 @@ export default function Projects() {
                         }`}>
                           {isSelected && <CheckCircle className="w-3 h-3 text-foreground" />}
                         </div>
-                        <span className="font-mono text-xs">{lang}</span>
+                        <span className="font-sans text-xs">{lang}</span>
                       </div>
                     );
                   })}
@@ -739,7 +739,7 @@ export default function Projects() {
                           <div className="flex flex-wrap gap-1">
                             {project.programming_languages ? (
                               JSON.parse(project.programming_languages).slice(0, 3).map((lang: string) => (
-                                <span key={lang} className="text-xs font-mono font-bold border border-primary/30 px-1.5 py-0.5 bg-primary/10 text-primary rounded">
+                                <span key={lang} className="text-xs font-sans font-bold border border-primary/30 px-1.5 py-0.5 bg-primary/10 text-primary rounded">
                                   {lang.toUpperCase()}
                                 </span>
                               ))
@@ -747,7 +747,7 @@ export default function Projects() {
                               <span className="text-muted-foreground">-</span>
                             )}
                             {project.programming_languages && JSON.parse(project.programming_languages).length > 3 && (
-                              <span className="text-xs font-mono font-bold border border-border px-1.5 py-0.5 bg-muted text-muted-foreground rounded">
+                              <span className="text-xs font-sans font-bold border border-border px-1.5 py-0.5 bg-muted text-muted-foreground rounded">
                                 +{JSON.parse(project.programming_languages).length - 3}
                               </span>
                             )}
@@ -807,13 +807,13 @@ export default function Projects() {
               <div className="w-3 h-3 rounded-full bg-yellow-500/80" />
               <div className="w-3 h-3 rounded-full bg-green-500/80" />
             </div>
-            <span className="ml-2 font-mono text-xs text-muted-foreground tracking-wider">
+            <span className="ml-2 font-sans text-xs text-muted-foreground tracking-wider">
               edit_project@dbapp
             </span>
           </div>
 
           <DialogHeader className="px-6 pt-4 flex-shrink-0">
-            <DialogTitle className="font-mono text-lg uppercase tracking-wider flex items-center gap-2 text-foreground">
+            <DialogTitle className="font-sans text-lg uppercase tracking-wider flex items-center gap-2 text-foreground">
               <Edit className="w-5 h-5 text-primary" />
               编辑项目配置
               {projectToEdit && (
@@ -827,9 +827,9 @@ export default function Projects() {
           <div className="flex-1 overflow-y-auto p-6 space-y-6">
             {/* 基本信息 */}
             <div className="space-y-4">
-              <h3 className="font-mono font-bold uppercase text-sm text-muted-foreground border-b border-border pb-2">基本信息</h3>
+              <h3 className="font-sans font-bold uppercase text-sm text-muted-foreground border-b border-border pb-2">基本信息</h3>
               <div>
-                <Label htmlFor="edit-name" className="font-mono font-bold uppercase text-xs text-muted-foreground">项目名称 *</Label>
+                <Label htmlFor="edit-name" className="font-sans font-bold uppercase text-xs text-muted-foreground">项目名称 *</Label>
                 <Input
                   id="edit-name"
                   value={editForm.name}
@@ -838,7 +838,7 @@ export default function Projects() {
                 />
               </div>
               <div>
-                <Label htmlFor="edit-description" className="font-mono font-bold uppercase text-xs text-muted-foreground">描述</Label>
+                <Label htmlFor="edit-description" className="font-sans font-bold uppercase text-xs text-muted-foreground">描述</Label>
                 <Textarea
                   id="edit-description"
                   value={editForm.description}
@@ -852,13 +852,13 @@ export default function Projects() {
             {/* 仓库信息 - 仅远程仓库类型显示 */}
             {editForm.source_type === 'repository' && (
               <div className="space-y-4">
-                <h3 className="font-mono font-bold uppercase text-sm text-muted-foreground border-b border-border pb-2 flex items-center gap-2">
+                <h3 className="font-sans font-bold uppercase text-sm text-muted-foreground border-b border-border pb-2 flex items-center gap-2">
                   <GitBranch className="w-4 h-4" />
                   仓库信息
                 </h3>
 
                 <div>
-                  <Label htmlFor="edit-repo-url" className="font-mono font-bold uppercase text-xs text-muted-foreground">仓库地址</Label>
+                  <Label htmlFor="edit-repo-url" className="font-sans font-bold uppercase text-xs text-muted-foreground">仓库地址</Label>
                   <Input
                     id="edit-repo-url"
                     value={editForm.repository_url}
@@ -871,12 +871,12 @@ export default function Projects() {
                     className="cyber-input mt-1"
                   />
                   {editForm.repository_type === 'other' && (
-                    <p className="text-xs text-muted-foreground font-mono mt-1">
+                    <p className="text-xs text-muted-foreground font-sans mt-1">
                       💡 SSH Key认证请使用 git@ 格式的SSH URL
                     </p>
                   )}
                   {editForm.repository_type !== 'other' && editForm.repository_type !== 'svn' && (
-                    <p className="text-xs text-muted-foreground font-mono mt-1">
+                    <p className="text-xs text-muted-foreground font-sans mt-1">
                       💡 Token认证请使用 https:// 格式的URL
                     </p>
                   )}
@@ -884,7 +884,7 @@ export default function Projects() {
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <Label htmlFor="edit-repo-type" className="font-mono font-bold uppercase text-xs text-muted-foreground">认证类型</Label>
+                    <Label htmlFor="edit-repo-type" className="font-sans font-bold uppercase text-xs text-muted-foreground">认证类型</Label>
                     <Select
                       value={editForm.repository_type}
                       onValueChange={(value: any) => setEditForm({ ...editForm, repository_type: value })}
@@ -903,7 +903,7 @@ export default function Projects() {
                   </div>
 
                   <div>
-                    <Label htmlFor="edit-default-branch" className="font-mono font-bold uppercase text-xs text-muted-foreground">默认分支</Label>
+                    <Label htmlFor="edit-default-branch" className="font-sans font-bold uppercase text-xs text-muted-foreground">默认分支</Label>
                     <Input
                       id="edit-default-branch"
                       value={editForm.default_branch}
@@ -919,7 +919,7 @@ export default function Projects() {
             {/* 归档项目文件管理 */}
             {editForm.source_type === 'zip' && (
               <div className="space-y-4">
-                <h3 className="font-mono font-bold uppercase text-sm text-muted-foreground border-b border-border pb-2 flex items-center gap-2">
+                <h3 className="font-sans font-bold uppercase text-sm text-muted-foreground border-b border-border pb-2 flex items-center gap-2">
                   <Upload className="w-4 h-4" />
                   归档文件管理
                 </h3>
@@ -927,13 +927,13 @@ export default function Projects() {
                 {loadingEditZipInfo ? (
                   <div className="flex items-center space-x-3 p-4 bg-secondary/8 border border-secondary/25 rounded">
                     <div className="loading-spinner w-5 h-5"></div>
-                    <p className="text-sm text-secondary font-bold font-mono">正在加载归档文件信息...</p>
+                    <p className="text-sm text-secondary font-bold font-sans">正在加载归档文件信息...</p>
                   </div>
                 ) : editZipInfo?.has_file ? (
                   <div className="bg-primary/10 border border-primary/25 p-4 rounded">
                     <div className="flex items-start space-x-3">
                       <FileText className="w-5 h-5 text-primary mt-0.5" />
-                      <div className="flex-1 text-sm font-mono">
+                      <div className="flex-1 text-sm font-sans">
                         <p className="font-bold text-emerald-300 mb-1 uppercase">当前存储的归档文件</p>
                         <p className="text-primary/80 text-xs">
                           文件名: {editZipInfo.original_filename}
@@ -956,7 +956,7 @@ export default function Projects() {
                   <div className="bg-warning/8 border border-warning/25 p-4 rounded">
                     <div className="flex items-start space-x-3">
                       <AlertCircle className="w-5 h-5 text-warning mt-0.5" />
-                      <div className="text-sm font-mono">
+                      <div className="text-sm font-sans">
                         <p className="font-bold text-warning mb-1 uppercase">暂无归档文件</p>
                         <p className="text-warning/80 text-xs">
                           此项目还没有上传归档文件，请上传文件以便进行代码审计。
@@ -968,7 +968,7 @@ export default function Projects() {
 
                 {/* 上传新文件 */}
                 <div className="space-y-2">
-                  <Label className="font-mono font-bold uppercase text-xs text-muted-foreground">
+                  <Label className="font-sans font-bold uppercase text-xs text-muted-foreground">
                     {editZipInfo?.has_file ? '更新归档文件' : '上传归档文件'}
                   </Label>
                   <input
@@ -995,7 +995,7 @@ export default function Projects() {
                     <div className="flex items-center justify-between p-3 bg-secondary/8 border border-secondary/25 rounded">
                       <div className="flex items-center space-x-2">
                         <FileText className="w-4 h-4 text-secondary" />
-                        <span className="text-sm font-mono font-bold text-secondary">{editZipFile.name}</span>
+                        <span className="text-sm font-sans font-bold text-secondary">{editZipFile.name}</span>
                         <span className="text-xs text-muted-foreground">
                           ({(editZipFile.size / 1024 / 1024).toFixed(2)} MB)
                         </span>
@@ -1025,7 +1025,7 @@ export default function Projects() {
 
             {/* 技术栈 */}
             <div className="space-y-4">
-              <h3 className="font-mono font-bold uppercase text-sm text-muted-foreground border-b border-border pb-2">技术栈</h3>
+              <h3 className="font-sans font-bold uppercase text-sm text-muted-foreground border-b border-border pb-2">技术栈</h3>
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                 {supportedLanguages.map((lang) => (
                   <div
@@ -1046,7 +1046,7 @@ export default function Projects() {
                         <CheckCircle className="w-3 h-3 text-foreground" />
                       )}
                     </div>
-                    <span className="text-sm font-mono font-bold uppercase">{lang}</span>
+                    <span className="text-sm font-sans font-bold uppercase">{lang}</span>
                   </div>
                 ))}
               </div>
@@ -1074,25 +1074,25 @@ export default function Projects() {
               <div className="w-3 h-3 rounded-full bg-yellow-500/80" />
               <div className="w-3 h-3 rounded-full bg-green-500/80" />
             </div>
-            <span className="ml-2 font-mono text-xs text-destructive tracking-wider">
+            <span className="ml-2 font-sans text-xs text-destructive tracking-wider">
               confirm_delete@dbapp
             </span>
           </div>
 
           <AlertDialogHeader className="p-6">
-            <AlertDialogTitle className="font-mono text-lg uppercase tracking-wider flex items-center gap-2 text-foreground">
+            <AlertDialogTitle className="font-sans text-lg uppercase tracking-wider flex items-center gap-2 text-foreground">
               <Trash2 className="w-5 h-5 text-destructive" />
               确认删除
             </AlertDialogTitle>
-            <AlertDialogDescription className="text-muted-foreground font-mono">
+            <AlertDialogDescription className="text-muted-foreground font-sans">
               您确定要移动 <span className="font-bold text-destructive">"{projectToDelete?.name}"</span> 到回收站吗？
             </AlertDialogDescription>
           </AlertDialogHeader>
 
           <div className="px-6 pb-6">
             <div className="bg-secondary/8 border border-secondary/25 p-4 rounded">
-              <p className="text-secondary font-bold mb-2 font-mono uppercase text-sm">系统通知:</p>
-              <ul className="list-none text-secondary/80 space-y-1 text-xs font-mono">
+              <p className="text-secondary font-bold mb-2 font-sans uppercase text-sm">系统通知:</p>
+              <ul className="list-none text-secondary/80 space-y-1 text-xs font-sans">
                 <li className="flex items-center gap-2"><span className="text-secondary">&gt;</span> 项目移至回收站</li>
                 <li className="flex items-center gap-2"><span className="text-secondary">&gt;</span> 可恢复</li>
                 <li className="flex items-center gap-2"><span className="text-secondary">&gt;</span> 审计数据保留</li>

@@ -443,7 +443,7 @@ export default function ProjectDetail() {
       <div className="flex items-center justify-center min-h-[60vh]">
         <div className="text-center space-y-4">
           <div className="loading-spinner mx-auto" />
-          <p className="text-muted-foreground font-mono text-sm uppercase tracking-wider">加载项目数据...</p>
+          <p className="text-muted-foreground font-sans text-sm uppercase tracking-wider">加载项目数据...</p>
         </div>
       </div>
     );
@@ -455,7 +455,7 @@ export default function ProjectDetail() {
         <div className="cyber-card p-8 text-center">
           <AlertTriangle className="w-16 h-16 text-destructive mx-auto mb-4" />
           <h2 className="text-2xl font-bold text-foreground mb-2 uppercase">项目未找到</h2>
-          <p className="text-muted-foreground mb-4 font-mono">请检查项目ID是否正确</p>
+          <p className="text-muted-foreground mb-4 font-sans">请检查项目ID是否正确</p>
           <Link to="/projects">
             <Button className="cyber-btn-primary">
               <ArrowLeft className="w-4 h-4 mr-2" />
@@ -468,7 +468,7 @@ export default function ProjectDetail() {
   }
 
   return (
-    <div className="space-y-4 px-6 pt-1 pb-6 cyber-bg-elevated min-h-screen font-mono relative">
+    <div className="space-y-4 px-6 pt-1 pb-6 cyber-bg-elevated min-h-screen font-sans relative">
       {/* Grid background */}
       <div className="absolute inset-0 cyber-grid-subtle pointer-events-none" />
 
@@ -487,7 +487,7 @@ export default function ProjectDetail() {
 
       {/* 项目信息 */}
       <div className="cyber-card p-4 relative z-10">
-        <div className="space-y-3 font-mono">
+        <div className="space-y-3 font-sans">
           <div className="flex items-center justify-between">
             <span className="text-sm text-muted-foreground uppercase">项目描述</span>
             <span className="text-sm text-foreground">{project.description || '暂无描述'}</span>
@@ -521,8 +521,8 @@ export default function ProjectDetail() {
       {/* 主要内容 */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full relative z-10 gap-0">
         <TabsList className="grid w-full grid-cols-2 bg-muted border border-border p-1 h-auto gap-1 rounded">
-          <TabsTrigger value="tasks" className="data-[state=active]:bg-primary data-[state=active]:text-foreground font-mono font-bold uppercase py-2 text-muted-foreground transition-all rounded-sm">任务列表</TabsTrigger>
-          <TabsTrigger value="issues" className="data-[state=active]:bg-primary data-[state=active]:text-foreground font-mono font-bold uppercase py-2 text-muted-foreground transition-all rounded-sm">问题列表</TabsTrigger>
+          <TabsTrigger value="tasks" className="data-[state=active]:bg-primary data-[state=active]:text-foreground font-sans font-medium uppercase py-2 text-muted-foreground transition-all rounded-sm">任务列表</TabsTrigger>
+          <TabsTrigger value="issues" className="data-[state=active]:bg-primary data-[state=active]:text-foreground font-sans font-medium uppercase py-2 text-muted-foreground transition-all rounded-sm">问题列表</TabsTrigger>
         </TabsList>
 
         <TabsContent value="tasks" className="flex flex-col gap-4 mt-2">

@@ -60,7 +60,7 @@ function LogRow({
   const isThinking = item.type === "thinking";
 
   return (
-    <div className="font-mono text-xs leading-4">
+    <div className="font-sans text-xs leading-4">
       <div className="flex items-center gap-2" onClick={isCollapsible ? onToggle : undefined}>
         <span className={`${typeInfo.color} flex-shrink-0`}>[{typeInfo.text}]</span>
         {item.time && (
@@ -163,11 +163,11 @@ export const PhaseStepper = memo(function PhaseStepper({
 
       {/* Toolbar */}
       <div className="flex items-center justify-between flex-shrink-0 py-1">
-        <span className="text-xs font-mono text-muted-foreground">{totalLogs} 条记录</span>
+        <span className="text-xs font-sans text-muted-foreground">{totalLogs} 条记录</span>
         <button
           onClick={onToggleAutoScroll}
           className={`
-            text-xs px-2 py-1 rounded-md font-mono transition-colors
+            text-xs px-2 py-1 rounded-md font-sans transition-colors
             ${isAutoScroll
               ? "bg-primary/10 text-primary border border-primary/30"
               : "text-muted-foreground border border-border hover:bg-muted"
@@ -181,7 +181,7 @@ export const PhaseStepper = memo(function PhaseStepper({
       {/* Terminal-style log stream */}
       <div ref={scrollRef} className="flex-1 overflow-y-auto custom-scrollbar">
         {startedPhases.length === 0 && (
-          <div className="py-8 text-center font-mono text-xs text-muted-foreground">
+          <div className="py-8 text-center font-sans text-xs text-muted-foreground">
             {isRunning ? "等待活动..." : "暂无活动记录"}
           </div>
         )}
@@ -195,7 +195,7 @@ export const PhaseStepper = memo(function PhaseStepper({
           return (
             <div key={phase}>
               {/* Phase start line */}
-              <div className="font-mono text-xs leading-4 text-slate-800 font-semibold">
+              <div className="font-sans text-xs leading-4 text-slate-800 font-semibold">
                 --- {config.label}阶段开始 ---
               </div>
 
@@ -215,14 +215,14 @@ export const PhaseStepper = memo(function PhaseStepper({
 
               {/* Active phase with no logs yet */}
               {isActive && logs.length === 0 && (
-                <div className="pl-2 font-mono text-xs text-muted-foreground">
+                <div className="pl-2 font-sans text-xs text-muted-foreground">
                   等待活动...
                 </div>
               )}
 
               {/* Phase end line (only for completed phases) */}
               {isCompleted && (
-                <div className="font-mono text-xs leading-4 text-slate-600 font-semibold">
+                <div className="font-sans text-xs leading-4 text-slate-600 font-semibold">
                   --- {config.label}阶段结束 ---
                 </div>
               )}

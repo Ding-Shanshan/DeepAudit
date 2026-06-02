@@ -19,19 +19,9 @@ export default {
     },
     extend: {
       fontFamily: {
-        mono: ['"SFMono-Regular"', '"JetBrains Mono"', '"Roboto Mono"', '"Menlo"', 'monospace'],
-        sans: ['"Inter"', '"PingFang SC"', '"Hiragino Sans GB"', '"Microsoft YaHei"', '"Noto Sans SC"', 'system-ui', 'sans-serif'],
-        display: ['"Inter"', '"PingFang SC"', '"Hiragino Sans GB"', 'sans-serif'],
-      },
-      fontSize: {
-        'xs': ['0.8125rem', { lineHeight: '1.125rem', letterSpacing: '0.01em' }],  // 13px
-        'sm': ['0.9375rem', { lineHeight: '1.375rem', letterSpacing: '0.01em' }],  // 15px
-        'base': ['1rem', { lineHeight: '1.5rem', letterSpacing: '0' }],            // 16px
-        'lg': ['1.125rem', { lineHeight: '1.75rem', letterSpacing: '-0.01em' }],   // 18px
-        'xl': ['1.375rem', { lineHeight: '1.875rem', letterSpacing: '-0.01em' }],  // 22px
-        '2xl': ['1.625rem', { lineHeight: '2.125rem', letterSpacing: '-0.02em' }], // 26px
-        '3xl': ['2rem', { lineHeight: '2.5rem', letterSpacing: '-0.02em' }],       // 32px
-        '4xl': ['2.5rem', { lineHeight: '3rem', letterSpacing: '-0.02em' }],       // 40px
+        sans: ['Inter', 'Noto Sans SC', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'system-ui', 'sans-serif'],
+        mono: ['SFMono-Regular', 'JetBrains Mono', 'Roboto Mono', 'Menlo', 'monospace'],
+        display: ['Inter', 'Noto Sans SC', 'PingFang SC', 'sans-serif'],
       },
       colors: {
         border: 'hsl(var(--border))',

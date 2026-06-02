@@ -196,7 +196,7 @@ export default function EmbeddingConfigPanel() {
       <div className="flex items-center justify-center min-h-[300px]">
         <div className="text-center space-y-4">
           <div className="loading-spinner mx-auto" />
-          <p className="text-muted-foreground font-mono text-sm uppercase tracking-wider">加载配置中...</p>
+          <p className="text-muted-foreground font-sans text-sm uppercase tracking-wider">加载配置中...</p>
         </div>
       </div>
     );
@@ -208,14 +208,14 @@ export default function EmbeddingConfigPanel() {
       <div className="space-y-6">
         {/* 1. 服务商 */}
         <div className="space-y-2">
-          <Label className="text-xs font-bold text-muted-foreground uppercase">服务商</Label>
+          <Label className="text-xs font-medium text-muted-foreground uppercase">服务商</Label>
           <Select value={selectedProvider} onValueChange={handleProviderChange}>
             <SelectTrigger className="h-10 cyber-input">
               <SelectValue placeholder="请选择服务商" />
             </SelectTrigger>
             <SelectContent className="cyber-dialog border-border">
               {providers.map((provider) => (
-                <SelectItem key={provider.id} value={provider.id} className="font-mono">
+                <SelectItem key={provider.id} value={provider.id} className="font-sans">
                   {provider.name.replace(/\s*[(（].+?[)）]/g, '')}
                 </SelectItem>
               ))}
@@ -226,7 +226,7 @@ export default function EmbeddingConfigPanel() {
         {/* 2. 模型名称 */}
         {selectedProviderInfo && (
           <div className="space-y-2">
-            <Label className="text-xs font-bold text-muted-foreground uppercase">模型名称</Label>
+            <Label className="text-xs font-medium text-muted-foreground uppercase">模型名称</Label>
             <Input
               type="text"
               value={selectedModel}
@@ -239,7 +239,7 @@ export default function EmbeddingConfigPanel() {
 
         {/* 3. API URL */}
         <div className="space-y-2">
-          <Label className="text-xs font-bold text-muted-foreground uppercase">API URL</Label>
+          <Label className="text-xs font-medium text-muted-foreground uppercase">API URL</Label>
           <Input
             type="url"
             value={baseUrl}
@@ -252,7 +252,7 @@ export default function EmbeddingConfigPanel() {
         {/* 4. API密钥 */}
         {selectedProviderInfo?.requires_api_key && (
           <div className="space-y-2">
-            <Label className="text-xs font-bold text-muted-foreground uppercase">
+            <Label className="text-xs font-medium text-muted-foreground uppercase">
               API密钥
               <span className="text-destructive ml-1">*</span>
             </Label>
@@ -269,7 +269,7 @@ export default function EmbeddingConfigPanel() {
         {/* 5. 向量维度 + 批处理大小 */}
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-2">
-            <Label className="text-xs font-bold text-muted-foreground uppercase">向量维度</Label>
+            <Label className="text-xs font-medium text-muted-foreground uppercase">向量维度</Label>
             <Input
               type="number"
               value={customDimension || ""}
@@ -281,7 +281,7 @@ export default function EmbeddingConfigPanel() {
             />
           </div>
           <div className="space-y-2">
-            <Label className="text-xs font-bold text-muted-foreground uppercase">批处理大小</Label>
+            <Label className="text-xs font-medium text-muted-foreground uppercase">批处理大小</Label>
             <Input
               type="number"
               value={batchSize}
@@ -322,7 +322,7 @@ export default function EmbeddingConfigPanel() {
               <pre className="text-sm text-destructive/80 whitespace-pre-wrap break-words font-mono leading-relaxed bg-destructive/5 p-3 rounded border border-destructive/15">{testResult.message}</pre>
             )}
             {testResult.success && (
-              <div className="mt-3 pt-3 border-t border-border text-xs text-muted-foreground space-y-1 font-mono">
+              <div className="mt-3 pt-3 border-t border-border text-xs text-muted-foreground space-y-1 font-sans">
                 <div>向量维度: <span className="text-foreground">{testResult.dimensions}</span></div>
                 <div>延迟: <span className="text-foreground">{testResult.latency_ms}ms</span></div>
                 {testResult.sample_embedding && (

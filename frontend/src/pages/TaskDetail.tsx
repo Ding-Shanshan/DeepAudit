@@ -60,8 +60,8 @@ function IssuesTable({ issues, onStatusChange, onViewDetail }: {
       <div className="cyber-card p-0">
         <div className="p-12 text-center">
           <CheckCircle className="w-16 h-16 text-primary dark:text-emerald-500 mx-auto mb-4" />
-          <h3 className="text-lg font-bold text-foreground mb-2 uppercase">未发现问题</h3>
-          <p className="text-sm text-muted-foreground font-mono">代码质量检查通过，没有发现任何问题</p>
+          <h3 className="text-lg font-semibold text-foreground mb-2 uppercase">未发现问题</h3>
+          <p className="text-sm text-muted-foreground font-sans">代码质量检查通过，没有发现任何问题</p>
         </div>
       </div>
     );
@@ -104,7 +104,7 @@ function IssuesTable({ issues, onStatusChange, onViewDetail }: {
                     {onStatusChange ? (
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                          <Button variant="outline" size="sm" className="text-xs font-mono border h-7">
+                          <Button variant="outline" size="sm" className="text-xs font-sans border h-7">
                             {issue.status === 'resolved' ? '已解决' :
                               issue.status === 'false_positive' ? '误报' :
                                 issue.status === 'pending_review' ? '存疑' : '待处理'}
@@ -318,7 +318,7 @@ export default function TaskDetail() {
       <div className="flex items-center justify-center min-h-[60vh]">
         <div className="text-center space-y-4">
           <div className="loading-spinner mx-auto" />
-          <p className="text-muted-foreground font-mono text-sm uppercase tracking-wider">加载任务详情...</p>
+          <p className="text-muted-foreground font-sans text-sm uppercase tracking-wider">加载任务详情...</p>
         </div>
       </div>
     );
@@ -326,7 +326,7 @@ export default function TaskDetail() {
 
   if (!task) {
     return (
-      <div className="space-y-4 px-6 pt-1 pb-6 cyber-bg-elevated min-h-screen font-mono">
+      <div className="space-y-4 px-6 pt-1 pb-6 cyber-bg-elevated min-h-screen font-sans">
         <div className="flex items-center space-x-4">
           <Link to="/audit-tasks">
             <Button variant="outline" size="sm" className="cyber-btn-ghost h-10 w-10 p-0">
@@ -336,15 +336,15 @@ export default function TaskDetail() {
         </div>
         <div className="cyber-card p-16 text-center">
           <AlertTriangle className="w-16 h-16 text-destructive mx-auto mb-4" />
-          <h3 className="text-xl font-bold text-foreground uppercase mb-2">任务不存在</h3>
-          <p className="text-muted-foreground font-mono">请检查任务ID是否正确</p>
+          <h3 className="text-xl font-semibold text-foreground uppercase mb-2">任务不存在</h3>
+          <p className="text-muted-foreground font-sans">请检查任务ID是否正确</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-4 px-6 pt-1 pb-6 cyber-bg-elevated min-h-screen font-mono relative">
+    <div className="space-y-4 px-6 pt-1 pb-6 cyber-bg-elevated min-h-screen font-sans relative">
       {/* Grid background */}
       <div className="absolute inset-0 cyber-grid-subtle pointer-events-none" />
 
@@ -356,7 +356,7 @@ export default function TaskDetail() {
               <ArrowLeft className="w-5 h-5" />
             </Button>
           </Link>
-          <h1 className="text-2xl font-bold text-foreground uppercase tracking-wider">{task.task_type === 'repository' ? '仓库审计任务' : '即时分析任务'}</h1>
+          <h1 className="text-2xl font-semibold text-foreground uppercase tracking-wider">{task.task_type === 'repository' ? '仓库审计任务' : '即时分析任务'}</h1>
         </div>
 
         <div className="flex items-center space-x-3">
@@ -377,7 +377,7 @@ export default function TaskDetail() {
 
       {/* 任务信息 */}
       <div className="cyber-card p-4 relative z-10">
-        <div className="space-y-3 font-mono">
+        <div className="space-y-3 font-sans">
           {task.project && (
             <>
               <div className="flex items-center justify-between">
@@ -476,7 +476,7 @@ export default function TaskDetail() {
       {/* 问题列表 */}
       <div className="relative z-10">
         <div className="flex items-center gap-3 p-4 border-b border-border flex-wrap">
-          <span className="font-mono font-bold uppercase text-foreground bg-primary text-primary-foreground border border-primary/20 px-6 py-2.5 rounded-xl text-sm tracking-wider min-w-[240px] text-center">问题列表</span>
+          <span className="font-sans font-bold uppercase text-foreground bg-primary text-primary-foreground border border-primary/20 px-6 py-2.5 rounded-xl text-sm tracking-wider min-w-[240px] text-center">问题列表</span>
           <div className="relative flex-1 min-w-[180px] max-w-[240px] ml-2">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
             <Input

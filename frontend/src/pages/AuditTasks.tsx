@@ -249,14 +249,14 @@ export default function AuditTasks() {
       <div className="flex items-center justify-center min-h-[60vh]">
         <div className="text-center space-y-4">
           <div className="loading-spinner mx-auto" />
-          <p className="text-muted-foreground font-mono text-sm uppercase tracking-wider">加载任务数据...</p>
+          <p className="text-muted-foreground font-sans text-sm uppercase tracking-wider">加载任务数据...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-4 px-6 pt-1 pb-6 cyber-bg-elevated min-h-screen font-mono relative">
+    <div className="space-y-4 px-6 pt-1 pb-6 cyber-bg-elevated min-h-screen font-sans relative">
       {/* Grid background */}
       <div className="absolute inset-0 cyber-grid-subtle pointer-events-none" />
 

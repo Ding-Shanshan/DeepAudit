@@ -218,7 +218,10 @@ class LiteLLMAdapter(BaseLLMAdapter):
         }
 
         # Claude 不允许同时传 temperature 和 top_p
-        if self.config.provider != LLMProvider.CLAUDE:
+        # 对于使用自定义 base_url 的 OpenAI 兼容代理，也不传 top_p
+        # 因为很多代理（如国产模型代理）不支持此参数，可能导致 500 错误
+        has_custom_base = bool(self.config.base_url)
+        if self.config.provider != LLMProvider.CLAUDE and not has_custom_base:
             kwargs["top_p"] = request.top_p if request.top_p is not None else self.config.top_p
 
         # 设置 API Key
@@ -233,8 +236,9 @@ class LiteLLMAdapter(BaseLLMAdapter):
         # 设置超时
         kwargs["timeout"] = self.config.timeout
 
-        # 对于 OpenAI 提供商，添加额外参数
-        if self.config.provider == LLMProvider.OPENAI:
+        # 对于原生 OpenAI 提供商（非代理），添加额外参数
+        # 使用自定义 base_url 的代理可能不支持这些参数，会导致 500 错误
+        if self.config.provider == LLMProvider.OPENAI and not has_custom_base:
             kwargs["frequency_penalty"] = self.config.frequency_penalty
             kwargs["presence_penalty"] = self.config.presence_penalty
 
@@ -330,12 +334,15 @@ class LiteLLMAdapter(BaseLLMAdapter):
         }
 
         # Claude 不允许同时传 temperature 和 top_p
-        if self.config.provider != LLMProvider.CLAUDE:
+        # 对于使用自定义 base_url 的 OpenAI 兼容代理，也不传 top_p
+        has_custom_base = bool(self.config.base_url)
+        if self.config.provider != LLMProvider.CLAUDE and not has_custom_base:
             kwargs["top_p"] = request.top_p if request.top_p is not None else self.config.top_p
 
         # 🔥 对于支持的模型，请求在流式输出中包含 usage 信息
         # OpenAI API 支持 stream_options
-        if self.config.provider in [LLMProvider.OPENAI, LLMProvider.DEEPSEEK]:
+        # 使用自定义 base_url 的代理可能不支持此参数
+        if self.config.provider in [LLMProvider.OPENAI, LLMProvider.DEEPSEEK] and not has_custom_base:
             kwargs["stream_options"] = {"include_usage": True}
 
         if self.config.api_key and self.config.api_key != "ollama":

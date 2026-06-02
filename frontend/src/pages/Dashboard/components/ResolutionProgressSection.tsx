@@ -59,7 +59,7 @@ function CircularProgress({
       </svg>
       {/* 中心文字 */}
       <div className="absolute inset-0 flex flex-col items-center justify-center">
-        <span className="text-lg font-bold text-foreground">{percentage}%</span>
+        <span className="text-lg font-semibold text-foreground">{percentage}%</span>
         <span className="text-xs text-muted-foreground">已解决</span>
       </div>
     </div>

@@ -23,7 +23,7 @@ export default function AgentModeSelector({
     <div className="space-y-3">
       <div className="flex items-center gap-2 mb-2">
         <Shield className="w-4 h-4 text-violet-600 dark:text-secondary" />
-        <span className="font-mono text-xs font-bold text-muted-foreground uppercase tracking-wider">
+        <span className="font-sans text-xs font-bold text-muted-foreground uppercase tracking-wider">
           审计模式
         </span>
       </div>
@@ -62,7 +62,7 @@ export default function AgentModeSelector({
               )} />
             </div>
             <span className={cn(
-              "font-bold text-sm font-mono uppercase",
+              "font-bold text-sm font-sans uppercase",
               value === "fast" ? "text-amber-700 dark:text-warning" : "text-muted-foreground"
             )}>
               快速审计
@@ -72,7 +72,7 @@ export default function AgentModeSelector({
             )}
           </div>
 
-          <ul className="text-xs text-muted-foreground space-y-1 mb-3 font-mono">
+          <ul className="text-xs text-muted-foreground space-y-1 mb-3 font-sans">
             <li className="flex items-center gap-1">
               <Clock className="w-3 h-3" />
               速度快（分钟级）
@@ -88,7 +88,7 @@ export default function AgentModeSelector({
           </ul>
 
           <div className="mt-auto pt-2 border-t border-border">
-            <span className="text-xs uppercase tracking-wider text-muted-foreground font-bold font-mono">
+            <span className="text-xs uppercase tracking-wider text-muted-foreground font-bold font-sans">
               适合: CI/CD 集成、日常检查
             </span>
           </div>
@@ -115,7 +115,7 @@ export default function AgentModeSelector({
           />
 
           {/* 推荐标签 */}
-          <div className="absolute -top-2 -right-2 px-2 py-0.5 bg-violet-600 text-white text-xs font-bold uppercase font-mono rounded shadow-[0_0_10px_rgba(139,92,246,0.5)]">
+          <div className="absolute -top-2 -right-2 px-2 py-0.5 bg-violet-600 text-white text-xs font-bold uppercase font-sans rounded shadow-[0_0_10px_rgba(139,92,246,0.5)]">
             推荐
           </div>
 
@@ -132,7 +132,7 @@ export default function AgentModeSelector({
               )} />
             </div>
             <span className={cn(
-              "font-bold text-sm font-mono uppercase",
+              "font-bold text-sm font-sans uppercase",
               value === "agent" ? "text-violet-700 dark:text-violet-300" : "text-muted-foreground"
             )}>
               深度审计
@@ -142,7 +142,7 @@ export default function AgentModeSelector({
             )}
           </div>
 
-          <ul className="text-xs text-muted-foreground space-y-1 mb-3 font-mono">
+          <ul className="text-xs text-muted-foreground space-y-1 mb-3 font-sans">
             <li className="flex items-center gap-1">
               <Bot className="w-3 h-3" />
               AI Agent 自主分析
@@ -161,7 +161,7 @@ export default function AgentModeSelector({
           </ul>
 
           <div className="mt-auto pt-2 border-t border-border">
-            <span className="text-xs uppercase tracking-wider text-muted-foreground font-bold font-mono">
+            <span className="text-xs uppercase tracking-wider text-muted-foreground font-bold font-sans">
               适合: 发版前审计、深度安全评估
             </span>
           </div>
@@ -170,7 +170,7 @@ export default function AgentModeSelector({
 
       {/* 模式说明 */}
       {value === "agent" && (
-        <div className="p-3 bg-violet-50 dark:bg-violet-950/30 border border-violet-500/30 text-xs text-violet-700 dark:text-violet-300 rounded font-mono">
+        <div className="p-3 bg-violet-50 dark:bg-violet-950/30 border border-violet-500/30 text-xs text-violet-700 dark:text-violet-300 rounded font-sans">
           <p className="font-bold mb-1 uppercase text-violet-700 dark:text-secondary">深度审计模式说明：</p>
           <ul className="list-disc list-inside space-y-0.5 text-violet-600 dark:text-violet-300/80">
             <li>AI智能体会自主规划审计策略</li>

@@ -43,7 +43,7 @@ export default function BasicConfig({
   const isZip = isZipProject(project);
 
   return (
-    <div className="space-y-4 mt-6 font-mono">
+    <div className="space-y-4 mt-6 font-sans">
       {/* ZIP 项目文件上传 */}
       {isZip && (
         <ZipFileSection
@@ -76,13 +76,13 @@ export default function BasicConfig({
               <SelectItem value="repository">
                 <div className="flex items-center space-x-2">
                   <GitBranch className="w-4 h-4" />
-                  <span className="font-mono">仓库审计</span>
+                  <span className="font-sans">仓库审计</span>
                 </div>
               </SelectItem>
               <SelectItem value="instant">
                 <div className="flex items-center space-x-2">
                   <Zap className="w-4 h-4" />
-                  <span className="font-mono">即时分析</span>
+                  <span className="font-sans">即时分析</span>
                 </div>
               </SelectItem>
             </SelectContent>
@@ -128,7 +128,7 @@ function ProjectInfoCard({ project }: { project: Project }) {
     <div className="bg-blue-50 border-2 border-black p-4 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
       <div className="flex items-start space-x-3">
         <Info className="w-5 h-5 text-blue-600 mt-0.5" />
-        <div className="text-sm font-mono">
+        <div className="text-sm font-sans">
           <p className="font-bold text-blue-900 mb-1 uppercase">
             选中项目：{project.name}
           </p>

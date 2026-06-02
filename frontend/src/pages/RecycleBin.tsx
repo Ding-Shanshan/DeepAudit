@@ -112,14 +112,14 @@ export default function RecycleBin() {
       <div className="flex items-center justify-center min-h-screen cyber-bg-elevated">
         <div className="text-center space-y-4">
           <div className="loading-spinner mx-auto" />
-          <p className="text-muted-foreground font-mono text-sm uppercase tracking-wider">加载中...</p>
+          <p className="text-muted-foreground font-sans text-sm uppercase tracking-wider">加载中...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-4 px-6 pt-1 pb-6 cyber-bg-elevated min-h-screen font-mono relative">
+    <div className="space-y-4 px-6 pt-1 pb-6 cyber-bg-elevated min-h-screen font-sans relative">
       {/* Grid background */}
       <div className="absolute inset-0 cyber-grid-subtle pointer-events-none" />
 
@@ -127,7 +127,7 @@ export default function RecycleBin() {
       <div className="cyber-card p-0 relative z-10">
         <div className="cyber-card-header">
           <Trash2 className="w-5 h-5 text-destructive" />
-          <h3 className="text-lg font-bold uppercase tracking-wider text-foreground">回收站</h3>
+          <h3 className="text-lg font-semibold uppercase tracking-wider text-foreground">回收站</h3>
           <Badge className="ml-2 cyber-badge-muted">{deletedProjects.length} 个项目</Badge>
         </div>
         <div className="p-4">
@@ -265,7 +265,7 @@ export default function RecycleBin() {
         <AlertDialogContent className="cyber-card p-0 cyber-dialog max-w-md !fixed">
           <AlertDialogHeader className="cyber-card-header">
             <RotateCcw className="w-5 h-5 text-primary" />
-            <AlertDialogTitle className="text-lg font-bold uppercase tracking-wider text-foreground">
+            <AlertDialogTitle className="text-lg font-semibold uppercase tracking-wider text-foreground">
               确认恢复项目
             </AlertDialogTitle>
           </AlertDialogHeader>
@@ -291,7 +291,7 @@ export default function RecycleBin() {
         <AlertDialogContent className="cyber-card p-0 cyber-dialog max-w-md !fixed">
           <AlertDialogHeader className="p-4 border-b border-destructive/25 bg-destructive/8 flex flex-row items-center gap-2">
             <AlertTriangle className="w-5 h-5 text-destructive" />
-            <AlertDialogTitle className="text-lg font-bold uppercase tracking-wider text-destructive">
+            <AlertDialogTitle className="text-lg font-semibold uppercase tracking-wider text-destructive">
               警告：永久删除项目
             </AlertDialogTitle>
           </AlertDialogHeader>

@@ -198,7 +198,7 @@ const CircularProgress = memo(function CircularProgress({
         />
       </svg>
       <div className="absolute inset-0 flex flex-col items-center justify-center">
-        <span className={`text-xl font-bold font-mono ${colors.text}`}>
+        <span className={`text-xl font-semibold font-sans ${colors.text}`}>
           {value.toFixed(0)}
         </span>
         <span className="text-[8px] text-muted-foreground uppercase tracking-wider">分</span>
@@ -269,7 +269,7 @@ const EnhancedStatsPanel = memo(function EnhancedStatsPanel({
               </span>
             </div>
             <div className="flex items-baseline gap-1">
-              <span className={`text-2xl font-bold font-mono ${stat.color}`}>
+              <span className={`text-2xl font-bold font-sans ${stat.color}`}>
                 {stat.value}
               </span>
               {stat.trend === "critical" && stat.value > 0 && (
@@ -437,7 +437,7 @@ const PreviewSearchBar = memo(function PreviewSearchBar({
       />
       {searchQuery && (
         <>
-          <span className="text-xs text-muted-foreground font-mono">
+          <span className="text-xs text-muted-foreground font-sans">
             {matchCount} 匹配
           </span>
           <button
@@ -515,7 +515,7 @@ const MarkdownPreview = memo(function MarkdownPreview({
                     <div className="w-2.5 h-2.5 rounded-full bg-amber-500/80" />
                     <div className="w-2.5 h-2.5 rounded-full bg-emerald-500/80" />
                   </div>
-                  <span className="text-xs text-muted-foreground uppercase tracking-wider font-mono ml-2">
+                  <span className="text-xs text-muted-foreground uppercase tracking-wider font-sans ml-2">
                     {codeLanguage || "code"}
                   </span>
                 </div>
@@ -556,7 +556,7 @@ const MarkdownPreview = memo(function MarkdownPreview({
       // Headers with decorative elements
       if (line.startsWith("# ")) {
         elements.push(
-          <h1 key={index} className="text-xl font-bold text-foreground mt-8 mb-4 pb-3 border-b border-border/50 flex items-center gap-3">
+          <h1 key={index} className="text-xl font-semibold text-foreground mt-8 mb-4 pb-3 border-b border-border/50 flex items-center gap-3">
             <span className="w-1 h-6 bg-primary rounded-full" />
             {highlightText(line.slice(2), searchQuery)}
           </h1>
@@ -565,7 +565,7 @@ const MarkdownPreview = memo(function MarkdownPreview({
       }
       if (line.startsWith("## ")) {
         elements.push(
-          <h2 key={index} className="text-lg font-bold text-foreground mt-6 mb-3 flex items-center gap-2">
+          <h2 key={index} className="text-lg font-semibold text-foreground mt-6 mb-3 flex items-center gap-2">
             <Sparkles className="w-4 h-4 text-primary/60" />
             {highlightText(line.slice(3), searchQuery)}
           </h2>
@@ -1633,11 +1633,11 @@ export const ReportExportDialog = memo(function ReportExportDialog({
                   <FileDown className="w-6 h-6 text-primary" />
                 </div>
                 <div>
-                  <DialogTitle className="text-xl font-bold text-foreground flex items-center gap-2">
+                  <DialogTitle className="text-xl font-semibold text-foreground flex items-center gap-2">
                     导出审计报告
                     <Sparkles className="w-4 h-4 text-primary/60" />
                   </DialogTitle>
-                  <p className="text-xs text-muted-foreground mt-1 font-mono flex items-center gap-2">
+                  <p className="text-xs text-muted-foreground mt-1 font-sans flex items-center gap-2">
                     <Clock className="w-3 h-3" />
                     {task.name || `Task ${task.id.slice(0, 8)}`}
                   </p>
@@ -1716,7 +1716,7 @@ export const ReportExportDialog = memo(function ReportExportDialog({
                     <Eye className="w-4 h-4 text-muted-foreground" />
                     <span className="text-xs text-muted-foreground font-medium">预览</span>
                   </div>
-                  <Badge className="text-xs bg-muted/50 text-muted-foreground border-0 font-mono">
+                  <Badge className="text-xs bg-muted/50 text-muted-foreground border-0 font-sans">
                     {formatBytes(preview.content.length)}
                   </Badge>
                 </div>
@@ -1733,7 +1733,7 @@ export const ReportExportDialog = memo(function ReportExportDialog({
                       className="w-24 bg-transparent text-xs text-foreground placeholder:text-muted-foreground outline-none"
                     />
                     {searchQuery && (
-                      <span className="text-xs text-muted-foreground font-mono">
+                      <span className="text-xs text-muted-foreground font-sans">
                         {searchMatchCount}
                       </span>
                     )}
@@ -1825,7 +1825,7 @@ export const ReportExportDialog = memo(function ReportExportDialog({
                 <span className={FORMAT_CONFIG[activeFormat].color}>
                   {FORMAT_CONFIG[activeFormat].icon}
                 </span>
-                <span className="font-mono">
+                <span className="font-sans">
                   {FORMAT_CONFIG[activeFormat].label} ({FORMAT_CONFIG[activeFormat].extension})
                 </span>
               </div>

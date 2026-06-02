@@ -110,7 +110,7 @@ export function ProjectIssuesTab(props: {
     return (
       <div className="cyber-card p-12 text-center">
         <div className="loading-spinner mx-auto mb-4"></div>
-        <p className="text-muted-foreground font-mono">正在加载问题列表...</p>
+        <p className="text-muted-foreground font-sans">正在加载问题列表...</p>
       </div>
     );
   }
@@ -213,7 +213,7 @@ export function ProjectIssuesTab(props: {
                           {onStatusChange ? (
                             <DropdownMenu>
                               <DropdownMenuTrigger asChild>
-                                <Button variant="outline" size="sm" className={`text-xs font-mono border h-7 ${getStatusBadgeClass(issue.status)}`}>
+                                <Button variant="outline" size="sm" className={`text-xs font-sans border h-7 ${getStatusBadgeClass(issue.status)}`}>
                                   {getStatusLabel(issue.status)}
                                 </Button>
                               </DropdownMenuTrigger>
@@ -266,8 +266,8 @@ export function ProjectIssuesTab(props: {
         ) : (
           <div className="p-12 text-center">
             <Shield className="w-16 h-16 text-primary/40 mx-auto mb-4" />
-            <h3 className="text-lg font-bold text-foreground mb-2 uppercase">未发现问题</h3>
-            <p className="text-sm text-muted-foreground font-mono">该项目暂未发现安全问题，或尚未进行审计。</p>
+            <h3 className="text-lg font-semibold text-foreground mb-2 uppercase">未发现问题</h3>
+            <p className="text-sm text-muted-foreground font-sans">该项目暂未发现安全问题，或尚未进行审计。</p>
           </div>
         )}
       </div>

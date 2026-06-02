@@ -88,13 +88,13 @@ export default function AdvancedOptions({
                 <SelectValue />
               </SelectTrigger>
               <SelectContent className="rounded-none border-2 border-border shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
-                <SelectItem value="basic" className="font-mono">
+                <SelectItem value="basic" className="font-sans">
                   基础 (快速)
                 </SelectItem>
-                <SelectItem value="standard" className="font-mono">
+                <SelectItem value="standard" className="font-sans">
                   标准 (推荐)
                 </SelectItem>
-                <SelectItem value="deep" className="font-mono">
+                <SelectItem value="deep" className="font-sans">
                   深度 (全面)
                 </SelectItem>
               </SelectContent>
@@ -181,7 +181,7 @@ function DepthExplanation() {
     <div className="bg-amber-50 border-2 border-border p-4 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
       <div className="flex items-start space-x-3">
         <AlertCircle className="w-5 h-5 text-amber-600 mt-0.5" />
-        <div className="text-sm font-mono">
+        <div className="text-sm font-sans">
           <p className="font-bold text-amber-900 mb-2 uppercase">
             分析深度说明：
           </p>

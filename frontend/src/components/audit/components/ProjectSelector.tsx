@@ -34,12 +34,12 @@ export default function ProjectSelector({
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <Label className="text-base font-bold font-mono uppercase">
+        <Label className="text-base font-bold font-sans uppercase">
           选择项目
         </Label>
         <Badge
           variant="outline"
-          className="text-xs rounded-none border-border font-mono"
+          className="text-xs rounded-none border-border font-sans"
         >
           {filteredProjects.length} 个可用项目
         </Badge>
@@ -101,11 +101,11 @@ function ProjectCard({
             {project.name}
           </h4>
           {project.description && (
-            <p className="text-xs text-muted-foreground mt-1 line-clamp-2 font-mono">
+            <p className="text-xs text-muted-foreground mt-1 line-clamp-2 font-sans">
               {project.description}
             </p>
           )}
-          <div className="flex items-center space-x-4 mt-2 text-xs text-muted-foreground font-mono font-bold">
+          <div className="flex items-center space-x-4 mt-2 text-xs text-muted-foreground font-sans font-bold">
             <span
               className={`px-1.5 py-0.5 ${isRepo ? "bg-blue-100 text-blue-700" : "bg-amber-100 text-amber-700"}`}
             >
@@ -141,7 +141,7 @@ function LoadingSpinner() {
 
 function EmptyState({ hasSearch }: { hasSearch: boolean }) {
   return (
-    <div className="col-span-2 text-center py-8 text-muted-foreground font-mono">
+    <div className="col-span-2 text-center py-8 text-muted-foreground font-sans">
       <FileText className="w-8 h-8 mx-auto mb-2 opacity-50" />
       <p className="text-sm">
         {hasSearch ? "未找到匹配的项目" : "暂无可用项目"}

@@ -247,14 +247,14 @@ export default function ScheduleManager() {
       <div className="flex items-center justify-center min-h-screen cyber-bg-elevated">
         <div className="text-center space-y-4">
           <div className="loading-spinner mx-auto" />
-          <p className="text-muted-foreground font-mono text-sm uppercase tracking-wider">加载中...</p>
+          <p className="text-muted-foreground font-sans text-sm uppercase tracking-wider">加载中...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-4 px-6 pt-1 pb-6 cyber-bg-elevated min-h-screen font-mono relative">
+    <div className="space-y-4 px-6 pt-1 pb-6 cyber-bg-elevated min-h-screen font-sans relative">
       <div className="absolute inset-0 cyber-grid-subtle pointer-events-none" />
 
       <div className="relative z-10">
@@ -363,73 +363,73 @@ export default function ScheduleManager() {
       <Sheet open={viewSheetOpen} onOpenChange={setViewSheetOpen}>
         <SheetContent side="right" className="!w-[min(90vw,500px)] sm:max-w-[500px] !sm:max-w-none flex flex-col p-0 gap-0 border-border overflow-y-auto">
           <SheetHeader className="px-6 py-4 border-b border-border flex-shrink-0 bg-muted">
-            <SheetTitle className="flex items-center gap-3 font-mono text-foreground">
+            <SheetTitle className="flex items-center gap-3 font-sans text-foreground">
               <div className="p-2 bg-primary/20 rounded border border-primary/30">
                 <Eye className="w-5 h-5 text-primary" />
               </div>
-              <span className="text-base font-bold uppercase tracking-wider">查看计划任务</span>
+              <span className="text-lg font-semibold uppercase tracking-wider">查看计划任务</span>
             </SheetTitle>
           </SheetHeader>
 
           {selectedSchedule && (
             <div className="flex-1 overflow-y-auto p-6 space-y-4">
               <div className="space-y-1.5">
-                <Label className="text-xs font-bold text-muted-foreground uppercase">任务名称</Label>
+                <Label className="text-xs font-medium text-muted-foreground uppercase">任务名称</Label>
                 <p className="text-sm text-foreground">{selectedSchedule.name}</p>
               </div>
               <div className="space-y-1.5">
-                <Label className="text-xs font-bold text-muted-foreground uppercase">项目</Label>
+                <Label className="text-xs font-medium text-muted-foreground uppercase">项目</Label>
                 <p className="text-sm text-foreground">{getProjectName(selectedSchedule.project_id)}</p>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1.5">
-                  <Label className="text-xs font-bold text-muted-foreground uppercase">扫描方式</Label>
+                  <Label className="text-xs font-medium text-muted-foreground uppercase">扫描方式</Label>
                   <p className="text-sm text-foreground">{selectedSchedule.scan_mode === "agent" ? "深度审计" : "快速审计"}</p>
                 </div>
                 <div className="space-y-1.5">
-                  <Label className="text-xs font-bold text-muted-foreground uppercase">分支</Label>
+                  <Label className="text-xs font-medium text-muted-foreground uppercase">分支</Label>
                   <p className="text-sm text-foreground">{selectedSchedule.branch_name || "-"}</p>
                 </div>
               </div>
               <div className="space-y-1.5">
-                <Label className="text-xs font-bold text-muted-foreground uppercase">扫描周期</Label>
+                <Label className="text-xs font-medium text-muted-foreground uppercase">扫描周期</Label>
                 <p className="text-sm text-foreground">{selectedSchedule.interval_minutes} 分钟</p>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1.5">
-                  <Label className="text-xs font-bold text-muted-foreground uppercase">允许开始时间</Label>
+                  <Label className="text-xs font-medium text-muted-foreground uppercase">允许开始时间</Label>
                   <p className="text-sm text-foreground">{selectedSchedule.time_window_start || "-"}</p>
                 </div>
                 <div className="space-y-1.5">
-                  <Label className="text-xs font-bold text-muted-foreground uppercase">允许结束时间</Label>
+                  <Label className="text-xs font-medium text-muted-foreground uppercase">允许结束时间</Label>
                   <p className="text-sm text-foreground">{selectedSchedule.time_window_end || "-"}</p>
                 </div>
               </div>
               <div className="space-y-1.5">
-                <Label className="text-xs font-bold text-muted-foreground uppercase">时区</Label>
+                <Label className="text-xs font-medium text-muted-foreground uppercase">时区</Label>
                 <p className="text-sm text-foreground">{selectedSchedule.timezone || "-"}</p>
               </div>
               <div className="space-y-1.5">
-                <Label className="text-xs font-bold text-muted-foreground uppercase">限定文件</Label>
+                <Label className="text-xs font-medium text-muted-foreground uppercase">限定文件</Label>
                 <p className="text-sm text-foreground">{selectedSchedule.file_paths?.length > 0 ? selectedSchedule.file_paths.join(", ") : "-"}</p>
               </div>
               <div className="space-y-1.5">
-                <Label className="text-xs font-bold text-muted-foreground uppercase">排除模式</Label>
+                <Label className="text-xs font-medium text-muted-foreground uppercase">排除模式</Label>
                 <p className="text-sm text-foreground">{selectedSchedule.exclude_patterns?.length > 0 ? selectedSchedule.exclude_patterns.join(", ") : "-"}</p>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1.5">
-                  <Label className="text-xs font-bold text-muted-foreground uppercase">状态</Label>
+                  <Label className="text-xs font-medium text-muted-foreground uppercase">状态</Label>
                   <p className="text-sm text-foreground">{selectedSchedule.is_active ? "启用" : "停用"}</p>
                 </div>
                 <div className="space-y-1.5">
-                  <Label className="text-xs font-bold text-muted-foreground uppercase">下次执行</Label>
+                  <Label className="text-xs font-medium text-muted-foreground uppercase">下次执行</Label>
                   <p className="text-sm text-foreground">{formatDate(selectedSchedule.next_run_at)}</p>
                 </div>
               </div>
               {selectedSchedule.last_run_at && (
                 <div className="space-y-1.5">
-                  <Label className="text-xs font-bold text-muted-foreground uppercase">上次执行</Label>
+                  <Label className="text-xs font-medium text-muted-foreground uppercase">上次执行</Label>
                   <p className="text-sm text-foreground">{formatDate(selectedSchedule.last_run_at)}</p>
                 </div>
               )}
@@ -442,17 +442,17 @@ export default function ScheduleManager() {
       <Sheet open={editSheetOpen} onOpenChange={setEditSheetOpen}>
         <SheetContent side="right" className="!w-[min(90vw,500px)] sm:max-w-[500px] !sm:max-w-none flex flex-col p-0 gap-0 border-border overflow-y-auto">
           <SheetHeader className="px-6 py-4 border-b border-border flex-shrink-0 bg-muted">
-            <SheetTitle className="flex items-center gap-3 font-mono text-foreground">
+            <SheetTitle className="flex items-center gap-3 font-sans text-foreground">
               <div className="p-2 bg-primary/20 rounded border border-primary/30">
                 <Edit className="w-5 h-5 text-primary" />
               </div>
-              <span className="text-base font-bold uppercase tracking-wider">编辑计划任务</span>
+              <span className="text-lg font-semibold uppercase tracking-wider">编辑计划任务</span>
             </SheetTitle>
           </SheetHeader>
 
           <div className="flex-1 overflow-y-auto p-6 space-y-4">
             <div className="space-y-2">
-              <Label className="text-xs font-bold text-muted-foreground uppercase">项目 *</Label>
+              <Label className="text-xs font-medium text-muted-foreground uppercase">项目 *</Label>
               <Select value={editForm.project_id} onValueChange={(value) => setEditForm((prev) => ({ ...prev, project_id: value }))}>
                 <SelectTrigger className="cyber-input">
                   <SelectValue placeholder="选择项目" />
@@ -467,12 +467,12 @@ export default function ScheduleManager() {
               </Select>
             </div>
             <div className="space-y-2">
-              <Label className="text-xs font-bold text-muted-foreground uppercase">任务名称 *</Label>
+              <Label className="text-xs font-medium text-muted-foreground uppercase">任务名称 *</Label>
               <Input value={editForm.name} onChange={(e) => setEditForm((prev) => ({ ...prev, name: e.target.value }))} className="cyber-input" />
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label className="text-xs font-bold text-muted-foreground uppercase">扫描方式</Label>
+                <Label className="text-xs font-medium text-muted-foreground uppercase">扫描方式</Label>
                 <Select value={editForm.scan_mode} onValueChange={(value) => setEditForm((prev) => ({ ...prev, scan_mode: value as "fast" | "agent" }))}>
                   <SelectTrigger className="cyber-input">
                     <SelectValue />
@@ -484,34 +484,34 @@ export default function ScheduleManager() {
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label className="text-xs font-bold text-muted-foreground uppercase">分支</Label>
+                <Label className="text-xs font-medium text-muted-foreground uppercase">分支</Label>
                 <Input value={editForm.branch_name} onChange={(e) => setEditForm((prev) => ({ ...prev, branch_name: e.target.value }))} className="cyber-input" />
               </div>
             </div>
             <div className="space-y-2">
-              <Label className="text-xs font-bold text-muted-foreground uppercase">扫描周期（分钟）</Label>
+              <Label className="text-xs font-medium text-muted-foreground uppercase">扫描周期（分钟）</Label>
               <Input type="number" min="1" value={editForm.interval_minutes} onChange={(e) => setEditForm((prev) => ({ ...prev, interval_minutes: e.target.value }))} className="cyber-input" />
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label className="text-xs font-bold text-muted-foreground uppercase">允许开始时间</Label>
+                <Label className="text-xs font-medium text-muted-foreground uppercase">允许开始时间</Label>
                 <Input type="time" value={editForm.time_window_start} onChange={(e) => setEditForm((prev) => ({ ...prev, time_window_start: e.target.value }))} className="cyber-input" />
               </div>
               <div className="space-y-2">
-                <Label className="text-xs font-bold text-muted-foreground uppercase">允许结束时间</Label>
+                <Label className="text-xs font-medium text-muted-foreground uppercase">允许结束时间</Label>
                 <Input type="time" value={editForm.time_window_end} onChange={(e) => setEditForm((prev) => ({ ...prev, time_window_end: e.target.value }))} className="cyber-input" />
               </div>
             </div>
             <div className="space-y-2">
-              <Label className="text-xs font-bold text-muted-foreground uppercase">时区</Label>
+              <Label className="text-xs font-medium text-muted-foreground uppercase">时区</Label>
               <Input value={editForm.timezone} onChange={(e) => setEditForm((prev) => ({ ...prev, timezone: e.target.value }))} className="cyber-input" />
             </div>
             <div className="space-y-2">
-              <Label className="text-xs font-bold text-muted-foreground uppercase">限定文件（逗号分隔）</Label>
+              <Label className="text-xs font-medium text-muted-foreground uppercase">限定文件（逗号分隔）</Label>
               <Input value={editForm.file_paths} onChange={(e) => setEditForm((prev) => ({ ...prev, file_paths: e.target.value }))} className="cyber-input" placeholder="cmd/main.go,src/App.tsx" />
             </div>
             <div className="space-y-2">
-              <Label className="text-xs font-bold text-muted-foreground uppercase">排除模式（逗号分隔）</Label>
+              <Label className="text-xs font-medium text-muted-foreground uppercase">排除模式（逗号分隔）</Label>
               <Input value={editForm.exclude_patterns} onChange={(e) => setEditForm((prev) => ({ ...prev, exclude_patterns: e.target.value }))} className="cyber-input" placeholder="node_modules/**,dist/**" />
             </div>
             <div className="h-10 px-3 border border-border rounded-md flex items-center justify-between bg-background">
@@ -531,11 +531,11 @@ export default function ScheduleManager() {
       <Sheet open={createSheetOpen} onOpenChange={setCreateSheetOpen}>
         <SheetContent side="right" className="!w-[min(90vw,500px)] sm:max-w-[500px] !sm:max-w-none flex flex-col p-0 gap-0 border-border overflow-y-auto">
           <SheetHeader className="px-6 py-4 border-b border-border flex-shrink-0 bg-muted">
-            <SheetTitle className="flex items-center gap-3 font-mono text-foreground">
+            <SheetTitle className="flex items-center gap-3 font-sans text-foreground">
               <div className="p-2 bg-primary/20 rounded border border-primary/30">
                 <Terminal className="w-5 h-5 text-primary" />
               </div>
-              <span className="text-base font-bold uppercase tracking-wider">新建计划任务</span>
+              <span className="text-lg font-semibold uppercase tracking-wider">新建计划任务</span>
             </SheetTitle>
             <SheetDescription className="text-xs text-muted-foreground font-normal">
               按分钟周期自动生成审计任务，支持项目、分支和排除规则配置。
@@ -544,7 +544,7 @@ export default function ScheduleManager() {
 
           <div className="flex-1 overflow-y-auto p-6 space-y-4">
             <div className="space-y-2">
-              <Label className="text-xs font-bold text-muted-foreground uppercase">项目 *</Label>
+              <Label className="text-xs font-medium text-muted-foreground uppercase">项目 *</Label>
               <Select value={createForm.project_id} onValueChange={(value) => setCreateForm((prev) => ({ ...prev, project_id: value }))}>
                 <SelectTrigger className="cyber-input">
                   <SelectValue placeholder="选择项目" />
@@ -559,12 +559,12 @@ export default function ScheduleManager() {
               </Select>
             </div>
             <div className="space-y-2">
-              <Label className="text-xs font-bold text-muted-foreground uppercase">任务名称 *</Label>
+              <Label className="text-xs font-medium text-muted-foreground uppercase">任务名称 *</Label>
               <Input value={createForm.name} onChange={(e) => setCreateForm((prev) => ({ ...prev, name: e.target.value }))} className="cyber-input" />
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label className="text-xs font-bold text-muted-foreground uppercase">扫描方式</Label>
+                <Label className="text-xs font-medium text-muted-foreground uppercase">扫描方式</Label>
                 <Select value={createForm.scan_mode} onValueChange={(value) => setCreateForm((prev) => ({ ...prev, scan_mode: value }))}>
                   <SelectTrigger className="cyber-input">
                     <SelectValue />
@@ -576,34 +576,34 @@ export default function ScheduleManager() {
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label className="text-xs font-bold text-muted-foreground uppercase">分支</Label>
+                <Label className="text-xs font-medium text-muted-foreground uppercase">分支</Label>
                 <Input value={createForm.branch_name} onChange={(e) => setCreateForm((prev) => ({ ...prev, branch_name: e.target.value }))} className="cyber-input" />
               </div>
             </div>
             <div className="space-y-2">
-              <Label className="text-xs font-bold text-muted-foreground uppercase">扫描周期（分钟）</Label>
+              <Label className="text-xs font-medium text-muted-foreground uppercase">扫描周期（分钟）</Label>
               <Input type="number" min="1" value={createForm.interval_minutes} onChange={(e) => setCreateForm((prev) => ({ ...prev, interval_minutes: e.target.value }))} className="cyber-input" />
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label className="text-xs font-bold text-muted-foreground uppercase">允许开始时间</Label>
+                <Label className="text-xs font-medium text-muted-foreground uppercase">允许开始时间</Label>
                 <Input type="time" value={createForm.time_window_start} onChange={(e) => setCreateForm((prev) => ({ ...prev, time_window_start: e.target.value }))} className="cyber-input" />
               </div>
               <div className="space-y-2">
-                <Label className="text-xs font-bold text-muted-foreground uppercase">允许结束时间</Label>
+                <Label className="text-xs font-medium text-muted-foreground uppercase">允许结束时间</Label>
                 <Input type="time" value={createForm.time_window_end} onChange={(e) => setCreateForm((prev) => ({ ...prev, time_window_end: e.target.value }))} className="cyber-input" />
               </div>
             </div>
             <div className="space-y-2">
-              <Label className="text-xs font-bold text-muted-foreground uppercase">时区</Label>
+              <Label className="text-xs font-medium text-muted-foreground uppercase">时区</Label>
               <Input value={createForm.timezone} onChange={(e) => setCreateForm((prev) => ({ ...prev, timezone: e.target.value }))} className="cyber-input" />
             </div>
             <div className="space-y-2">
-              <Label className="text-xs font-bold text-muted-foreground uppercase">限定文件（逗号分隔）</Label>
+              <Label className="text-xs font-medium text-muted-foreground uppercase">限定文件（逗号分隔）</Label>
               <Input value={createForm.file_paths} onChange={(e) => setCreateForm((prev) => ({ ...prev, file_paths: e.target.value }))} className="cyber-input" placeholder="cmd/main.go,src/App.tsx" />
             </div>
             <div className="space-y-2">
-              <Label className="text-xs font-bold text-muted-foreground uppercase">排除模式（逗号分隔）</Label>
+              <Label className="text-xs font-medium text-muted-foreground uppercase">排除模式（逗号分隔）</Label>
               <Input value={createForm.exclude_patterns} onChange={(e) => setCreateForm((prev) => ({ ...prev, exclude_patterns: e.target.value }))} className="cyber-input" placeholder="node_modules/**,dist/**" />
             </div>
           </div>

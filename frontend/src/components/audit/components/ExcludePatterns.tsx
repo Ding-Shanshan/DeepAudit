@@ -127,7 +127,7 @@ function SelectedPatterns({
           <Badge
             key={pattern}
             variant="secondary"
-            className="cursor-pointer hover:bg-red-100 hover:text-red-800 rounded-none border-2 border-border bg-muted text-foreground font-mono font-bold"
+            className="cursor-pointer hover:bg-red-100 hover:text-red-800 rounded-none border-2 border-border bg-muted text-foreground font-sans font-bold"
             onClick={() => onRemove(pattern)}
           >
             {pattern} ×

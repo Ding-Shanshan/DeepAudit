@@ -735,12 +735,12 @@ function AgentAuditPageContent() {
 
   if (isLoading && !task) {
     return (
-      <div className="h-screen bg-background flex items-center justify-center font-mono relative">
+      <div className="h-screen bg-background flex items-center justify-center font-sans relative">
         <div className="cyber-card p-4">
           <div className="flex items-center justify-center h-[60vh]">
             <div className="flex items-center gap-3 text-muted-foreground">
               <div className="loading-spinner" />
-              <span className="font-mono text-sm tracking-wide">加载审计任务...</span>
+              <span className="font-sans text-sm tracking-wide">加载审计任务...</span>
             </div>
           </div>
         </div>
@@ -749,7 +749,7 @@ function AgentAuditPageContent() {
   }
 
   return (
-    <div className="h-screen bg-background flex flex-col overflow-hidden px-6 pt-1 pb-4 font-mono relative gap-4">
+    <div className="h-screen bg-background flex flex-col overflow-hidden px-6 pt-1 pb-4 font-sans relative gap-4">
 
       {/* Header */}
       <Header
@@ -792,14 +792,14 @@ function AgentAuditPageContent() {
               {selectedAgentId && !showAllLogs ? 'Agent 详情' : 'Agent 概览'}
             </h3>
             {!selectedAgentId && agentTree && (
-              <Badge variant="outline" className="ml-2 h-5 px-2 text-xs border-primary/30 text-primary bg-primary/10 font-mono">
+              <Badge variant="outline" className="ml-2 h-5 px-2 text-xs border-primary/30 text-primary bg-primary/10 font-sans">
                 {agentTree.total_agents}
               </Badge>
             )}
             {isConnected && (
               <div className="ml-auto flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-primary/10 border border-primary/25">
                 <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
-                <span className="text-xs font-mono text-primary font-semibold">LIVE</span>
+                <span className="text-xs font-sans text-primary font-semibold">LIVE</span>
               </div>
             )}
           </div>
@@ -845,7 +845,7 @@ function AgentAuditPageContent() {
             <div className="flex-shrink-0 pt-2 border-t border-border mt-2">
               <button
                 onClick={() => selectAgent(null)}
-                className="text-xs text-primary hover:text-primary/80 font-mono uppercase px-2 py-1 rounded hover:bg-primary/10"
+                className="text-xs text-primary hover:text-primary/80 font-sans uppercase px-2 py-1 rounded hover:bg-primary/10"
               >
                 返回概览
               </button>

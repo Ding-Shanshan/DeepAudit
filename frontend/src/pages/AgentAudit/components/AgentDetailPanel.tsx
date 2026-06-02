@@ -24,7 +24,7 @@ export const AgentDetailPanel = memo(function AgentDetailPanel({ agentId, treeNo
   const typeLabel = AGENT_TYPE_LABEL[agent.agent_type] || "Agent";
 
   return (
-    <div className="font-mono text-xs space-y-1.5 rounded border border-slate-200 p-3">
+    <div className="font-sans text-xs space-y-1.5 rounded border border-slate-200 p-3">
       {/* Close button */}
       <div className="flex items-center justify-between py-1">
         <span className="text-slate-800 font-semibold">{agent.agent_name}</span>

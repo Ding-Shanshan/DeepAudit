@@ -359,7 +359,7 @@ public class Example {
           </div>
           <div className="flex-1">
             <h4 className="font-bold text-base text-foreground mb-1 group-hover:text-primary transition-colors uppercase">{issue.title}</h4>
-            <div className="flex items-center space-x-1 text-xs text-muted-foreground font-mono">
+            <div className="flex items-center space-x-1 text-xs text-muted-foreground font-sans">
               <span className="text-primary">&gt;</span>
               <span>LINE: {issue.line}</span>
               {issue.column && <span>, COL: {issue.column}</span>}
@@ -390,9 +390,9 @@ public class Example {
               <div className="w-4 h-4 bg-primary rounded flex items-center justify-center">
                 <Code className="w-2 h-2 text-foreground" />
               </div>
-              <span className="text-primary dark:text-primary text-xs font-bold font-mono uppercase">CODE_SNIPPET</span>
+              <span className="text-primary dark:text-primary text-xs font-bold font-sans uppercase">CODE_SNIPPET</span>
             </div>
-            <span className="text-muted-foreground text-xs font-mono">LINE: {issue.line}</span>
+            <span className="text-muted-foreground text-xs font-sans">LINE: {issue.line}</span>
           </div>
           <div className="bg-slate-100 dark:bg-black/40 p-2 border border-border rounded">
             <pre className="text-xs text-emerald-700 dark:text-primary font-mono overflow-x-auto">
@@ -411,7 +411,7 @@ public class Example {
               </div>
               <span className="font-bold text-sky-700 dark:text-secondary text-sm uppercase">修复建议</span>
             </div>
-            <p className="text-sky-800 dark:text-sky-200/80 text-xs leading-relaxed font-mono">{issue.suggestion}</p>
+            <p className="text-sky-800 dark:text-sky-200/80 text-xs leading-relaxed font-sans">{issue.suggestion}</p>
           </div>
         )}
 
@@ -427,7 +427,7 @@ public class Example {
                   </div>
                   <span className="font-bold text-violet-700 dark:text-violet-300 text-sm uppercase">AI 解释</span>
                 </div>
-                <div className="space-y-2 text-xs font-mono">
+                <div className="space-y-2 text-xs font-sans">
                   {parsedExplanation.what && (
                     <div className="border-l-2 border-rose-500 pl-2">
                       <span className="font-bold text-rose-600 dark:text-destructive uppercase">问题：</span>
@@ -469,7 +469,7 @@ public class Example {
                   <Zap className="w-4 h-4 text-violet-600 dark:text-secondary mr-2" />
                   <span className="font-bold text-violet-700 dark:text-violet-300 text-sm uppercase">AI 解释</span>
                 </div>
-                <p className="text-foreground text-xs leading-relaxed font-mono">{issue.ai_explanation}</p>
+                <p className="text-foreground text-xs leading-relaxed font-sans">{issue.ai_explanation}</p>
               </div>
             );
           }
@@ -479,7 +479,7 @@ public class Example {
   );
 
   return (
-    <div className="space-y-4 px-6 pt-1 pb-6 cyber-bg-elevated min-h-screen font-mono relative">
+    <div className="space-y-4 px-6 pt-1 pb-6 cyber-bg-elevated min-h-screen font-sans relative">
       {/* Grid background */}
       <div className="absolute inset-0 cyber-grid-subtle pointer-events-none" />
 
@@ -488,7 +488,7 @@ public class Example {
         <div className="cyber-card p-0 relative z-10">
           <div className="cyber-card-header">
             <History className="w-5 h-5 text-primary" />
-            <h3 className="text-lg font-bold uppercase tracking-wider text-foreground">分析历史记录</h3>
+            <h3 className="text-lg font-semibold uppercase tracking-wider text-foreground">分析历史记录</h3>
             <div className="ml-auto flex items-center gap-2">
               {historyRecords.length > 0 && (
                 <Button
@@ -514,7 +514,7 @@ public class Example {
             {loadingHistory ? (
               <div className="text-center py-8">
                 <div className="loading-spinner mx-auto mb-4"></div>
-                <p className="text-muted-foreground font-mono">加载中...</p>
+                <p className="text-muted-foreground font-sans">加载中...</p>
               </div>
             ) : historyRecords.length === 0 ? (
               <div className="empty-state">
@@ -538,10 +538,10 @@ public class Example {
                       <div className="flex items-center justify-between mb-2">
                         <div className="flex items-center gap-2">
                           <Badge className="cyber-badge-muted">{record.language}</Badge>
-                          <span className="text-sm font-mono text-muted-foreground">{formatDate(record.created_at)}</span>
+                          <span className="text-sm font-sans text-muted-foreground">{formatDate(record.created_at)}</span>
                         </div>
                         <div className="flex items-center gap-2">
-                          <Badge className={`font-mono ${
+                          <Badge className={`font-sans ${
                             record.quality_score >= 80 ? 'cyber-badge-success' :
                             record.quality_score >= 60 ? 'cyber-badge-warning' :
                             'cyber-badge-danger'
@@ -559,7 +559,7 @@ public class Example {
                           <ChevronRight className="w-4 h-4 text-muted-foreground" />
                         </div>
                       </div>
-                      <div className="flex items-center gap-4 text-xs font-mono text-muted-foreground">
+                      <div className="flex items-center gap-4 text-xs font-sans text-muted-foreground">
                         <span className="flex items-center gap-1">
                           <AlertTriangle className="w-3 h-3" />
                           {record.issues_count} 个问题
@@ -582,7 +582,7 @@ public class Example {
       <div className="cyber-card p-0 relative z-10">
         <div className="cyber-card-header">
           <Terminal className="w-5 h-5 text-primary" />
-          <h3 className="text-lg font-bold uppercase tracking-wider text-foreground">代码分析</h3>
+          <h3 className="text-lg font-semibold uppercase tracking-wider text-foreground">代码分析</h3>
           <div className="ml-auto flex items-center gap-2">
             <Button
               variant="outline"
@@ -677,7 +677,7 @@ public class Example {
 
           {/* Code Editor */}
           <div className="relative">
-            <div className="absolute top-0 right-0 bg-muted text-muted-foreground px-2 py-1 text-xs font-mono uppercase z-10 rounded-bl border-l border-b border-border">
+            <div className="absolute top-0 right-0 bg-muted text-muted-foreground px-2 py-1 text-xs font-sans uppercase z-10 rounded-bl border-l border-b border-border">
               Editor
             </div>
             <Textarea
@@ -687,7 +687,7 @@ public class Example {
               className="min-h-[300px] font-mono text-sm cyber-bg-elevated text-primary border border-border p-4 focus:ring-0 focus:border-primary/50 placeholder:text-muted-foreground"
               disabled={analyzing}
             />
-            <div className="text-xs text-muted-foreground mt-1 font-mono text-right">
+            <div className="text-xs text-muted-foreground mt-1 font-sans text-right">
               {code.length} 字符，{code.split('\n').length} 行
             </div>
           </div>
@@ -696,7 +696,7 @@ public class Example {
           <Button
             onClick={handleAnalyze}
             disabled={!code.trim() || !language || analyzing}
-            className="w-full cyber-btn-primary h-12 text-lg font-bold uppercase"
+            className="w-full cyber-btn-primary h-12 text-lg font-semibold uppercase"
           >
             {analyzing ? (
               <>
@@ -720,7 +720,7 @@ public class Example {
           <div className="cyber-card p-0">
             <div className="cyber-card-header">
               <CheckCircle className="w-5 h-5 text-primary" />
-              <h3 className="text-lg font-bold uppercase tracking-wider text-foreground">分析结果</h3>
+              <h3 className="text-lg font-semibold uppercase tracking-wider text-foreground">分析结果</h3>
               <div className="ml-auto flex items-center gap-2">
                 <Badge className="cyber-badge-muted">
                   <Clock className="w-3 h-3 mr-1" />
@@ -744,7 +744,7 @@ public class Example {
                   <TrendingUp className="w-4 h-4" />
                   详细指标
                 </h3>
-                <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 font-mono">
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 font-sans">
                   {[
                     { label: '复杂度', value: result.metrics?.complexity ?? 0 },
                     { label: '可维护性', value: result.metrics?.maintainability ?? 0 },
@@ -752,7 +752,7 @@ public class Example {
                     { label: '性能', value: result.metrics?.performance ?? 0 },
                   ].map((metric) => (
                     <div key={metric.label} className="text-center">
-                      <div className="text-xl font-bold text-foreground mb-1">{metric.value}</div>
+                      <div className="text-xl font-semibold text-foreground mb-1">{metric.value}</div>
                       <p className="text-xs text-muted-foreground uppercase mb-2">{metric.label}</p>
                       <Progress value={metric.value} className="h-2 bg-muted [&>div]:bg-primary" />
                     </div>
@@ -766,22 +766,22 @@ public class Example {
           <div className="cyber-card p-0">
             <div className="cyber-card-header">
               <Shield className="w-5 h-5 text-warning" />
-              <h3 className="text-lg font-bold uppercase tracking-wider text-foreground">发现的问题 ({result.issues.length})</h3>
+              <h3 className="text-lg font-semibold uppercase tracking-wider text-foreground">发现的问题 ({result.issues.length})</h3>
             </div>
             <div className="p-6">
               {result.issues.length > 0 ? (
                 <Tabs defaultValue="all" className="w-full">
                   <TabsList className="grid w-full grid-cols-4 bg-muted border border-border p-1 h-auto gap-1 rounded mb-6">
-                    <TabsTrigger value="all" className="data-[state=active]:bg-primary data-[state=active]:text-foreground font-mono font-bold uppercase py-2 text-muted-foreground transition-all rounded-sm text-xs">
+                    <TabsTrigger value="all" className="data-[state=active]:bg-primary data-[state=active]:text-foreground font-sans font-medium uppercase py-2 text-muted-foreground transition-all rounded-sm text-xs">
                       全部 ({result.issues.length})
                     </TabsTrigger>
-                    <TabsTrigger value="critical" className="data-[state=active]:bg-rose-500 data-[state=active]:text-foreground font-mono font-bold uppercase py-2 text-muted-foreground transition-all rounded-sm text-xs">
+                    <TabsTrigger value="critical" className="data-[state=active]:bg-rose-500 data-[state=active]:text-foreground font-sans font-medium uppercase py-2 text-muted-foreground transition-all rounded-sm text-xs">
                       严重 ({result.issues.filter(i => i.severity === 'critical').length})
                     </TabsTrigger>
-                    <TabsTrigger value="high" className="data-[state=active]:bg-orange-500 data-[state=active]:text-foreground font-mono font-bold uppercase py-2 text-muted-foreground transition-all rounded-sm text-xs">
+                    <TabsTrigger value="high" className="data-[state=active]:bg-orange-500 data-[state=active]:text-foreground font-sans font-medium uppercase py-2 text-muted-foreground transition-all rounded-sm text-xs">
                       高 ({result.issues.filter(i => i.severity === 'high').length})
                     </TabsTrigger>
-                    <TabsTrigger value="medium" className="data-[state=active]:bg-amber-500 data-[state=active]:text-background font-mono font-bold uppercase py-2 text-muted-foreground transition-all rounded-sm text-xs">
+                    <TabsTrigger value="medium" className="data-[state=active]:bg-amber-500 data-[state=active]:text-background font-sans font-medium uppercase py-2 text-muted-foreground transition-all rounded-sm text-xs">
                       中等 ({result.issues.filter(i => i.severity === 'medium').length})
                     </TabsTrigger>
                   </TabsList>
@@ -797,10 +797,10 @@ public class Example {
                       ) : (
                         <div className="cyber-card p-12 text-center border-dashed">
                           <CheckCircle className="w-16 h-16 text-primary mx-auto mb-4" />
-                          <h3 className="text-lg font-bold text-foreground uppercase mb-2">
+                          <h3 className="text-lg font-semibold text-foreground uppercase mb-2">
                             没有发现{severity === 'critical' ? '严重' : severity === 'high' ? '高优先级' : '中等优先级'}问题
                           </h3>
-                          <p className="text-muted-foreground font-mono">代码在此级别的检查中表现良好</p>
+                          <p className="text-muted-foreground font-sans">代码在此级别的检查中表现良好</p>
                         </div>
                       )}
                     </TabsContent>
@@ -809,10 +809,10 @@ public class Example {
               ) : (
                 <div className="cyber-card p-16 text-center border-dashed">
                   <CheckCircle className="w-16 h-16 text-primary dark:text-primary mx-auto mb-4" />
-                  <h3 className="text-xl font-bold text-emerald-700 dark:text-emerald-300 mb-2 uppercase">代码质量优秀！</h3>
-                  <p className="text-primary dark:text-primary/80 mb-4 font-mono">恭喜！没有发现任何问题</p>
+                  <h3 className="text-xl font-semibold text-emerald-700 dark:text-emerald-300 mb-2 uppercase">代码质量优秀！</h3>
+                  <p className="text-primary dark:text-primary/80 mb-4 font-sans">恭喜！没有发现任何问题</p>
                   <div className="bg-primary/10 border border-primary/25 p-4 max-w-md mx-auto rounded">
-                    <p className="text-emerald-700 dark:text-emerald-300/80 text-sm font-mono">
+                    <p className="text-emerald-700 dark:text-emerald-300/80 text-sm font-sans">
                       您的代码通过了所有质量检查，包括安全性、性能、可维护性等各个方面的评估。
                     </p>
                   </div>
@@ -831,10 +831,10 @@ public class Example {
               <div className="loading-spinner w-12 h-12"></div>
             </div>
             <h3 className="text-2xl font-bold text-foreground uppercase mb-3">AI正在分析您的代码</h3>
-            <p className="text-muted-foreground mb-6 font-mono">请稍候，这通常需要至少30秒钟...</p>
-            <p className="text-muted-foreground text-sm mb-6 font-mono">分析时长取决于您的网络环境、代码长度以及使用的模型等因素</p>
+            <p className="text-muted-foreground mb-6 font-sans">请稍候，这通常需要至少30秒钟...</p>
+            <p className="text-muted-foreground text-sm mb-6 font-sans">分析时长取决于您的网络环境、代码长度以及使用的模型等因素</p>
             <div className="bg-primary/10 border border-primary/30 p-4 max-w-md mx-auto rounded">
-              <p className="text-primary text-sm font-mono">
+              <p className="text-primary text-sm font-sans">
                 正在进行安全检测、性能分析、代码风格检查等多维度评估<br />
                 请勿离开页面！
               </p>

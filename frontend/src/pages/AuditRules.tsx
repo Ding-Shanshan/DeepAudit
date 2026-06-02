@@ -276,14 +276,14 @@ export default function AuditRules() {
       <div className="flex items-center justify-center min-h-screen cyber-bg-elevated">
         <div className="text-center space-y-4">
           <div className="loading-spinner mx-auto" />
-          <p className="text-muted-foreground font-mono text-sm uppercase tracking-wider">加载中...</p>
+          <p className="text-muted-foreground font-sans text-sm uppercase tracking-wider">加载中...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-4 px-6 pt-1 pb-6 cyber-bg-elevated min-h-screen font-mono relative">
+    <div className="space-y-4 px-6 pt-1 pb-6 cyber-bg-elevated min-h-screen font-sans relative">
       {/* Grid background */}
       <div className="absolute inset-0 cyber-grid-subtle pointer-events-none" />
 
@@ -407,67 +407,67 @@ export default function AuditRules() {
       <Sheet open={showViewRuleSheet} onOpenChange={setShowViewRuleSheet}>
         <SheetContent side="right" className="!w-[min(90vw,500px)] sm:max-w-[500px] !sm:max-w-none flex flex-col p-0 gap-0 border-border overflow-y-auto">
           <SheetHeader className="px-6 py-4 border-b border-border flex-shrink-0 bg-muted">
-            <SheetTitle className="flex items-center gap-3 font-mono text-foreground">
+            <SheetTitle className="flex items-center gap-3 font-sans text-foreground">
               <div className="p-2 bg-primary/20 rounded border border-primary/30">
                 <Eye className="w-5 h-5 text-primary" />
               </div>
-              <span className="text-base font-bold uppercase tracking-wider">查看规则</span>
+              <span className="text-lg font-semibold uppercase tracking-wider">查看规则</span>
             </SheetTitle>
           </SheetHeader>
           {selectedRule && selectedRuleSet && (
             <div className="flex-1 overflow-y-auto p-6 space-y-4">
               <div className="space-y-1.5">
-                <Label className="text-xs font-bold text-muted-foreground uppercase">规则代码</Label>
+                <Label className="text-xs font-medium text-muted-foreground uppercase">规则代码</Label>
                 <p className="text-sm text-primary font-semibold">{selectedRule.rule_code}</p>
               </div>
               <div className="space-y-1.5">
-                <Label className="text-xs font-bold text-muted-foreground uppercase">规则名称</Label>
+                <Label className="text-xs font-medium text-muted-foreground uppercase">规则名称</Label>
                 <p className="text-sm text-foreground">{selectedRule.name}</p>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1.5">
-                  <Label className="text-xs font-bold text-muted-foreground uppercase">类别</Label>
+                  <Label className="text-xs font-medium text-muted-foreground uppercase">类别</Label>
                   <p className="text-sm text-foreground">{CATEGORIES.find(c => c.value === selectedRule.category)?.label || selectedRule.category}</p>
                 </div>
                 <div className="space-y-1.5">
-                  <Label className="text-xs font-bold text-muted-foreground uppercase">严重程度</Label>
+                  <Label className="text-xs font-medium text-muted-foreground uppercase">严重程度</Label>
                   <p className="text-sm text-foreground">{SEVERITIES.find(s => s.value === selectedRule.severity)?.label || selectedRule.severity}</p>
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1.5">
-                  <Label className="text-xs font-bold text-muted-foreground uppercase">所属集合</Label>
+                  <Label className="text-xs font-medium text-muted-foreground uppercase">所属集合</Label>
                   <p className="text-sm text-foreground">{selectedRuleSet.name}</p>
                 </div>
                 <div className="space-y-1.5">
-                  <Label className="text-xs font-bold text-muted-foreground uppercase">规则类型</Label>
+                  <Label className="text-xs font-medium text-muted-foreground uppercase">规则类型</Label>
                   <Badge className="cyber-badge-muted">{RULE_TYPES.find(t => t.value === selectedRuleSet.rule_type)?.label || selectedRuleSet.rule_type}</Badge>
                 </div>
               </div>
               <div className="space-y-1.5">
-                <Label className="text-xs font-bold text-muted-foreground uppercase">描述</Label>
+                <Label className="text-xs font-medium text-muted-foreground uppercase">描述</Label>
                 <p className="text-sm text-foreground whitespace-pre-wrap">{selectedRule.description || '-'}</p>
               </div>
               {selectedRule.custom_prompt && (
                 <div className="space-y-1.5">
-                  <Label className="text-xs font-bold text-muted-foreground uppercase">检测规则</Label>
+                  <Label className="text-xs font-medium text-muted-foreground uppercase">检测规则</Label>
                   <p className="text-sm text-foreground whitespace-pre-wrap">{selectedRule.custom_prompt}</p>
                 </div>
               )}
               {selectedRule.fix_suggestion && (
                 <div className="space-y-1.5">
-                  <Label className="text-xs font-bold text-muted-foreground uppercase">修复建议</Label>
+                  <Label className="text-xs font-medium text-muted-foreground uppercase">修复建议</Label>
                   <p className="text-sm text-foreground whitespace-pre-wrap">{selectedRule.fix_suggestion}</p>
                 </div>
               )}
               {selectedRule.reference_url && (
                 <div className="space-y-1.5">
-                  <Label className="text-xs font-bold text-muted-foreground uppercase">参考链接</Label>
+                  <Label className="text-xs font-medium text-muted-foreground uppercase">参考链接</Label>
                   <a href={selectedRule.reference_url} target="_blank" rel="noopener noreferrer" className="text-sm text-primary hover:underline">{selectedRule.reference_url}</a>
                 </div>
               )}
               <div className="space-y-1.5">
-                <Label className="text-xs font-bold text-muted-foreground uppercase">启用状态</Label>
+                <Label className="text-xs font-medium text-muted-foreground uppercase">启用状态</Label>
                 <Badge className={selectedRule.enabled ? "cyber-badge-success" : "cyber-badge-danger"}>{selectedRule.enabled ? '已启用' : '已禁用'}</Badge>
               </div>
             </div>
@@ -479,11 +479,11 @@ export default function AuditRules() {
       <Sheet open={showCreateDialog} onOpenChange={setShowCreateDialog}>
         <SheetContent side="right" className="!w-[min(90vw,500px)] sm:max-w-[500px] !sm:max-w-none flex flex-col p-0 gap-0 border-border overflow-y-auto">
           <SheetHeader className="px-6 py-4 border-b border-border flex-shrink-0 bg-muted">
-            <SheetTitle className="flex items-center gap-3 font-mono text-foreground">
+            <SheetTitle className="flex items-center gap-3 font-sans text-foreground">
               <div className="p-2 bg-primary/20 rounded border border-primary/30">
                 <Terminal className="w-5 h-5 text-primary" />
               </div>
-              <span className="text-base font-bold uppercase tracking-wider">新建规则</span>
+              <span className="text-lg font-semibold uppercase tracking-wider">新建规则</span>
             </SheetTitle>
             <SheetDescription className="text-xs text-muted-foreground font-normal">
               创建新的规则集
@@ -491,16 +491,16 @@ export default function AuditRules() {
           </SheetHeader>
           <div className="flex-1 overflow-y-auto p-6 space-y-4">
             <div className="space-y-2">
-              <Label className="text-xs font-bold text-muted-foreground uppercase">名称 *</Label>
+              <Label className="text-xs font-medium text-muted-foreground uppercase">名称 *</Label>
               <Input value={ruleSetForm.name} onChange={e => setRuleSetForm({ ...ruleSetForm, name: e.target.value })} placeholder="规则集名称" className="cyber-input" />
             </div>
             <div className="space-y-2">
-              <Label className="text-xs font-bold text-muted-foreground uppercase">描述</Label>
+              <Label className="text-xs font-medium text-muted-foreground uppercase">描述</Label>
               <Textarea value={ruleSetForm.description} onChange={e => setRuleSetForm({ ...ruleSetForm, description: e.target.value })} placeholder="规则集描述" className="cyber-input" />
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label className="text-xs font-bold text-muted-foreground uppercase">适用语言</Label>
+                <Label className="text-xs font-medium text-muted-foreground uppercase">适用语言</Label>
                 <Select value={ruleSetForm.language} onValueChange={v => setRuleSetForm({ ...ruleSetForm, language: v })}>
                   <SelectTrigger className="cyber-input"><SelectValue /></SelectTrigger>
                   <SelectContent className="cyber-dialog border-border">
@@ -509,7 +509,7 @@ export default function AuditRules() {
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label className="text-xs font-bold text-muted-foreground uppercase">规则类型</Label>
+                <Label className="text-xs font-medium text-muted-foreground uppercase">规则类型</Label>
                 <Select value={ruleSetForm.rule_type} onValueChange={v => setRuleSetForm({ ...ruleSetForm, rule_type: v })}>
                   <SelectTrigger className="cyber-input"><SelectValue /></SelectTrigger>
                   <SelectContent className="cyber-dialog border-border">
@@ -530,32 +530,32 @@ export default function AuditRules() {
       <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
         <DialogContent className="!w-[min(90vw,500px)] !max-w-none max-h-[85vh] flex flex-col p-0 gap-0 cyber-dialog border border-border rounded-lg">
           <DialogHeader className="px-6 py-4 border-b border-border flex-shrink-0 bg-muted">
-            <DialogTitle className="flex items-center gap-3 font-mono text-foreground">
+            <DialogTitle className="flex items-center gap-3 font-sans text-foreground">
               <div className="p-2 bg-primary/20 rounded border border-primary/30">
                 <Edit className="w-5 h-5 text-primary" />
               </div>
-              <span className="text-base font-bold uppercase tracking-wider">编辑规则集</span>
+              <span className="text-lg font-semibold uppercase tracking-wider">编辑规则集</span>
             </DialogTitle>
           </DialogHeader>
           <div className="flex-1 overflow-y-auto p-6 space-y-4">
             <div className="space-y-2">
-              <Label className="text-xs font-bold text-muted-foreground uppercase">名称</Label>
+              <Label className="text-xs font-medium text-muted-foreground uppercase">名称</Label>
               <Input value={ruleSetForm.name} onChange={e => setRuleSetForm({ ...ruleSetForm, name: e.target.value })} className="cyber-input" />
             </div>
             <div className="space-y-2">
-              <Label className="text-xs font-bold text-muted-foreground uppercase">描述</Label>
+              <Label className="text-xs font-medium text-muted-foreground uppercase">描述</Label>
               <Textarea value={ruleSetForm.description} onChange={e => setRuleSetForm({ ...ruleSetForm, description: e.target.value })} className="cyber-input" />
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label className="text-xs font-bold text-muted-foreground uppercase">适用语言</Label>
+                <Label className="text-xs font-medium text-muted-foreground uppercase">适用语言</Label>
                 <Select value={ruleSetForm.language} onValueChange={v => setRuleSetForm({ ...ruleSetForm, language: v })}>
                   <SelectTrigger className="cyber-input"><SelectValue /></SelectTrigger>
                   <SelectContent className="cyber-dialog border-border">{LANGUAGES.map(l => <SelectItem key={l.value} value={l.value}>{l.label}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label className="text-xs font-bold text-muted-foreground uppercase">规则类型</Label>
+                <Label className="text-xs font-medium text-muted-foreground uppercase">规则类型</Label>
                 <Select value={ruleSetForm.rule_type} onValueChange={v => setRuleSetForm({ ...ruleSetForm, rule_type: v })}>
                   <SelectTrigger className="cyber-input"><SelectValue /></SelectTrigger>
                   <SelectContent className="cyber-dialog border-border">{RULE_TYPES.map(t => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}</SelectContent>
@@ -574,22 +574,22 @@ export default function AuditRules() {
       <Sheet open={showRuleDialog} onOpenChange={setShowRuleDialog}>
         <SheetContent side="right" className="!w-[min(90vw,500px)] sm:max-w-[500px] !sm:max-w-none flex flex-col p-0 gap-0 border-border overflow-y-auto">
           <SheetHeader className="px-6 py-4 border-b border-border flex-shrink-0 bg-muted">
-            <SheetTitle className="flex items-center gap-3 font-mono text-foreground">
+            <SheetTitle className="flex items-center gap-3 font-sans text-foreground">
               <div className="p-2 bg-primary/20 rounded border border-primary/30">
                 <Code className="w-5 h-5 text-primary" />
               </div>
-              <span className="text-base font-bold uppercase tracking-wider">{selectedRule ? '编辑规则' : '新建规则'}</span>
+              <span className="text-lg font-semibold uppercase tracking-wider">{selectedRule ? '编辑规则' : '新建规则'}</span>
             </SheetTitle>
           </SheetHeader>
           <div className="flex-1 overflow-y-auto p-6 space-y-4">
             {/* 1. 规则名称 */}
             <div className="space-y-2">
-              <Label className="text-xs font-bold text-muted-foreground uppercase">规则名称 *</Label>
+              <Label className="text-xs font-medium text-muted-foreground uppercase">规则名称 *</Label>
               <Input value={ruleForm.name} onChange={e => setRuleForm({ ...ruleForm, name: e.target.value })} placeholder="规则名称" className="h-10 cyber-input" />
             </div>
             {/* 2. 类别 */}
             <div className="space-y-2">
-              <Label className="text-xs font-bold text-muted-foreground uppercase">类别</Label>
+              <Label className="text-xs font-medium text-muted-foreground uppercase">类别</Label>
               <Select value={ruleForm.category} onValueChange={v => {
                 setRuleForm({ ...ruleForm, category: v, rule_code: selectedRule ? ruleForm.rule_code : generateRuleCode(v) });
               }}>
@@ -599,7 +599,7 @@ export default function AuditRules() {
             </div>
             {/* 3. 严重程度 */}
             <div className="space-y-2">
-              <Label className="text-xs font-bold text-muted-foreground uppercase">严重程度</Label>
+              <Label className="text-xs font-medium text-muted-foreground uppercase">严重程度</Label>
               <Select value={ruleForm.severity} onValueChange={v => setRuleForm({ ...ruleForm, severity: v })}>
                 <SelectTrigger className="h-10 cyber-input"><SelectValue /></SelectTrigger>
                 <SelectContent className="cyber-dialog border-border">{SEVERITIES.map(s => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}</SelectContent>
@@ -607,7 +607,7 @@ export default function AuditRules() {
             </div>
             {/* 4. 所属集合 */}
             <div className="space-y-2">
-              <Label className="text-xs font-bold text-muted-foreground uppercase">所属集合 *</Label>
+              <Label className="text-xs font-medium text-muted-foreground uppercase">所属集合 *</Label>
               <Select value={selectedRuleSet?.id || ''} onValueChange={v => {
                 const rs = ruleSets.find(r => r.id === v);
                 if (rs) setSelectedRuleSet(rs);
@@ -620,17 +620,17 @@ export default function AuditRules() {
             </div>
             {/* 5. 描述 */}
             <div className="space-y-2">
-              <Label className="text-xs font-bold text-muted-foreground uppercase">描述</Label>
+              <Label className="text-xs font-medium text-muted-foreground uppercase">描述</Label>
               <Textarea value={ruleForm.description} onChange={e => setRuleForm({ ...ruleForm, description: e.target.value })} placeholder="规则描述" className="cyber-input" />
             </div>
             {/* 6. 检测规则 */}
             <div className="space-y-2">
-              <Label className="text-xs font-bold text-muted-foreground uppercase">检测规则</Label>
+              <Label className="text-xs font-medium text-muted-foreground uppercase">检测规则</Label>
               <Textarea value={ruleForm.custom_prompt} onChange={e => setRuleForm({ ...ruleForm, custom_prompt: e.target.value })} placeholder={"如：检测SQL拼接模式：execute(f\"...{INPUT}...\")、cursor.execute(\"...\" + input)"} rows={3} className="cyber-input" />
             </div>
             {/* 7. 修复建议 */}
             <div className="space-y-2">
-              <Label className="text-xs font-bold text-muted-foreground uppercase">修复建议</Label>
+              <Label className="text-xs font-medium text-muted-foreground uppercase">修复建议</Label>
               <Textarea value={ruleForm.fix_suggestion} onChange={e => setRuleForm({ ...ruleForm, fix_suggestion: e.target.value })} placeholder="修复建议模板" rows={2} className="cyber-input" />
             </div>
           </div>
@@ -645,18 +645,18 @@ export default function AuditRules() {
       <Dialog open={showImportDialog} onOpenChange={setShowImportDialog}>
         <DialogContent className="!w-[min(90vw,700px)] !max-w-none max-h-[85vh] flex flex-col p-0 gap-0 cyber-dialog border border-border rounded-lg">
           <DialogHeader className="px-6 py-4 border-b border-border flex-shrink-0 bg-muted">
-            <DialogTitle className="flex items-center gap-3 font-mono text-foreground">
+            <DialogTitle className="flex items-center gap-3 font-sans text-foreground">
               <div className="p-2 bg-primary/20 rounded border border-primary/30">
                 <Upload className="w-5 h-5 text-primary" />
               </div>
               <div>
-                <span className="text-base font-bold uppercase tracking-wider">导入规则</span>
+                <span className="text-lg font-semibold uppercase tracking-wider">导入规则</span>
                 <p className="text-xs text-muted-foreground font-normal mt-0.5">粘贴导出的 JSON 内容</p>
               </div>
             </DialogTitle>
           </DialogHeader>
           <div className="flex-1 overflow-y-auto p-6">
-            <Textarea value={importJson} onChange={e => setImportJson(e.target.value)} placeholder='{"name": "...", "rules": [...]}' rows={15} className="cyber-input font-mono text-sm text-primary" />
+            <Textarea value={importJson} onChange={e => setImportJson(e.target.value)} placeholder='{"name": "...", "rules": [...]}' rows={15} className="cyber-input font-sans text-sm text-primary" />
           </div>
           <DialogFooter className="flex-shrink-0 flex justify-end gap-3 px-6 py-4 bg-muted border-t border-border">
             <Button variant="outline" onClick={() => setShowImportDialog(false)} className="cyber-btn-outline">取消</Button>

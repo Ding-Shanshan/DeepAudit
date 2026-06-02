@@ -346,7 +346,7 @@ export function SystemConfig() {
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="text-center space-y-4">
           <div className="loading-spinner mx-auto" />
-          <p className="text-muted-foreground font-mono text-sm uppercase tracking-wider">加载配置中...</p>
+          <p className="text-muted-foreground font-sans text-sm uppercase tracking-wider">加载配置中...</p>
         </div>
       </div>
     );
@@ -359,12 +359,12 @@ export function SystemConfig() {
         <div className="cyber-card p-6 space-y-6">
           <div className="flex items-center gap-2 mb-2">
             <MessageSquare className="w-4 h-4 text-primary" />
-            <h3 className="text-sm font-bold text-foreground uppercase tracking-wider">添加LLM模型</h3>
+            <h3 className="text-lg font-semibold text-foreground uppercase tracking-wider">添加LLM模型</h3>
           </div>
 
           {/* 1. 服务商 */}
           <div className="space-y-2">
-            <Label className="text-xs font-bold text-muted-foreground uppercase">服务商</Label>
+            <Label className="text-xs font-medium text-muted-foreground uppercase">服务商</Label>
             <Select value={config.llmProvider} onValueChange={(v) => {
 	              const provider = LLM_PROVIDERS.find(p => p.value === v);
 	              // 切换服务商时自动填充默认 Base URL 和默认模型
@@ -377,7 +377,7 @@ export function SystemConfig() {
               </SelectTrigger>
               <SelectContent className="cyber-dialog border-border">
                 {[...LLM_PROVIDERS].sort((a, b) => a.label.localeCompare(b.label)).map(p => (
-                  <SelectItem key={p.value} value={p.value} className="font-mono">
+                  <SelectItem key={p.value} value={p.value} className="font-sans">
                     {p.label}
                   </SelectItem>
                 ))}
@@ -387,7 +387,7 @@ export function SystemConfig() {
 
           {/* 2. 模型名称 */}
           <div className="space-y-2">
-            <Label className="text-xs font-bold text-muted-foreground uppercase">模型名称</Label>
+            <Label className="text-xs font-medium text-muted-foreground uppercase">模型名称</Label>
             <Input
               value={config.llmModel}
               onChange={(e) => updateConfig('llmModel', e.target.value)}
@@ -398,7 +398,7 @@ export function SystemConfig() {
 
           {/* 3. API URL */}
           <div className="space-y-2">
-            <Label className="text-xs font-bold text-muted-foreground uppercase">API URL</Label>
+            <Label className="text-xs font-medium text-muted-foreground uppercase">API URL</Label>
             <Input
               value={config.llmBaseUrl}
               onChange={(e) => updateConfig('llmBaseUrl', e.target.value)}
@@ -410,7 +410,7 @@ export function SystemConfig() {
           {/* 4. API密钥 */}
           {config.llmProvider !== 'ollama' && (
             <div className="space-y-2">
-              <Label className="text-xs font-bold text-muted-foreground uppercase">API密钥</Label>
+              <Label className="text-xs font-medium text-muted-foreground uppercase">API密钥</Label>
               <Input
                 type="text"
                 value={config.llmApiKey}
@@ -423,7 +423,7 @@ export function SystemConfig() {
 
           {/* 随机性 */}
           <div className="space-y-2">
-            <Label className="text-xs font-bold text-muted-foreground uppercase">随机性</Label>
+            <Label className="text-xs font-medium text-muted-foreground uppercase">随机性</Label>
             <Input
               type="number"
               step="0.1"
@@ -479,7 +479,7 @@ export function SystemConfig() {
               </div>
               {showDebugInfo && llmTestResult.debug && (
                 <div className="mt-3 pt-3 border-t border-border/50">
-                  <div className="text-xs font-mono space-y-1 text-muted-foreground">
+                  <div className="text-xs font-sans space-y-1 text-muted-foreground">
                     <div className="font-bold text-foreground mb-2">连接信息:</div>
                     <div>Provider: <span className="text-foreground">{String(llmTestResult.debug.provider)}</span></div>
                     <div>Model: <span className="text-foreground">{String(llmTestResult.debug.model_used || llmTestResult.debug.model_requested || 'N/A')}</span></div>
@@ -556,7 +556,7 @@ export function SystemConfig() {
         <div className="cyber-card p-6 space-y-6">
           <div className="flex items-center gap-2 mb-2">
             <VectorSquare className="w-4 h-4 text-primary" />
-            <h3 className="text-sm font-bold text-foreground uppercase tracking-wider">添加embedding模型</h3>
+            <h3 className="text-lg font-semibold text-foreground uppercase tracking-wider">添加embedding模型</h3>
           </div>
           <EmbeddingConfig />
         </div>
@@ -565,11 +565,11 @@ export function SystemConfig() {
         <div className="cyber-card p-6 space-y-6">
           <div className="flex items-center gap-2 mb-2">
             <Settings className="w-4 h-4 text-primary" />
-            <h3 className="text-sm font-bold text-foreground uppercase tracking-wider">并发配置</h3>
+            <h3 className="text-lg font-semibold text-foreground uppercase tracking-wider">并发配置</h3>
           </div>
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label className="text-xs font-bold text-muted-foreground uppercase">并发文件数</Label>
+              <Label className="text-xs font-medium text-muted-foreground uppercase">并发文件数</Label>
               <Input
                 type="number"
                 value={config.maxAnalyzeFiles}
@@ -578,7 +578,7 @@ export function SystemConfig() {
               />
             </div>
             <div className="space-y-2">
-              <Label className="text-xs font-bold text-muted-foreground uppercase">模型并发数</Label>
+              <Label className="text-xs font-medium text-muted-foreground uppercase">模型并发数</Label>
               <Input
                 type="number"
                 value={config.llmConcurrency}
@@ -593,20 +593,20 @@ export function SystemConfig() {
         <div className="cyber-card p-6 space-y-6">
           <div className="flex items-center gap-2 mb-2">
             <Globe className="w-4 h-4 text-primary" />
-            <h3 className="text-sm font-bold text-foreground uppercase tracking-wider">仓库配置</h3>
+            <h3 className="text-lg font-semibold text-foreground uppercase tracking-wider">仓库配置</h3>
           </div>
           <div className="space-y-4">
             {/* 仓库类型选择 */}
             <div className="space-y-2">
-              <Label className="text-xs font-bold text-muted-foreground uppercase">仓库类型</Label>
+              <Label className="text-xs font-medium text-muted-foreground uppercase">仓库类型</Label>
               <Select value={selectedRepoType} onValueChange={setSelectedRepoType}>
                 <SelectTrigger className="h-10 cyber-input">
                   <SelectValue placeholder="请选择仓库类型" />
                 </SelectTrigger>
                 <SelectContent className="cyber-dialog border-border">
-                  <SelectItem value="github" className="font-mono">GitHub</SelectItem>
-                  <SelectItem value="gitlab" className="font-mono">GitLab</SelectItem>
-                  <SelectItem value="gitea" className="font-mono">Gitea</SelectItem>
+                  <SelectItem value="github" className="font-sans">GitHub</SelectItem>
+                  <SelectItem value="gitlab" className="font-sans">GitLab</SelectItem>
+                  <SelectItem value="gitea" className="font-sans">Gitea</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -614,7 +614,7 @@ export function SystemConfig() {
             {/* 根据选择显示对应的 Token 配置 */}
             {selectedRepoType === 'github' && (
               <div className="space-y-2">
-                <Label className="text-xs font-bold text-muted-foreground uppercase">Token</Label>
+                <Label className="text-xs font-medium text-muted-foreground uppercase">Token</Label>
                 <Input
                   type="password"
                   value={config.githubToken}
@@ -626,7 +626,7 @@ export function SystemConfig() {
             )}
             {selectedRepoType === 'gitlab' && (
               <div className="space-y-2">
-                <Label className="text-xs font-bold text-muted-foreground uppercase">Token</Label>
+                <Label className="text-xs font-medium text-muted-foreground uppercase">Token</Label>
                 <Input
                   type="password"
                   value={config.gitlabToken}
@@ -638,7 +638,7 @@ export function SystemConfig() {
             )}
             {selectedRepoType === 'gitea' && (
               <div className="space-y-2">
-                <Label className="text-xs font-bold text-muted-foreground uppercase">Token</Label>
+                <Label className="text-xs font-medium text-muted-foreground uppercase">Token</Label>
                 <Input
                   type="password"
                   value={config.giteaToken}
@@ -654,7 +654,7 @@ export function SystemConfig() {
           <div className="pt-4 border-t border-border border-dashed space-y-4">
             <div className="flex items-center gap-3">
               <Key className="w-4 h-4 text-primary" />
-              <h4 className="text-sm font-bold uppercase tracking-wider text-foreground">SSH 密钥管理</h4>
+              <h4 className="text-base font-medium uppercase tracking-wider text-foreground">SSH 密钥管理</h4>
             </div>
 
             {!sshKey.has_key ? (
@@ -686,7 +686,7 @@ export function SystemConfig() {
                 {/* Public Key Display */}
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
-                    <Label className="text-xs font-bold text-muted-foreground uppercase flex items-center gap-2">
+                    <Label className="text-xs font-medium text-muted-foreground uppercase flex items-center gap-2">
                       <CheckCircle2 className="w-3 h-3 text-primary" />
                       SSH 公钥
                     </Label>
@@ -703,12 +703,12 @@ export function SystemConfig() {
                   <Textarea
                     value={sshKey.public_key || ""}
                     readOnly
-                    className="cyber-input font-mono text-xs h-24 resize-none"
+                    className="cyber-input font-sans text-xs h-24 resize-none"
                   />
 
                   {sshKey.fingerprint && (
                     <div className="p-2 bg-muted/50 rounded border border-border">
-                      <Label className="text-xs font-bold text-muted-foreground uppercase mb-1 block">
+                      <Label className="text-xs font-medium text-muted-foreground uppercase mb-1 block">
                         公钥指纹 (SHA256)
                       </Label>
                       <code className="text-xs text-primary font-mono break-all">
@@ -724,7 +724,7 @@ export function SystemConfig() {
 
                 {/* Test SSH Connection */}
                 <div className="space-y-2 pt-4 border-t border-border">
-                  <Label className="text-xs font-bold text-muted-foreground uppercase">
+                  <Label className="text-xs font-medium text-muted-foreground uppercase">
                     测试 SSH 连接
                   </Label>
                   <div className="flex gap-2">
@@ -732,7 +732,7 @@ export function SystemConfig() {
                       placeholder="git@github.com:username/repo.git"
                       value={testRepoUrl}
                       onChange={(e) => setTestRepoUrl(e.target.value)}
-                      className="cyber-input font-mono text-xs"
+                      className="cyber-input font-sans text-xs"
                     />
                     <Button
                       onClick={handleTestSSHKey}
@@ -802,7 +802,7 @@ export function SystemConfig() {
       <AlertDialog open={showDeleteKeyDialog} onOpenChange={setShowDeleteKeyDialog}>
         <AlertDialogContent className="cyber-card border-destructive/25 cyber-dialog">
           <AlertDialogHeader>
-            <AlertDialogTitle className="text-lg font-bold uppercase text-foreground flex items-center gap-2">
+            <AlertDialogTitle className="text-lg font-semibold uppercase text-foreground flex items-center gap-2">
               <Trash2 className="w-5 h-5 text-destructive" />
               确认删除 SSH 密钥？
             </AlertDialogTitle>

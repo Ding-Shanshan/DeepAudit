@@ -72,8 +72,8 @@ export function ProjectTasksTab(props: {
       ) : (
         <div className="p-12 text-center">
           <FolderOpen className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
-          <h3 className="text-lg font-bold text-foreground mb-2 uppercase">暂无审计任务</h3>
-          <p className="text-sm text-muted-foreground mb-6 font-mono">该项目尚未创建审计任务</p>
+          <h3 className="text-lg font-semibold text-foreground mb-2 uppercase">暂无审计任务</h3>
+          <p className="text-sm text-muted-foreground mb-6 font-sans">该项目尚未创建审计任务</p>
         </div>
       )}
     </div>

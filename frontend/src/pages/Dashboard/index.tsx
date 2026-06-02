@@ -80,7 +80,7 @@ export default function Dashboard() {
   };
 
   return (
-    <div className="space-y-4 px-6 pt-1 pb-6 bg-background min-h-screen font-mono relative">
+    <div className="space-y-4 px-6 pt-1 pb-6 bg-background min-h-screen font-sans relative">
       {/* 模块 1: 风险态势总览 */}
       <RiskOverviewCards
         data={aggregatedData?.riskOverview || { criticalIssues: 0, highRiskProjects: 0, pendingIssues: 0, todayNewIssues: 0 }}

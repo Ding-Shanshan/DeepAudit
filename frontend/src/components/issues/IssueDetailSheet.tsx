@@ -334,7 +334,7 @@ export default function IssueDetailSheet({
           {isAgent && (source || sink || dataflowPath) && (
             <SectionCard icon={ChevronRight} title="数据流" accentColor="text-violet-400">
               {source && (
-                <InfoRow label="污点源" value={<span className="font-mono text-red-400">{source}</span>} />
+                <InfoRow label="污点源" value={<span className="font-mono text-red-400">{source}</span>} mono />
               )}
               {dataflowPath && Array.isArray(dataflowPath) && dataflowPath.length > 0 && (
                 <div className="space-y-1">
@@ -347,7 +347,7 @@ export default function IssueDetailSheet({
                 </div>
               )}
               {sink && (
-                <InfoRow label="危险终点" value={<span className="font-mono text-red-400">{sink}</span>} />
+                <InfoRow label="危险终点" value={<span className="font-mono text-red-400">{sink}</span>} mono />
               )}
             </SectionCard>
           )}

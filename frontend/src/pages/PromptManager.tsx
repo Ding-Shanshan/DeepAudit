@@ -207,7 +207,7 @@ export default function PromptManager() {
       <div className="flex items-center justify-center min-h-screen cyber-bg-elevated">
         <div className="text-center space-y-4">
           <div className="loading-spinner mx-auto" />
-          <p className="text-muted-foreground font-mono text-sm uppercase tracking-wider">加载中...</p>
+          <p className="text-muted-foreground font-sans text-sm uppercase tracking-wider">加载中...</p>
         </div>
       </div>
     );
@@ -338,22 +338,22 @@ export default function PromptManager() {
       <Sheet open={showCreateDialog || showEditDialog} onOpenChange={(open) => { if (!open) { setShowCreateDialog(false); setShowEditDialog(false); } }}>
         <SheetContent side="right" className="!w-[min(90vw,700px)] sm:max-w-[700px] !sm:max-w-none flex flex-col p-0 gap-0 border-border overflow-y-auto">
           <SheetHeader className="px-6 py-4 border-b border-border flex-shrink-0 bg-muted">
-            <SheetTitle className="flex items-center gap-3 font-mono text-foreground">
+            <SheetTitle className="flex items-center gap-3 font-sans text-foreground">
               <div className="p-2 bg-primary/20 rounded border border-primary/30">
                 <FileText className="w-5 h-5 text-primary" />
               </div>
-              <span className="text-base font-bold uppercase tracking-wider">
+              <span className="text-lg font-semibold uppercase tracking-wider">
                 {showEditDialog ? '编辑规则' : '新建规则'}
               </span>
             </SheetTitle>
             </SheetHeader>
           <div className="flex-1 overflow-y-auto p-6 space-y-4">
             <div className="space-y-2">
-              <Label className="text-xs font-bold text-muted-foreground uppercase">规则名称 *</Label>
+              <Label className="text-xs font-medium text-muted-foreground uppercase">规则名称 *</Label>
               <Input value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} placeholder="请填写规则名称" className="cyber-input" />
             </div>
             <div className="space-y-2">
-              <Label className="text-xs font-bold text-muted-foreground uppercase">描述</Label>
+              <Label className="text-xs font-medium text-muted-foreground uppercase">描述</Label>
               <Input value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} placeholder="请输入规则描述" className="cyber-input" />
             </div>
             <RadioGroup value={editTab} onValueChange={setEditTab} className="flex items-center gap-6">
@@ -367,29 +367,29 @@ export default function PromptManager() {
               </div>
             </RadioGroup>
             {editTab === 'zh' ? (
-              <Textarea value={form.content_zh} onChange={e => setForm({ ...form, content_zh: e.target.value })} placeholder="用自然语言描述检测规则" rows={12} className="cyber-input font-mono text-sm text-primary" />
+              <Textarea value={form.content_zh} onChange={e => setForm({ ...form, content_zh: e.target.value })} placeholder="用自然语言描述检测规则" rows={12} className="cyber-input font-sans text-sm text-primary" />
             ) : (
               <div className="space-y-4">
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
-                    <Label className="text-xs font-bold text-muted-foreground">规则简述</Label>
+                    <Label className="text-xs font-medium text-muted-foreground">规则简述</Label>
                     <Button size="sm" onClick={handleGenerateRule} disabled={generating || !ruleSummaryEn.trim()} className="cyber-btn-primary h-7 text-xs">
                       {generating ? (<><Loader2 className="w-3 h-3 mr-1 animate-spin" />生成中...</>) : (<><Wand2 className="w-3 h-3 mr-1" />生成规则</>)}
                     </Button>
                   </div>
-                  <Textarea value={ruleSummaryEn} onChange={e => setRuleSummaryEn(e.target.value)} placeholder="请用自然语言简述检测逻辑" rows={4} className="cyber-input font-mono text-sm text-primary" />
+                  <Textarea value={ruleSummaryEn} onChange={e => setRuleSummaryEn(e.target.value)} placeholder="请用自然语言简述检测逻辑" rows={4} className="cyber-input font-sans text-sm text-primary" />
                 </div>
                 <div className="space-y-2">
-                  <Label className="text-xs font-bold text-muted-foreground">正样例描述（可选）</Label>
-                  <Textarea value={positiveExample} onChange={e => setPositiveExample(e.target.value)} placeholder="应该被报告的情况，如：使用f-string拼接SQL语句" rows={2} className="cyber-input font-mono text-sm text-primary" />
+                  <Label className="text-xs font-medium text-muted-foreground">正样例描述（可选）</Label>
+                  <Textarea value={positiveExample} onChange={e => setPositiveExample(e.target.value)} placeholder="应该被报告的情况，如：使用f-string拼接SQL语句" rows={2} className="cyber-input font-sans text-sm text-primary" />
                 </div>
                 <div className="space-y-2">
-                  <Label className="text-xs font-bold text-muted-foreground">反样例描述（可选）</Label>
-                  <Textarea value={negativeExample} onChange={e => setNegativeExample(e.target.value)} placeholder="不应被报告的情况，如：使用ORM参数化查询" rows={2} className="cyber-input font-mono text-sm text-primary" />
+                  <Label className="text-xs font-medium text-muted-foreground">反样例描述（可选）</Label>
+                  <Textarea value={negativeExample} onChange={e => setNegativeExample(e.target.value)} placeholder="不应被报告的情况，如：使用ORM参数化查询" rows={2} className="cyber-input font-sans text-sm text-primary" />
                 </div>
                 <div className="space-y-2">
-                  <Label className="text-xs font-bold text-muted-foreground">生成结果</Label>
-                  <Textarea value={form.content_en} onChange={e => setForm({ ...form, content_en: e.target.value })} placeholder="等待AI生成规则" rows={8} className="cyber-input font-mono text-sm text-primary" />
+                  <Label className="text-xs font-medium text-muted-foreground">生成结果</Label>
+                  <Textarea value={form.content_en} onChange={e => setForm({ ...form, content_en: e.target.value })} placeholder="等待AI生成规则" rows={8} className="cyber-input font-sans text-sm text-primary" />
                 </div>
               </div>
             )}
@@ -405,12 +405,12 @@ export default function PromptManager() {
       <Dialog open={showTestDialog} onOpenChange={setShowTestDialog}>
         <DialogContent className="!w-[min(95vw,1200px)] !max-w-none max-h-[85vh] flex flex-col p-0 gap-0 cyber-dialog border border-border rounded-lg">
           <DialogHeader className="px-6 py-4 border-b border-border flex-shrink-0 bg-muted">
-            <DialogTitle className="flex items-center gap-3 font-mono text-foreground">
+            <DialogTitle className="flex items-center gap-3 font-sans text-foreground">
               <div className="p-2 bg-violet-500/20 rounded border border-violet-500/30">
                 <Sparkles className="w-5 h-5 text-secondary" />
               </div>
               <div>
-                <span className="text-base font-bold uppercase tracking-wider">
+                <span className="text-lg font-semibold uppercase tracking-wider">
                   测试提示词: {selectedTemplate?.name}
                 </span>
                 <p className="text-xs text-muted-foreground font-normal mt-0.5">使用示例代码测试提示词效果</p>
@@ -422,7 +422,7 @@ export default function PromptManager() {
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-2">
-                  <Label className="text-xs font-bold text-muted-foreground uppercase">编程语言</Label>
+                  <Label className="text-xs font-medium text-muted-foreground uppercase">编程语言</Label>
                   <Select value={testForm.language} onValueChange={v => {
                     const templateCodes = selectedTemplate ? TEMPLATE_TEST_CODES[selectedTemplate.name] : null;
                     const code = templateCodes?.[v] || TEST_CODE_SAMPLES[v] || TEST_CODE_SAMPLES.python;
@@ -437,7 +437,7 @@ export default function PromptManager() {
                   </Select>
                 </div>
                 <div className="space-y-2">
-                  <Label className="text-xs font-bold text-muted-foreground uppercase">提示词语言</Label>
+                  <Label className="text-xs font-medium text-muted-foreground uppercase">提示词语言</Label>
                   <Select value={testForm.promptLang} onValueChange={(v: 'zh' | 'en') => setTestForm({ ...testForm, promptLang: v })}>
                     <SelectTrigger className="cyber-input"><SelectValue /></SelectTrigger>
                     <SelectContent className="cyber-dialog border-border">
@@ -448,7 +448,7 @@ export default function PromptManager() {
                 </div>
               </div>
               <div className="space-y-2">
-                <Label className="text-xs font-bold text-muted-foreground uppercase">测试代码</Label>
+                <Label className="text-xs font-medium text-muted-foreground uppercase">测试代码</Label>
                 <Textarea value={testForm.code} onChange={e => setTestForm({ ...testForm, code: e.target.value })} rows={10} className="cyber-input font-mono text-sm text-primary" />
               </div>
               <Button onClick={handleTest} disabled={testing} className="w-full cyber-btn-primary h-12">
@@ -457,7 +457,7 @@ export default function PromptManager() {
             </div>
             {/* Right: Results */}
             <div className="space-y-4">
-              <Label className="text-xs font-bold text-muted-foreground uppercase">分析结果</Label>
+              <Label className="text-xs font-medium text-muted-foreground uppercase">分析结果</Label>
               <div className="border border-border h-[400px] overflow-auto cyber-bg-elevated rounded">
                 {testResult ? (
                   testResult.success ? (
@@ -468,7 +468,7 @@ export default function PromptManager() {
                           <Check className="w-5 h-5" />
                           <span className="uppercase text-sm">分析成功</span>
                         </div>
-                        <span className="text-xs text-muted-foreground font-mono">
+                        <span className="text-xs text-muted-foreground font-sans">
                           {testResult.execution_time}s
                         </span>
                       </div>
@@ -543,7 +543,7 @@ export default function PromptManager() {
                           <span className="uppercase text-sm">测试失败</span>
                         </div>
                         {testResult.execution_time && (
-                          <span className="text-xs text-muted-foreground font-mono">
+                          <span className="text-xs text-muted-foreground font-sans">
                             {testResult.execution_time}s
                           </span>
                         )}
@@ -563,8 +563,8 @@ export default function PromptManager() {
                     <div className="w-16 h-16 bg-muted border border-border flex items-center justify-center mb-4 rounded">
                       <Play className="w-8 h-8 opacity-50" />
                     </div>
-                    <p className="font-mono uppercase text-sm">点击"运行测试"</p>
-                    <p className="font-mono text-xs mt-1">查看分析结果</p>
+                    <p className="font-sans uppercase text-sm">点击"运行测试"</p>
+                    <p className="font-sans text-xs mt-1">查看分析结果</p>
                   </div>
                 )}
               </div>
@@ -580,11 +580,11 @@ export default function PromptManager() {
       <Sheet open={showViewDialog} onOpenChange={setShowViewDialog}>
         <SheetContent side="right" className="!w-[min(90vw,700px)] sm:max-w-[700px] !sm:max-w-none flex flex-col p-0 gap-0 border-border overflow-y-auto">
           <SheetHeader className="px-6 py-4 border-b border-border flex-shrink-0 bg-muted">
-            <SheetTitle className="flex items-center gap-3 font-mono text-foreground">
+            <SheetTitle className="flex items-center gap-3 font-sans text-foreground">
               <div className="p-2 bg-primary/20 rounded border border-primary/30">
                 <Eye className="w-5 h-5 text-primary" />
               </div>
-              <span className="text-base font-bold uppercase tracking-wider">
+              <span className="text-lg font-semibold uppercase tracking-wider">
                 查看规则
               </span>
             </SheetTitle>
@@ -592,11 +592,11 @@ export default function PromptManager() {
           {viewTemplate && (
             <div className="flex-1 overflow-y-auto p-6 space-y-4">
               <div className="space-y-2">
-                <Label className="text-xs font-bold text-muted-foreground uppercase">规则名称</Label>
+                <Label className="text-xs font-medium text-muted-foreground uppercase">规则名称</Label>
                 <Input value={viewTemplate.name} readOnly className="cyber-input bg-muted cursor-default" />
               </div>
               <div className="space-y-2">
-                <Label className="text-xs font-bold text-muted-foreground uppercase">描述</Label>
+                <Label className="text-xs font-medium text-muted-foreground uppercase">描述</Label>
                 <Input value={viewTemplate.description || ''} readOnly className="cyber-input bg-muted cursor-default" />
               </div>
               <RadioGroup value={viewTab} onValueChange={setViewTab} className="flex items-center gap-6">
@@ -610,9 +610,9 @@ export default function PromptManager() {
                 </div>
               </RadioGroup>
               {viewTab === 'zh' ? (
-                <Textarea value={viewTemplate.content_zh || ''} readOnly rows={12} className="cyber-input font-mono text-sm text-primary bg-muted cursor-default" />
+                <Textarea value={viewTemplate.content_zh || ''} readOnly rows={12} className="cyber-input font-sans text-sm text-primary bg-muted cursor-default" />
               ) : (
-                <Textarea value={viewTemplate.content_en || ''} readOnly rows={12} className="cyber-input font-mono text-sm text-primary bg-muted cursor-default" />
+                <Textarea value={viewTemplate.content_en || ''} readOnly rows={12} className="cyber-input font-sans text-sm text-primary bg-muted cursor-default" />
               )}
             </div>
           )}

@@ -90,7 +90,7 @@ export function ThemeToggle({ collapsed = false, className }: ThemeToggleProps) 
   return (
     <div className={cn("w-full", className)}>
       <div className="flex items-center gap-2 px-3 py-2">
-        <span className="text-xs text-muted-foreground dark:text-muted-foreground font-mono uppercase tracking-wider">
+        <span className="text-xs text-muted-foreground dark:text-muted-foreground font-sans uppercase tracking-wide">
           主题
         </span>
       </div>
@@ -109,7 +109,7 @@ export function ThemeToggle({ collapsed = false, className }: ThemeToggleProps) 
               onClick={() => handleThemeChange(value)}
               className={cn(
                 "flex-1 flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-md transition-all duration-200",
-                "text-xs font-mono uppercase tracking-wider",
+                "text-xs font-sans uppercase tracking-wide",
                 isActive
                   ? cn(
                       "dark:bg-primary/20 dark:text-primary dark:border dark:border-primary/40",

@@ -74,11 +74,11 @@ export default function InstantExportDialog({
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="sm:max-w-[600px] cyber-dialog border-border">
                 <DialogHeader>
-                    <DialogTitle className="flex items-center gap-3 text-lg font-bold uppercase tracking-wider text-foreground">
+                    <DialogTitle className="flex items-center gap-3 text-lg font-semibold uppercase tracking-wider text-foreground">
                         <Download className="w-5 h-5 text-primary" />
                         导出分析报告
                     </DialogTitle>
-                    <DialogDescription className="text-muted-foreground font-mono text-xs">
+                    <DialogDescription className="text-muted-foreground font-sans text-xs">
                         选择报告格式并导出代码分析结果
                     </DialogDescription>
                 </DialogHeader>
@@ -120,7 +120,7 @@ export default function InstantExportDialog({
                             <Terminal className="w-3 h-3 text-primary" />
                             <h4 className="font-bold text-foreground uppercase text-xs">报告内容预览</h4>
                         </div>
-                        <div className="p-4 grid grid-cols-2 gap-3 text-xs font-mono">
+                        <div className="p-4 grid grid-cols-2 gap-3 text-xs font-sans">
                             <div className="flex items-center justify-between border-b border-border pb-2">
                                 <span className="text-muted-foreground">编程语言:</span>
                                 <span className="font-bold text-secondary">{language.toUpperCase()}</span>

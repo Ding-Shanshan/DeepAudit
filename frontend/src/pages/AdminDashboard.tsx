@@ -189,12 +189,12 @@ export default function AdminDashboard() {
 
   if (!isAdmin) {
     return (
-      <div className="space-y-4 px-6 pt-1 pb-6 cyber-bg-elevated min-h-screen font-mono relative">
+      <div className="space-y-4 px-6 pt-1 pb-6 cyber-bg-elevated min-h-screen font-sans relative">
         <div className="absolute inset-0 cyber-grid-subtle pointer-events-none" />
         <div className="relative z-10 cyber-card p-8">
           <div className="cyber-card-header">
             <Shield className="w-5 h-5 text-primary" />
-            <h1 className="text-lg font-bold uppercase tracking-wider text-foreground">
+            <h1 className="text-2xl font-semibold uppercase tracking-wider text-foreground">
               系统管理
             </h1>
           </div>
@@ -207,7 +207,7 @@ export default function AdminDashboard() {
   }
 
   return (
-    <div className="space-y-4 px-6 pt-1 pb-6 cyber-bg-elevated min-h-screen font-mono relative">
+    <div className="space-y-4 px-6 pt-1 pb-6 cyber-bg-elevated min-h-screen font-sans relative">
       <div className="absolute inset-0 cyber-grid-subtle pointer-events-none" />
 
       {activeTab === "users" && (
@@ -374,18 +374,18 @@ export default function AdminDashboard() {
           className="!w-[min(90vw,500px)] sm:max-w-[500px] !sm:max-w-none flex flex-col p-0 gap-0 border-border overflow-y-auto"
         >
           <SheetHeader className="px-6 py-4 border-b border-border flex-shrink-0 bg-muted">
-            <SheetTitle className="flex items-center gap-3 font-mono text-foreground">
+            <SheetTitle className="flex items-center gap-3 font-sans text-foreground">
               <div className="p-2 bg-primary/20 rounded border border-primary/30">
                 <Plus className="w-5 h-5 text-primary" />
               </div>
-              <span className="text-base font-bold uppercase tracking-wider">
+              <span className="text-lg font-semibold uppercase tracking-wider">
                 创建新用户
               </span>
             </SheetTitle>
           </SheetHeader>
           <div className="flex-1 overflow-y-auto p-6 space-y-4">
             <div className="space-y-2">
-              <Label className="text-xs font-bold text-muted-foreground uppercase">
+              <Label className="text-xs font-medium text-muted-foreground uppercase">
                 用户名 *
               </Label>
               <Input
@@ -398,7 +398,7 @@ export default function AdminDashboard() {
               />
             </div>
             <div className="space-y-2">
-              <Label className="text-xs font-bold text-muted-foreground uppercase">
+              <Label className="text-xs font-medium text-muted-foreground uppercase">
                 邮箱
               </Label>
               <Input
@@ -411,7 +411,7 @@ export default function AdminDashboard() {
               />
             </div>
             <div className="space-y-2">
-              <Label className="text-xs font-bold text-muted-foreground uppercase">
+              <Label className="text-xs font-medium text-muted-foreground uppercase">
                 初始密码 *
               </Label>
               <Input
@@ -424,7 +424,7 @@ export default function AdminDashboard() {
               />
             </div>
             <div className="space-y-2">
-              <Label className="text-xs font-bold text-muted-foreground uppercase">
+              <Label className="text-xs font-medium text-muted-foreground uppercase">
                 角色
               </Label>
               <Select

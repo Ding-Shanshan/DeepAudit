@@ -73,7 +73,7 @@ export const FileHotspotsList = memo(function FileHotspotsList({
               to={`/issues?file_path=${encodeURIComponent(item.filePath)}`}
               className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted/50 transition-colors group"
             >
-              <span className="text-xs text-muted-foreground w-5 text-right font-mono">
+              <span className="text-xs text-muted-foreground w-5 text-right font-sans">
                 {index + 1}
               </span>
               <div className="flex-1 min-w-0">

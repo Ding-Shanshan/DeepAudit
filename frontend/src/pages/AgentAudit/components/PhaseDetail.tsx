@@ -383,7 +383,7 @@ export const PhaseDetail = memo(function PhaseDetail({
     <div className="flex flex-col">
       {/* Compact toolbar */}
       <div className="flex items-center justify-between flex-shrink-0 py-2">
-        <Badge variant="outline" className="text-xs h-6 px-2 font-mono">
+        <Badge variant="outline" className="text-xs h-6 px-2 font-sans">
           {currentPhaseLogs.length} 条记录
         </Badge>
         <button

@@ -208,7 +208,7 @@ export function DatabaseManager() {
       <div className="cyber-card p-0">
         <div className="cyber-card-header">
           <Activity className="w-5 h-5 text-primary" />
-          <h3 className="text-lg font-bold uppercase tracking-wider text-foreground">数据库健康检查</h3>
+          <h3 className="text-lg font-semibold uppercase tracking-wider text-foreground">数据库健康检查</h3>
           <div className="ml-auto">
             <Button
               variant="outline"
@@ -292,7 +292,7 @@ export function DatabaseManager() {
       <div className="cyber-card p-0">
         <div className="cyber-card-header">
           <Database className="w-5 h-5 text-secondary" />
-          <h3 className="text-lg font-bold uppercase tracking-wider text-foreground">详细数据统计</h3>
+          <h3 className="text-lg font-semibold uppercase tracking-wider text-foreground">详细数据统计</h3>
           <div className="ml-auto">
             <Button
               variant="outline"
@@ -347,7 +347,7 @@ export function DatabaseManager() {
       <div className="cyber-card p-0">
         <div className="cyber-card-header">
           <Database className="w-5 h-5 text-primary" />
-          <h3 className="text-lg font-bold uppercase tracking-wider text-foreground">数据操作</h3>
+          <h3 className="text-lg font-semibold uppercase tracking-wider text-foreground">数据操作</h3>
         </div>
         <div className="p-6 space-y-6">
           {message && (
@@ -361,7 +361,7 @@ export function DatabaseManager() {
               ) : (
                 <AlertCircle className="h-5 w-5 text-destructive mt-0.5" />
               )}
-              <p className={`text-sm font-mono ${message.type === 'success' ? 'text-emerald-300/80' : 'text-rose-300/80'}`}>
+              <p className={`text-sm font-sans ${message.type === 'success' ? 'text-emerald-300/80' : 'text-rose-300/80'}`}>
                 {message.text}
               </p>
             </div>

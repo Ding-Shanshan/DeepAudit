@@ -29,8 +29,17 @@
     --ring: 239 84% 67%;
     --radius: 8px;
 
-    --font-ui: "Noto Sans SC", "Source Han Sans SC", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, sans-serif;
+    --font-ui: "Inter", "Noto Sans SC", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, sans-serif;
     --font-code: "SFMono-Regular", "JetBrains Mono", "Roboto Mono", "Menlo", monospace;
+
+    /* Semantic font-size variables */
+    --text-badge: 0.75rem;       /* 12px - xs */
+    --text-caption: 0.875rem;    /* 14px - sm */
+    --text-body: 1rem;           /* 16px - base */
+    --text-heading-sm: 1.125rem; /* 18px - lg */
+    --text-heading-md: 1.25rem;  /* 20px - xl */
+    --text-heading-lg: 1.5rem;   /* 24px - 2xl */
+    --text-heading-xl: 1.875rem; /* 30px - 3xl */
 
     --shadow-sm: 0 1px 2px rgba(99, 102, 241, 0.04);
     --shadow-md: 0 4px 16px rgba(99, 102, 241, 0.06);
@@ -201,7 +210,7 @@
   }
 
   .terminal-title {
-    font-size: 0.875rem;
+    font-size: var(--text-caption);
     color: var(--cyber-text-muted);
     font-weight: 500;
   }
@@ -219,7 +228,7 @@
     border: 1px solid var(--cyber-border);
     background: rgba(255, 255, 255, 0.96);
     color: var(--cyber-text);
-    font-size: 0.9375rem;
+    font-size: var(--text-caption);
   }
 
   .cyber-btn:hover:not(:disabled) {
@@ -273,7 +282,7 @@
     border: 1px solid var(--cyber-border);
     padding: 0.75rem 1rem;
     border-radius: 6px;
-    font-size: 0.9375rem;
+    font-size: var(--text-caption);
     color: var(--cyber-text);
     transition: border-color 0.2s ease, box-shadow 0.2s ease;
   }
@@ -299,7 +308,7 @@
     gap: 0.35rem;
     padding: 0.35rem 0.7rem;
     border-radius: 999px;
-    font-size: 0.75rem;
+    font-size: var(--text-badge);
     font-weight: 600;
     letter-spacing: 0.02em;
     border: 1px solid transparent;
@@ -443,7 +452,7 @@
   }
 
   .section-title {
-    font-size: 1.125rem;
+    font-size: var(--text-heading-sm);
     font-weight: 600;
     color: var(--cyber-text);
   }
@@ -456,13 +465,13 @@
   }
 
   .stat-value {
-    font-size: 2rem;
+    font-size: var(--text-heading-xl);
     font-weight: 700;
     color: var(--cyber-text);
   }
 
   .stat-label {
-    font-size: 0.8125rem;
+    font-size: var(--text-badge);
     font-weight: 600;
     color: var(--cyber-text-muted);
   }
@@ -480,7 +489,7 @@
 
   .cyber-table {
     width: 100%;
-    font-size: 0.9375rem;
+    font-size: var(--text-caption);
   }
 
   .cyber-table thead {
@@ -491,7 +500,7 @@
   .cyber-table th {
     padding: 0.95rem 1rem;
     text-align: left;
-    font-size: 0.8125rem;
+    font-size: var(--text-badge);
     font-weight: 600;
     color: var(--cyber-text-muted);
   }
@@ -523,14 +532,14 @@
   }
 
   .empty-state-title {
-    font-size: 1.375rem;
+    font-size: var(--text-heading-md);
     font-weight: 600;
     margin-bottom: 0.5rem;
     color: var(--cyber-text);
   }
 
   .empty-state-description {
-    font-size: 0.9375rem;
+    font-size: var(--text-caption);
     color: var(--cyber-text-muted);
   }
 
@@ -611,7 +620,7 @@
 
   .data-label,
   .cyber-label {
-    font-size: 0.8125rem;
+    font-size: var(--text-badge);
     color: var(--cyber-text-muted);
     font-weight: 600;
   }
@@ -720,17 +729,4 @@
   .glow-cyan {
     box-shadow: none;
   }
-}
-
-.font-mono {
-  font-family: var(--font-ui) !important;
-}
-
-pre.font-mono,
-code.font-mono,
-kbd.font-mono,
-samp.font-mono,
-pre .font-mono,
-code .font-mono {
-  font-family: var(--font-code) !important;
 }

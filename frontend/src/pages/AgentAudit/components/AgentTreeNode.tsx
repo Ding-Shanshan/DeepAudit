@@ -80,21 +80,21 @@ export const AgentTreeNodeItem = memo(function AgentTreeNodeItem({
         `} />
 
         {/* Agent name */}
-        <span className="font-mono text-xs truncate flex-1 text-slate-700">
+        <span className="font-sans text-xs truncate flex-1 text-slate-700">
           {node.agent_name}
         </span>
 
         {/* Metrics */}
         <div className="flex items-center gap-1.5 flex-shrink-0">
           {(node.iterations ?? 0) > 0 && (
-            <span className="flex items-center gap-1 text-xs text-slate-500 font-mono">
+            <span className="flex items-center gap-1 text-xs text-slate-500 font-sans">
               <Zap className="w-3 h-3" />
               {node.iterations}
             </span>
           )}
 
           {!node.parent_agent_id && node.findings_count > 0 && (
-            <span className="flex items-center gap-1 text-xs text-slate-600 font-mono">
+            <span className="flex items-center gap-1 text-xs text-slate-600 font-sans">
               <Bug className="w-3 h-3" />
               {node.findings_count}
             </span>

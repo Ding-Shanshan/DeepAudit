@@ -179,7 +179,7 @@ export class AgentErrorBoundary extends Component<Props, State> {
               )} />
             </div>
             <div>
-              <h2 className="text-xl font-bold text-foreground">Agent Error</h2>
+              <h2 className="text-xl font-semibold text-foreground">Agent Error</h2>
               <p className="text-sm text-muted-foreground">{this.getRecoveryHint()}</p>
             </div>
           </div>
@@ -198,7 +198,7 @@ export class AgentErrorBoundary extends Component<Props, State> {
                   <div className="flex items-start gap-2">
                     <Bug className="w-4 h-4 text-red-400 mt-0.5 flex-shrink-0" />
                     <div>
-                      <p className="text-sm font-mono text-red-400">{error.name}</p>
+                      <p className="text-sm font-sans text-red-400">{error.name}</p>
                       <p className="text-sm text-foreground">{error.message}</p>
                     </div>
                   </div>
@@ -207,7 +207,7 @@ export class AgentErrorBoundary extends Component<Props, State> {
 
               {this.props.taskId && (
                 <div className="text-xs text-muted-foreground">
-                  Task ID: <span className="font-mono text-muted-foreground">{this.props.taskId}</span>
+                  Task ID: <span className="font-sans text-muted-foreground">{this.props.taskId}</span>
                 </div>
               )}
 

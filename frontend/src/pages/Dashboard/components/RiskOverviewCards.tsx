@@ -89,7 +89,7 @@ export const RiskOverviewCards = memo(function RiskOverviewCards({
             <div className="flex items-center justify-between h-full">
               <div className="flex flex-col">
                 <p className="text-xs text-muted-foreground font-medium">{config.label}</p>
-                <p className={`text-lg font-bold ${config.textColor}`}>
+                <p className={`text-lg font-semibold ${config.textColor}`}>
                   {value}
                 </p>
               </div>

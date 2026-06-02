@@ -145,14 +145,14 @@ export default function Account() {
       <div className="flex items-center justify-center min-h-screen cyber-bg-elevated">
         <div className="text-center space-y-4">
           <div className="loading-spinner mx-auto" />
-          <p className="text-muted-foreground font-mono text-sm uppercase tracking-wider">加载中...</p>
+          <p className="text-muted-foreground font-sans text-sm uppercase tracking-wider">加载中...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-4 px-6 pt-1 pb-6 cyber-bg-elevated min-h-screen font-mono relative">
+    <div className="space-y-4 px-6 pt-1 pb-6 cyber-bg-elevated min-h-screen font-sans relative">
       {/* Grid background */}
       <div className="absolute inset-0 cyber-grid-subtle pointer-events-none" />
 
@@ -161,7 +161,7 @@ export default function Account() {
         <div className="cyber-card p-0">
           <div className="cyber-card-header">
             <User className="w-5 h-5 text-primary" />
-            <h3 className="text-lg font-bold uppercase tracking-wider text-foreground">用户信息</h3>
+            <h3 className="text-lg font-semibold uppercase tracking-wider text-foreground">用户信息</h3>
           </div>
           <div className="p-6 text-center">
             <div className="relative inline-block mb-4">
@@ -175,7 +175,7 @@ export default function Account() {
                 <div className="w-2 h-2 bg-foreground rounded-full animate-pulse" />
               </div>
             </div>
-            <h4 className="text-lg font-bold text-foreground uppercase mb-1">
+            <h4 className="text-lg font-semibold text-foreground uppercase mb-1">
               {profile?.full_name || "未设置姓名"}
             </h4>
             <p className="text-muted-foreground text-sm">@{profile?.username}</p>
@@ -192,7 +192,7 @@ export default function Account() {
               <div className="flex items-center gap-3 text-sm">
                 <Calendar className="w-4 h-4 text-secondary" />
                 <span className="text-muted-foreground">注册时间:</span>
-                <span className="text-foreground font-mono">{formatDate(profile?.created_at)}</span>
+                <span className="text-foreground font-sans">{formatDate(profile?.created_at)}</span>
               </div>
             </div>
 
@@ -221,7 +221,7 @@ export default function Account() {
         <div className="lg:col-span-2 cyber-card p-0">
           <div className="cyber-card-header">
             <Terminal className="w-5 h-5 text-primary" />
-            <h3 className="text-lg font-bold uppercase tracking-wider text-foreground">基本信息</h3>
+            <h3 className="text-lg font-semibold uppercase tracking-wider text-foreground">基本信息</h3>
           </div>
           <div className="p-6 space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -330,7 +330,7 @@ export default function Account() {
         <div className="lg:col-span-3 cyber-card p-0">
           <div className="cyber-card-header">
             <KeyRound className="w-5 h-5 text-warning" />
-            <h3 className="text-lg font-bold uppercase tracking-wider text-foreground">修改密码</h3>
+            <h3 className="text-lg font-semibold uppercase tracking-wider text-foreground">修改密码</h3>
           </div>
           <div className="p-6">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -384,7 +384,7 @@ export default function Account() {
       <AlertDialog open={showLogoutDialog} onOpenChange={setShowLogoutDialog}>
         <AlertDialogContent className="cyber-card border-destructive/25 cyber-dialog">
           <AlertDialogHeader>
-            <AlertDialogTitle className="text-lg font-bold uppercase text-foreground flex items-center gap-2">
+            <AlertDialogTitle className="text-lg font-semibold uppercase text-foreground flex items-center gap-2">
               <LogOut className="w-5 h-5 text-destructive" />
               确认退出登录？
             </AlertDialogTitle>
