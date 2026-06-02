@@ -62,6 +62,21 @@ export interface AgentTask {
   error_message: string | null;
 }
 
+/** 数据流路径步骤 */
+export interface DataFlowStep {
+  step: number;
+  type: 'source' | 'propagation' | 'sanitization' | 'sink';
+  file: string;
+  line: number;
+  end_line?: number;
+  function?: string;
+  class_name?: string;
+  code: string;
+  label?: string;
+  variable?: string;
+  operation?: string;
+}
+
 export interface AgentFinding {
   id: string;
   task_id: string;
@@ -75,7 +90,7 @@ export interface AgentFinding {
   line_end: number | null;
   code_snippet: string | null;
 
-  status: string;
+  status: 'fixed' | 'not_fixed' | 'false_positive' | 'suspicious';
   is_verified: boolean;
   has_poc: boolean;
   poc_code: string | null;
@@ -84,6 +99,15 @@ export interface AgentFinding {
   fix_code: string | null;
   ai_explanation: string | null;
   ai_confidence: number | null;
+  ai_suggestion?: string | null;  // AI排查结果 (JSON)
+
+  // Data flow fields
+  source?: string;
+  sink?: string;
+  dataflow_path?: DataFlowStep[];
+  code_context?: string;
+  function_name?: string;
+  class_name?: string;
 
   created_at: string;
 }
@@ -236,6 +260,16 @@ export async function updateAgentFinding(
   data: { status?: string }
 ): Promise<AgentFinding> {
   const response = await apiClient.patch(`/agent-tasks/${taskId}/findings/${findingId}`, data);
+  return response.data;
+}
+
+// ==================== AI排查 ====================
+
+export async function aiInvestigateFinding(
+  taskId: string,
+  findingId: string
+): Promise<{message: string; finding_id: string; status: string}> {
+  const response = await apiClient.post(`/agent-tasks/${taskId}/findings/${findingId}/ai-investigate`);
   return response.data;
 }
 
