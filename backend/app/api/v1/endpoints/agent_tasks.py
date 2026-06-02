@@ -1379,6 +1379,14 @@ async def _save_findings(
                 verification_result = {"details": finding.get("verification_details")}
 
             # 🔥 Handle CWE and CVSS
+            # Extract data flow information
+            source = finding.get("source")
+            sink = finding.get("sink")
+            dataflow_path = finding.get("dataflow_path")
+            code_context = finding.get("code_context")
+            function_name = finding.get("function_name")
+            class_name = finding.get("class_name")
+
             cwe_id = finding.get("cwe_id") or finding.get("cwe")
             cvss_score = finding.get("cvss_score") or finding.get("cvss")
             if isinstance(cvss_score, str):
@@ -1412,6 +1420,13 @@ async def _save_findings(
                 cvss_score=cvss_score,
                 # References for CWE
                 references=[{"cwe": cwe_id}] if cwe_id else None,
+                # Data flow fields
+                source=source,
+                sink=sink,
+                dataflow_path=dataflow_path,
+                code_context=code_context,
+                function_name=function_name,
+                class_name=class_name,
             )
             db.add(db_finding)
             saved_count += 1
