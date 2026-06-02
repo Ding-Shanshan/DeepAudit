@@ -24,8 +24,12 @@ import {
   Wrench,
   Gauge,
   ChevronRight,
+  Sparkles,
+  Loader2,
 } from "lucide-react";
 import type { AggregatedAuditIssue, AggregatedAgentFinding } from "@/shared/types";
+import DataFlowPathDiagram from './DataFlowPathDiagram';
+import { ISSUE_STATUS_LABELS, ISSUE_STATUS_BADGE_CLASS } from "@/shared/constants";
 
 // ============ Severity helpers ============
 
@@ -35,20 +39,6 @@ const SEVERITY_CONFIG: Record<string, { label: string; className: string }> = {
   medium: { label: "中等", className: "severity-medium" },
   low: { label: "低危", className: "severity-low" },
   info: { label: "信息", className: "severity-info" },
-};
-
-const STATUS_LABELS: Record<string, string> = {
-  open: "待处理",
-  pending_review: "存疑",
-  new: "待处理",
-  resolved: "已解决",
-  false_positive: "误报",
-  fixed: "已修复",
-  wont_fix: "不修复",
-  verified: "已验证",
-  analyzing: "分析中",
-  needs_review: "待审核",
-  duplicate: "重复",
 };
 
 const ISSUE_TYPE_LABELS: Record<string, string> = {
@@ -209,12 +199,12 @@ export default function IssueDetailSheet({
   const fixDesc = (agent as any)?.fix_description;
   const references: Array<{ url?: string; title?: string; cwe?: string }> | null = (agent as any)?.references;
   const aiConfidence = (agent as any)?.ai_confidence ?? (agent as any)?.confidence;
-  const codeContext = (agent as any)?.code_context;
-  const functionName = (agent as any)?.function_name;
-  const className = (agent as any)?.class_name;
-  const dataflowPath = (agent as any)?.dataflow_path;
-  const source = (agent as any)?.source;
-  const sink = (agent as any)?.sink;
+  const codeContext = agent?.code_context;
+  const functionName = agent?.function_name;
+  const className = agent?.class_name;
+  const dataflowPath = agent?.dataflow_path;
+  const source = agent?.source;
+  const sink = agent?.sink;
   const verificationMethod = (agent as any)?.verification_method;
   const cvssScore = (agent as any)?.cvss_score;
   const cvssVector = (agent as any)?.cvss_vector;
@@ -247,8 +237,8 @@ export default function IssueDetailSheet({
                   {ISSUE_TYPE_LABELS[issueType] || issueType}
                 </Badge>
               )}
-              <Badge className="bg-muted text-muted-foreground border border-border text-xs">
-                {STATUS_LABELS[status] || status}
+              <Badge className={`border text-xs ${ISSUE_STATUS_BADGE_CLASS[status] || 'bg-muted text-muted-foreground border-border'}`}>
+                {ISSUE_STATUS_LABELS[status] || status}
               </Badge>
               {isAgent && isVerified && (
                 <Badge className="bg-emerald-500/15 text-emerald-600 border-emerald-500/30 text-xs">
@@ -330,25 +320,14 @@ export default function IssueDetailSheet({
             </SectionCard>
           )}
 
-          {/* 数据流 (Agent only) */}
+          {/* 数据流路径 (Agent only) */}
           {isAgent && (source || sink || dataflowPath) && (
-            <SectionCard icon={ChevronRight} title="数据流" accentColor="text-violet-400">
-              {source && (
-                <InfoRow label="污点源" value={<span className="font-mono text-red-400">{source}</span>} mono />
-              )}
-              {dataflowPath && Array.isArray(dataflowPath) && dataflowPath.length > 0 && (
-                <div className="space-y-1">
-                  {dataflowPath.map((step: any, idx: number) => (
-                    <div key={idx} className="flex items-center gap-2 text-xs">
-                      <ChevronRight className="w-3 h-3 text-muted-foreground flex-shrink-0" />
-                      <span className="font-mono text-muted-foreground">{typeof step === "string" ? step : step.description || step.function || JSON.stringify(step)}</span>
-                    </div>
-                  ))}
-                </div>
-              )}
-              {sink && (
-                <InfoRow label="危险终点" value={<span className="font-mono text-red-400">{sink}</span>} mono />
-              )}
+            <SectionCard icon={ChevronRight} title="数据流路径" accentColor="text-violet-400">
+              <DataFlowPathDiagram
+                dataflowPath={dataflowPath}
+                source={source}
+                sink={sink}
+              />
             </SectionCard>
           )}
 
@@ -417,6 +396,93 @@ export default function IssueDetailSheet({
               <CodeBlock code={fixCode} />
             </SectionCard>
           )}
+
+          {/* AI排查建议 */}
+          {(issue as any).ai_suggestion && (() => {
+            let aiData: any = null;
+            try { aiData = JSON.parse((issue as any).ai_suggestion); } catch { aiData = null; }
+            if (!aiData) return null;
+
+            if (aiData.verdict === "analyzing") {
+              return (
+                <SectionCard icon={Sparkles} title="AI排查建议" accentColor="text-purple-400">
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    AI 正在排查中...
+                  </div>
+                </SectionCard>
+              );
+            }
+
+            if (aiData.verdict === "error") {
+              return (
+                <SectionCard icon={Sparkles} title="AI排查建议" accentColor="text-red-400">
+                  <p className="text-sm text-red-500">{aiData.reasoning || "AI排查失败，请稍后重试"}</p>
+                </SectionCard>
+              );
+            }
+
+            return (
+              <SectionCard icon={Sparkles} title="AI排查建议" accentColor="text-purple-400">
+                <div className="space-y-3">
+                  {/* 判定结果 */}
+                  <div className="flex items-center gap-2">
+                    <Badge className={
+                      aiData.verdict === "confirmed"
+                        ? "bg-red-500/15 text-red-600 border-red-500/30 text-xs"
+                        : aiData.verdict === "false_positive"
+                          ? "bg-emerald-500/15 text-emerald-600 border-emerald-500/30 text-xs"
+                          : "bg-amber-500/15 text-amber-600 border-amber-500/30 text-xs"
+                    }>
+                      {aiData.verdict === "confirmed" ? "确认存在" : aiData.verdict === "false_positive" ? "确认为误报" : "不确定"}
+                    </Badge>
+                    {aiData.confidence != null && (
+                      <span className="text-xs text-muted-foreground">置信度 {Math.round(aiData.confidence * 100)}%</span>
+                    )}
+                  </div>
+
+                  {/* 推理分析 */}
+                  {aiData.reasoning && (
+                    <div>
+                      <div className="text-[10px] text-muted-foreground uppercase tracking-wider font-bold mb-1">
+                        推理分析
+                      </div>
+                      <p className="text-sm text-foreground/90 leading-relaxed whitespace-pre-wrap">
+                        {aiData.reasoning}
+                      </p>
+                    </div>
+                  )}
+
+                  {/* 修复建议 */}
+                  {aiData.suggestion && (
+                    <div>
+                      <div className="text-[10px] text-muted-foreground uppercase tracking-wider font-bold mb-1">
+                        AI修复建议
+                      </div>
+                      <p className="text-sm text-foreground/90 leading-relaxed whitespace-pre-wrap">
+                        {aiData.suggestion}
+                      </p>
+                    </div>
+                  )}
+
+                  {/* 修复代码 */}
+                  {aiData.fix_code && (
+                    <div>
+                      <div className="text-[10px] text-muted-foreground uppercase tracking-wider font-bold mb-1">
+                        AI修复代码
+                      </div>
+                      <CodeBlock code={aiData.fix_code} />
+                    </div>
+                  )}
+
+                  {/* 置信度进度条 */}
+                  {aiData.confidence != null && (
+                    <ConfidenceBar value={aiData.confidence} />
+                  )}
+                </div>
+              </SectionCard>
+            );
+          })()}
 
           {/* PoC 概念验证 (Agent only) */}
           {isAgent && hasPoc && (
