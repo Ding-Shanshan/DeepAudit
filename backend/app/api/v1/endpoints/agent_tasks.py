@@ -188,17 +188,26 @@ class AgentFindingResponse(BaseModel):
     line_start: Optional[int]
     line_end: Optional[int]
     code_snippet: Optional[str]
-    
+
+    # Data flow fields
+    source: Optional[str] = None
+    sink: Optional[str] = None
+    dataflow_path: Optional[List[Dict[str, Any]]] = None
+    code_context: Optional[str] = None
+    function_name: Optional[str] = None
+    class_name: Optional[str] = None
+
     is_verified: bool
     # 🔥 FIX: Map from ai_confidence in ORM, make Optional with default
     confidence: Optional[float] = Field(default=0.5, validation_alias="ai_confidence")
     status: str
-    
+
     suggestion: Optional[str] = None
     poc: Optional[dict] = None
-    
+    ai_suggestion: Optional[str] = None
+
     created_at: datetime
-    
+
     model_config = {
         "from_attributes": True,
         "populate_by_name": True,  # Allow both 'confidence' and 'ai_confidence'
@@ -1393,7 +1402,7 @@ async def _save_findings(
                 suggestion=suggestion[:5000] if suggestion else None,
                 is_verified=is_verified,
                 ai_confidence=confidence,  # 🔥 FIX: Use ai_confidence, not confidence
-                status=FindingStatus.VERIFIED if is_verified else FindingStatus.NEW,
+                status=FindingStatus.FIXED if is_verified else FindingStatus.NOT_FIXED,
                 # 🔥 Additional fields
                 has_poc=has_poc,
                 poc_code=poc_code,
@@ -2275,9 +2284,8 @@ async def update_finding_status(
         raise HTTPException(status_code=404, detail="发现不存在")
 
     VALID_FINDING_STATUSES = {
-        FindingStatus.NEW, FindingStatus.ANALYZING, FindingStatus.VERIFIED,
-        FindingStatus.FALSE_POSITIVE, FindingStatus.NEEDS_REVIEW,
-        FindingStatus.FIXED, FindingStatus.WONT_FIX, FindingStatus.DUPLICATE,
+        FindingStatus.FIXED, FindingStatus.NOT_FIXED,
+        FindingStatus.FALSE_POSITIVE, FindingStatus.SUSPICIOUS,
     }
     if status not in VALID_FINDING_STATUSES:
         raise HTTPException(status_code=400, detail=f"无效的状态: {status}")
@@ -2289,7 +2297,52 @@ async def update_finding_status(
     return {"message": "状态已更新", "finding_id": finding_id, "status": status}
 
 
-# ============ Helper Functions ============
+# ============ AI排查端点 ============
+
+@router.post("/{task_id}/findings/{finding_id}/ai-investigate")
+async def ai_investigate_finding(
+    task_id: str,
+    finding_id: str,
+    background_tasks: BackgroundTasks,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(deps.get_current_user),
+) -> Any:
+    """
+    对单个 AgentFinding 进行 AI 排查
+    """
+    # 验证发现存在
+    finding = await db.get(AgentFinding, finding_id)
+    if not finding or finding.task_id != task_id:
+        raise HTTPException(status_code=404, detail="发现不存在")
+
+    # 验证权限
+    task = await db.get(AgentTask, task_id)
+    if not task:
+        raise HTTPException(status_code=404, detail="任务不存在")
+    project = await db.get(Project, task.project_id)
+    if not project or project.owner_id != current_user.id:
+        raise HTTPException(status_code=403, detail="无权操作")
+
+    # 标记为排查中
+    finding.ai_suggestion = json.dumps({
+        "verdict": "analyzing",
+        "analyzed_at": datetime.now(timezone.utc).isoformat(),
+    }, ensure_ascii=False)
+    await db.commit()
+
+    # 获取用户配置
+    user_config = await _get_user_config(db, current_user.id)
+
+    # 启动后台任务
+    from app.services.ai_investigation import execute_single_investigation
+    background_tasks.add_task(
+        execute_single_investigation,
+        finding_id,
+        "agent",
+        user_config,
+    )
+
+    return {"message": "AI排查已启动", "finding_id": finding_id, "status": "analyzing"}
 
 def validate_git_url(url: str) -> bool:
     """
@@ -2370,7 +2423,10 @@ def is_path_safe(base_path: str, target_path: str) -> bool:
 def safe_extract_zip(zip_ref: zipfile.ZipFile, extract_dir: str, task_id: str) -> None:
     """
     安全解压 ZIP 文件，防止 Zip Slip 攻击
-    
+
+    不再剥离公共前缀——由 _get_project_root 的智能检测逻辑
+    在解压后自动处理单层嵌套目录（如 myproject/ 包裹目录）。
+
     Args:
         zip_ref: ZipFile 对象
         extract_dir: 解压目标目录
@@ -2379,34 +2435,26 @@ def safe_extract_zip(zip_ref: zipfile.ZipFile, extract_dir: str, task_id: str) -
     def check_cancelled():
         if is_task_cancelled(task_id):
             raise asyncio.CancelledError("任务已取消")
-    
+
     file_list = zip_ref.namelist()
-    
-    # 找到公共前缀
-    if file_list:
-        common_prefix = file_list[0].split('/')[0] + '/'
-        
-        for i, file_name in enumerate(file_list):
-            if i % 50 == 0:
-                check_cancelled()
-            
-            # 去掉公共前缀
-            if file_name.startswith(common_prefix):
-                target_path = file_name[len(common_prefix):]
-                if target_path:
-                    full_target = os.path.join(extract_dir, target_path)
-                    
-                    # 🔥 安全检查：防止路径遍历
-                    if not is_path_safe(extract_dir, target_path):
-                        logger.warning(f"⚠️ 检测到路径遍历攻击: {file_name}")
-                        continue
-                    
-                    if file_name.endswith('/'):
-                        os.makedirs(full_target, exist_ok=True)
-                    else:
-                        os.makedirs(os.path.dirname(full_target), exist_ok=True)
-                        with zip_ref.open(file_name) as src, open(full_target, 'wb') as dst:
-                            dst.write(src.read())
+
+    for i, file_name in enumerate(file_list):
+        if i % 50 == 0:
+            check_cancelled()
+
+        full_target = os.path.join(extract_dir, file_name)
+
+        # 🔥 安全检查：防止路径遍历（Zip Slip）
+        if not is_path_safe(extract_dir, file_name):
+            logger.warning(f"⚠️ 检测到路径遍历攻击: {file_name}")
+            continue
+
+        if file_name.endswith('/'):
+            os.makedirs(full_target, exist_ok=True)
+        else:
+            os.makedirs(os.path.dirname(full_target), exist_ok=True)
+            with zip_ref.open(file_name) as src, open(full_target, 'wb') as dst:
+                dst.write(src.read())
 
 async def _get_project_root(
     project: Project,
