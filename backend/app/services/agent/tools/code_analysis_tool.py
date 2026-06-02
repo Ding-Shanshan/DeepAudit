@@ -258,6 +258,16 @@ class DataFlowAnalysisTool(AgentTool):
 - risk_level: 风险等级 (high/medium/low/none)
 - explanation: 详细解释
 - recommendation: 建议
+- path_steps: 数据流路径步骤列表，每步包含:
+  - step: 序号(从1开始)
+  - type: 步骤类型 (source|propagation|sanitization|sink)
+  - file: 文件路径
+  - line: 行号
+  - function: 函数名(如有)
+  - code: 该步骤的关键代码行
+  - label: 人可读的操作描述
+  - variable: 当前跟踪的变量名
+  - operation: 操作类型 (input|assignment|parameter|return|call|sanitize)
 """
             
             # 🔥 添加超时保护（2分钟）
@@ -318,6 +328,7 @@ class DataFlowAnalysisTool(AgentTool):
                     "variable": variable_name,
                     "file_path": file_path,
                     "analysis": result,
+                    "path_steps": result.get("path_steps", []) if isinstance(result, dict) else [],
                 }
             )
             
@@ -360,10 +371,21 @@ class DataFlowAnalysisTool(AgentTool):
             "input_func": r'\binput\s*\(',
         }
         
+        source_type = "unknown"
+        has_source = False
+        source_match_obj = None
+        source_line = None
+
         for source_name, pattern in source_patterns.items():
-            if re.search(pattern, source_code, re.IGNORECASE):
-                result["source_type"] = source_name
+            match = re.search(pattern, source_code, re.IGNORECASE)
+            if match:
+                source_type = source_name
+                source_match_obj = match
+                has_source = True
+                source_line = source_code[:match.start()].count('\n') + 1
                 break
+
+        result["source_type"] = source_type
         
         # 检测净化方法
         sanitize_patterns = [
@@ -397,10 +419,14 @@ class DataFlowAnalysisTool(AgentTool):
             (r'echo\s+', "echo"),
             (r'print\s*\(', "print"),
         ]
-        
+
+        dangerous_sinks_found = []
         for pattern, name in sink_patterns:
-            if re.search(pattern, code_to_analyze, re.IGNORECASE):
+            match = re.search(pattern, code_to_analyze, re.IGNORECASE)
+            if match:
                 result["dangerous_sinks"].append(name)
+                sink_line = code_to_analyze[:match.start()].count('\n') + 1
+                dangerous_sinks_found.append((name, sink_line, match))
         
         # 计算风险等级
         if result["source_type"].startswith("user_input") and result["dangerous_sinks"]:
@@ -410,7 +436,35 @@ class DataFlowAnalysisTool(AgentTool):
                 result["risk_level"] = "medium"
         elif result["dangerous_sinks"]:
             result["risk_level"] = "medium"
-        
+
+        # Build path_steps from pattern analysis
+        path_steps = []
+        if has_source:
+            path_steps.append({
+                "step": 1,
+                "type": "source",
+                "file": file_path,
+                "line": source_line,
+                "function": None,
+                "code": source_match_obj.group(0) if source_match_obj else "",
+                "label": f"用户输入源: {source_type}",
+                "variable": variable_name,
+                "operation": "input",
+            })
+        for sink_name, sink_line, sink_match in dangerous_sinks_found:
+            path_steps.append({
+                "step": len(path_steps) + 1,
+                "type": "sink",
+                "file": file_path,
+                "line": sink_line,
+                "function": None,
+                "code": sink_match.group(0),
+                "label": f"危险函数: {sink_name}",
+                "variable": variable_name,
+                "operation": "call",
+            })
+        result["path_steps"] = path_steps
+
         return result
     
     def _format_quick_analysis_result(
@@ -444,6 +498,7 @@ class DataFlowAnalysisTool(AgentTool):
                 "variable": variable_name,
                 "file_path": file_path,
                 "analysis": analysis,
+                "path_steps": analysis.get("path_steps", []),
                 "fallback_used": True,
             }
         )
