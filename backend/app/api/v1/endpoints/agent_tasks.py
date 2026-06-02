@@ -188,7 +188,15 @@ class AgentFindingResponse(BaseModel):
     line_start: Optional[int]
     line_end: Optional[int]
     code_snippet: Optional[str]
-    
+
+    # Data flow fields
+    source: Optional[str] = None
+    sink: Optional[str] = None
+    dataflow_path: Optional[List[Dict[str, Any]]] = None
+    code_context: Optional[str] = None
+    function_name: Optional[str] = None
+    class_name: Optional[str] = None
+
     is_verified: bool
     # 🔥 FIX: Map from ai_confidence in ORM, make Optional with default
     confidence: Optional[float] = Field(default=0.5, validation_alias="ai_confidence")
