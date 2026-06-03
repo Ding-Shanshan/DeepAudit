@@ -505,7 +505,30 @@ async def _execute_agent_task(task_id: str):
             task.total_files = project_info.get("file_count", 0)
             task.total_lines = project_info.get("line_count", 0)
             await db.commit()
-            
+
+            # 🔥 代码分析 - 在项目准备完成后执行
+            try:
+                from app.services.code_analysis import CodeAnalysisService
+                await event_emitter.emit_info("📊 正在执行代码结构分析...")
+
+                analysis_service = CodeAnalysisService(project_root)
+                code_analysis_results = analysis_service.analyze(
+                    exclude_patterns=task.exclude_patterns,
+                    target_files=task.target_files,
+                )
+                task.code_analysis_results = code_analysis_results
+                await db.commit()
+
+                # 统计信息
+                api_count = len(code_analysis_results.get("api_endpoints", []))
+                call_count = len(code_analysis_results.get("call_graph", []))
+                dep_count = len(code_analysis_results.get("file_dependencies", []))
+                await event_emitter.emit_info(f"✅ 代码分析完成: {api_count} API端点, {call_count} 调用关系, {dep_count} 文件依赖")
+            except Exception as e:
+                logger.warning(f"Code analysis failed: {e}")
+                await event_emitter.emit_warning(f"⚠️ 代码分析失败: {e}")
+                # 不影响主流程
+
             # 构建输入数据
             input_data = {
                 "project_info": project_info,
@@ -2236,6 +2259,29 @@ async def list_agent_findings(
 
     # 显式转换为 Pydantic schema，避免 from_attributes 序列化失败
     return [AgentFindingResponse.model_validate(f) for f in findings]
+
+
+@router.get("/{task_id}/code-analysis")
+async def get_code_analysis(
+    task_id: str,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(deps.get_current_user),
+):
+    """获取深度审计任务的代码分析结果"""
+    task = await db.get(AgentTask, task_id, options=[selectinload(AgentTask.project)])
+    if not task:
+        raise HTTPException(status_code=404, detail="任务不存在")
+
+    # 检查权限
+    if task.project and task.project.owner_id != current_user.id:
+        raise HTTPException(status_code=403, detail="无权访问此任务")
+
+    return task.code_analysis_results or {
+        "api_endpoints": [],
+        "call_graph": [],
+        "file_dependencies": [],
+        "control_flow": [],
+    }
 
 
 @router.get("/{task_id}/summary", response_model=TaskSummaryResponse)

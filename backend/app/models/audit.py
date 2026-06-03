@@ -1,5 +1,5 @@
 import uuid
-from sqlalchemy import Column, String, Integer, DateTime, ForeignKey, Text, Float
+from sqlalchemy import Column, String, Integer, DateTime, ForeignKey, Text, Float, JSON
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
 from app.db.base import Base
@@ -26,7 +26,10 @@ class AuditTask(Base):
     total_lines = Column(Integer, default=0)
     issues_count = Column(Integer, default=0)
     quality_score = Column(Float, default=0.0)
-    
+
+    # 源代码分析结果
+    code_analysis_results = Column(JSON, nullable=True, default={})  # 代码分析结果
+
     started_at = Column(DateTime(timezone=True), nullable=True)
     completed_at = Column(DateTime(timezone=True), nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())

@@ -118,7 +118,10 @@ class AgentTask(Base):
     
     # 审计计划
     audit_plan = Column(JSON, nullable=True)  # Agent 生成的审计计划
-    
+
+    # 源代码分析结果
+    code_analysis_results = Column(JSON, nullable=True, default={})  # 代码分析结果
+
     # 时间戳
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())

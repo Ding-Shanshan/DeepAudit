@@ -29,6 +29,7 @@ from app.services.quick_scan import (
     run_semgrep_scan,
     should_exclude as local_should_exclude,
 )
+from app.services.code_analysis import CodeAnalysisService
 
 
 def get_analysis_config(user_config: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
@@ -432,6 +433,24 @@ async def scan_local_workspace(
     task.scanned_files = 0  # 初始为0，扫描过程中逐步更新
     task.status = "running"
     await db.commit()
+
+    # 执行代码分析
+    try:
+        analysis_service = CodeAnalysisService(workspace_dir)
+        code_analysis_results = analysis_service.analyze(
+            exclude_patterns=exclude_patterns,
+            target_files=target_files,
+            extract_api=True,
+            extract_calls=True,
+            extract_dependencies=True,
+            extract_control_flow=False,  # 快速审计暂不提取控制流
+        )
+        task.code_analysis_results = code_analysis_results
+        await db.commit()
+        print(f"✅ 代码分析完成: 分析了 {code_analysis_results['statistics']['analyzed_files']} 个文件")
+    except Exception as e:
+        print(f"⚠️ 代码分析失败: {e}")
+        # 不影响主流程，继续执行扫描
 
     # Phase 1: 规则扫描（Semgrep + 正则）
     semgrep_findings = run_semgrep_scan(

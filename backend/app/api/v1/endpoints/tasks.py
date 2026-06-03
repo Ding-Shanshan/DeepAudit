@@ -292,6 +292,30 @@ async def read_task_issues(
     )
 
 
+@router.get("/{task_id}/code-analysis")
+async def get_code_analysis(
+    task_id: str,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(deps.get_current_user),
+):
+    """获取快速审计任务的代码分析结果"""
+    task = await db.get(AuditTask, task_id)
+    if not task:
+        raise HTTPException(status_code=404, detail="任务不存在")
+
+    # 检查权限
+    project = await db.get(Project, task.project_id)
+    if project and project.owner_id != current_user.id:
+        raise HTTPException(status_code=403, detail="无权访问此任务")
+
+    return task.code_analysis_results or {
+        "api_endpoints": [],
+        "call_graph": [],
+        "file_dependencies": [],
+        "control_flow": [],
+    }
+
+
 @router.patch("/{task_id}/issues/{issue_id}", response_model=AuditIssueSchema)
 async def update_issue(
     task_id: str,

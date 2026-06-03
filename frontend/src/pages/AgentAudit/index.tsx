@@ -36,6 +36,7 @@ import {
 import ReportExportDialog from "./components/ReportExportDialog";
 import IssueDetailSheet from "@/components/issues/IssueDetailSheet";
 import { useAgentAuditState } from "./hooks";
+import { CodeAnalysisPanel } from "@/components/code-analysis/CodeAnalysisPanel";
 import { ACTION_VERBS, POLLING_INTERVALS } from "./constants";
 import { cleanThinkingContent, truncateOutput, inferPhaseFromEvent, inferInitialPhase } from "./utils";
 import type { AuditPhase } from "./types";
@@ -777,8 +778,8 @@ function AgentAuditPageContent() {
 
       {/* 主内容区 */}
       <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
-        {/* 日志流 - 高度减小50% */}
-        <div className="h-[40%] min-h-0 flex flex-col overflow-hidden">
+        {/* 日志流和代码分析 - 左右各占50% */}
+        <div className="h-[40%] min-h-0 grid grid-cols-2 gap-4 overflow-hidden px-4 py-2">
           <LogStream
             currentPhase={currentPhase}
             completedPhases={completedPhases}
@@ -791,6 +792,7 @@ function AgentAuditPageContent() {
             onToggleAutoScroll={() => setAutoScroll(!isAutoScroll)}
             scrollRef={phaseScrollRef}
           />
+          <CodeAnalysisPanel taskId={taskId!} taskType="agent" />
         </div>
 
         {/* 分界线 */}

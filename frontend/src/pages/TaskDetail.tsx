@@ -41,6 +41,7 @@ import { ISSUE_STATUS_LABELS, ISSUE_STATUS_BADGE_CLASS, ISSUE_STATUS } from "@/s
 import { toast } from "sonner";
 import { calculateTaskProgress, safeJsonParseArray } from "@/shared/utils/utils";
 import IssueDetailSheet from "@/components/issues/IssueDetailSheet";
+import { CodeAnalysisPanel } from "@/components/code-analysis/CodeAnalysisPanel";
 
 // Issues Table Component
 function IssuesTable({ issues, total, hasMore, onLoadMore, loadingMore, onStatusChange, onViewDetail, onAiInvestigate }: {
@@ -533,101 +534,104 @@ export default function TaskDetail() {
       </div>
 
       {/* 任务信息 */}
-      <div className="cyber-card p-4 relative z-10">
-        <div className="space-y-3 font-sans">
-          {task.project && (
-            <>
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground uppercase">项目名称</span>
-                <Link to={`/projects/${task.project.id}`} className="text-sm font-bold text-primary hover:underline">
-                  {task.project.name}
-                </Link>
-              </div>
-
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground uppercase">项目负责人</span>
-                <span className="text-sm text-foreground">{task.project.owner?.full_name || task.project.owner?.phone || '未知'}</span>
-              </div>
-
-              {task.project.programming_languages && (
+      <div className="grid grid-cols-2 gap-4 relative z-10">
+        <div className="cyber-card p-4">
+          <div className="space-y-3 font-sans">
+            {task.project && (
+              <>
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground uppercase">项目语言</span>
-                  <div className="flex flex-wrap gap-2">
-                    {safeJsonParseArray(task.project.programming_languages).map((lang: string) => (
-                      <Badge key={lang} className="cyber-badge-primary">
-                        {lang}
-                      </Badge>
-                    ))}
-                  </div>
+                  <span className="text-sm text-muted-foreground uppercase">项目名称</span>
+                  <Link to={`/projects/${task.project.id}`} className="text-sm font-bold text-primary hover:underline">
+                    {task.project.name}
+                  </Link>
                 </div>
-              )}
 
-              <div className="border-t border-border" />
-            </>
-          )}
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-muted-foreground uppercase">项目负责人</span>
+                  <span className="text-sm text-foreground">{task.project.owner?.full_name || task.project.owner?.phone || '未知'}</span>
+                </div>
 
-          <div className="flex items-center justify-between">
-            <span className="text-sm text-muted-foreground uppercase">任务类型</span>
-            <span className="text-sm font-bold text-foreground">{task.task_type === 'repository' ? '仓库审计任务' : '即时分析任务'}</span>
-          </div>
+                {task.project.programming_languages && (
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-muted-foreground uppercase">项目语言</span>
+                    <div className="flex flex-wrap gap-2">
+                      {safeJsonParseArray(task.project.programming_languages).map((lang: string) => (
+                        <Badge key={lang} className="cyber-badge-primary">
+                          {lang}
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+                )}
 
-          <div className="flex items-center justify-between">
-            <span className="text-sm text-muted-foreground uppercase">目标分支</span>
-            <span className="text-sm text-foreground flex items-center">
-              <GitBranch className="w-3.5 h-3.5 mr-1" />
-              {task.branch_name || '默认分支'}
-            </span>
-          </div>
+                <div className="border-t border-border" />
+              </>
+            )}
 
-          <div className="flex items-center justify-between">
-            <span className="text-sm text-muted-foreground uppercase">创建时间</span>
-            <span className="text-sm text-foreground">{formatDate(task.created_at)}</span>
-          </div>
-
-          {task.completed_at && (
             <div className="flex items-center justify-between">
-              <span className="text-sm text-muted-foreground uppercase">完成时间</span>
-              <span className="text-sm text-foreground">{formatDate(task.completed_at)}</span>
+              <span className="text-sm text-muted-foreground uppercase">任务类型</span>
+              <span className="text-sm font-bold text-foreground">{task.task_type === 'repository' ? '仓库审计任务' : '即时分析任务'}</span>
             </div>
-          )}
 
-          <div className="flex items-center justify-between">
-            <span className="text-sm text-muted-foreground uppercase">文件数</span>
-            <span className="text-sm text-foreground">{task.total_files ?? 0}</span>
-          </div>
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-muted-foreground uppercase">目标分支</span>
+              <span className="text-sm text-foreground flex items-center">
+                <GitBranch className="w-3.5 h-3.5 mr-1" />
+                {task.branch_name || '默认分支'}
+              </span>
+            </div>
 
-          <div className="flex items-center justify-between">
-            <span className="text-sm text-muted-foreground uppercase">问题数</span>
-            <span className={`text-sm font-bold ${task.issues_count > 0 ? 'text-warning' : 'text-foreground'}`}>{task.issues_count}</span>
-          </div>
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-muted-foreground uppercase">创建时间</span>
+              <span className="text-sm text-foreground">{formatDate(task.created_at)}</span>
+            </div>
 
-          {task.scan_config && (() => {
-            let config: any = {};
-            try { config = JSON.parse(task.scan_config); } catch {}
-            const excludePatterns: string[] = Array.isArray(config.exclude_patterns) ? config.exclude_patterns : [];
-            return excludePatterns.length > 0 && (
-              <div>
-                <div className="flex items-start justify-between">
-                  <span className="text-sm text-muted-foreground uppercase pt-0.5">白名单</span>
-                  <div className="flex flex-wrap gap-2 justify-end max-w-[70%]">
-                    {excludePatterns.map((pattern: string) => (
-                      <Badge key={pattern} className="cyber-badge-muted">
-                        {pattern}
-                      </Badge>
-                    ))}
+            {task.completed_at && (
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-muted-foreground uppercase">完成时间</span>
+                <span className="text-sm text-foreground">{formatDate(task.completed_at)}</span>
+              </div>
+            )}
+
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-muted-foreground uppercase">文件数</span>
+              <span className="text-sm text-foreground">{task.total_files ?? 0}</span>
+            </div>
+
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-muted-foreground uppercase">问题数</span>
+              <span className={`text-sm font-bold ${task.issues_count > 0 ? 'text-warning' : 'text-foreground'}`}>{task.issues_count}</span>
+            </div>
+
+            {task.scan_config && (() => {
+              let config: any = {};
+              try { config = JSON.parse(task.scan_config); } catch {}
+              const excludePatterns: string[] = Array.isArray(config.exclude_patterns) ? config.exclude_patterns : [];
+              return excludePatterns.length > 0 && (
+                <div>
+                  <div className="flex items-start justify-between">
+                    <span className="text-sm text-muted-foreground uppercase pt-0.5">白名单</span>
+                    <div className="flex flex-wrap gap-2 justify-end max-w-[70%]">
+                      {excludePatterns.map((pattern: string) => (
+                        <Badge key={pattern} className="cyber-badge-muted">
+                          {pattern}
+                        </Badge>
+                      ))}
+                    </div>
                   </div>
                 </div>
-              </div>
-            );
-          })()}
+              );
+            })()}
 
-          <div className="flex items-center justify-between">
-            <span className="text-sm text-muted-foreground uppercase">任务状态</span>
-            {getStatusBadge(task.status)}
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-muted-foreground uppercase">任务状态</span>
+              {getStatusBadge(task.status)}
+            </div>
+
+            <div className="border-t border-border" />
           </div>
-
-          <div className="border-t border-border" />
         </div>
+        <CodeAnalysisPanel taskId={id!} taskType="quick" />
       </div>
 
       {/* 问题列表 */}

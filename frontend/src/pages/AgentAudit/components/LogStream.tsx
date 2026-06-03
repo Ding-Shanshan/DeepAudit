@@ -181,7 +181,7 @@ export const LogStream = memo(function LogStream({
   const totalLogs = Object.values(phaseLogMap).reduce((sum, logs) => sum + logs.length, 0);
 
   return (
-    <div className="flex flex-col h-full min-h-0">
+    <div className="flex flex-col h-full min-h-0 border border-slate-200 rounded overflow-hidden bg-white">
       {/* 头部 - 简化 */}
       <div className="flex items-center px-3 py-2 border-b border-slate-100">
         <div className="flex items-center gap-2">
@@ -191,7 +191,7 @@ export const LogStream = memo(function LogStream({
       </div>
 
       {/* 日志流 */}
-      <div ref={scrollRef} className="flex-1 overflow-y-auto custom-scrollbar">
+      <div ref={scrollRef} className="flex-1 overflow-y-auto custom-scrollbar bg-slate-50/30">
         {startedPhases.length === 0 && (
           <div className="py-16 text-center">
             <p className="text-xs text-slate-300">
