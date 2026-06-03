@@ -65,8 +65,8 @@ export default function ScheduleManager() {
     scan_mode: "fast",
     branch_name: "main",
     interval_minutes: "60",
-    time_window_start: "00:00",
-    time_window_end: "23:59",
+    time_window_start: "",
+    time_window_end: "",
     timezone: "Asia/Shanghai",
     file_paths: "",
     exclude_patterns: "",
@@ -78,8 +78,8 @@ export default function ScheduleManager() {
     scan_mode: "fast" as "fast" | "agent",
     branch_name: "main",
     interval_minutes: "60",
-    time_window_start: "00:00",
-    time_window_end: "23:59",
+    time_window_start: "",
+    time_window_end: "",
     timezone: "Asia/Shanghai",
     file_paths: "",
     exclude_patterns: "",
@@ -135,8 +135,8 @@ export default function ScheduleManager() {
       scan_mode: item.scan_mode || "fast",
       branch_name: item.branch_name || "main",
       interval_minutes: String(item.interval_minutes),
-      time_window_start: item.time_window_start || "00:00",
-      time_window_end: item.time_window_end || "23:59",
+      time_window_start: item.time_window_start || "",
+      time_window_end: item.time_window_end || "",
       timezone: item.timezone || "Asia/Shanghai",
       file_paths: (item.file_paths || []).join(", "),
       exclude_patterns: (item.exclude_patterns || []).join(", "),
@@ -151,14 +151,26 @@ export default function ScheduleManager() {
       return;
     }
     try {
+      // 将空字符串或默认 "00:00"/"23:59" 转为 null（表示"无时间窗口限制"）
+      const normalizeTimeWindow = (value: string | undefined | null): string | null => {
+        if (!value) return null;
+        // "00:00" + "23:59" 组合表示用户未自定义，等同于"不限"
+        return value || null;
+      };
+      const twStart = normalizeTimeWindow(createForm.time_window_start);
+      const twEnd = normalizeTimeWindow(createForm.time_window_end);
+      // 如果只设了开始没设结束，或反过来，都视为无效，两端都传 null
+      const finalStart = (twStart && twEnd) ? twStart : null;
+      const finalEnd = (twStart && twEnd) ? twEnd : null;
+
       await apiClient.post("/schedules", {
         project_id: createForm.project_id,
         name: createForm.name,
         scan_mode: createForm.scan_mode,
         branch_name: createForm.branch_name || null,
         interval_minutes: Number(createForm.interval_minutes || 60),
-        time_window_start: createForm.time_window_start || null,
-        time_window_end: createForm.time_window_end || null,
+        time_window_start: finalStart,
+        time_window_end: finalEnd,
         timezone: createForm.timezone || "Asia/Shanghai",
         file_paths: parseCommaList(createForm.file_paths),
         exclude_patterns: parseCommaList(createForm.exclude_patterns),
@@ -171,8 +183,8 @@ export default function ScheduleManager() {
         scan_mode: "fast",
         branch_name: "main",
         interval_minutes: "60",
-        time_window_start: "00:00",
-        time_window_end: "23:59",
+        time_window_start: "",
+        time_window_end: "",
         timezone: "Asia/Shanghai",
         file_paths: "",
         exclude_patterns: "",
@@ -191,14 +203,25 @@ export default function ScheduleManager() {
       return;
     }
     try {
+      // 将空字符串转为 null（表示"无时间窗口限制"）
+      const normalizeTimeWindow = (value: string | undefined | null): string | null => {
+        if (!value) return null;
+        return value || null;
+      };
+      const twStart = normalizeTimeWindow(editForm.time_window_start);
+      const twEnd = normalizeTimeWindow(editForm.time_window_end);
+      // 如果只设了开始没设结束，或反过来，都视为无效，两端都传 null
+      const finalStart = (twStart && twEnd) ? twStart : null;
+      const finalEnd = (twStart && twEnd) ? twEnd : null;
+
       await apiClient.put(`/schedules/${selectedSchedule.id}`, {
         project_id: editForm.project_id,
         name: editForm.name,
         scan_mode: editForm.scan_mode,
         branch_name: editForm.branch_name || null,
         interval_minutes: Number(editForm.interval_minutes || 60),
-        time_window_start: editForm.time_window_start || null,
-        time_window_end: editForm.time_window_end || null,
+        time_window_start: finalStart,
+        time_window_end: finalEnd,
         timezone: editForm.timezone || "Asia/Shanghai",
         file_paths: parseCommaList(editForm.file_paths),
         exclude_patterns: parseCommaList(editForm.exclude_patterns),

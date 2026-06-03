@@ -217,8 +217,15 @@ async def cancel_task(
     if task.created_by != current_user.id:
         raise HTTPException(status_code=403, detail="无权取消此任务")
     
-    if task.status not in ["pending", "running"]:
-        raise HTTPException(status_code=400, detail="只能取消待处理或运行中的任务")
+    if task.status not in ["pending", "running", "scheduled"]:
+        raise HTTPException(status_code=400, detail="只能取消待扫描、待处理或运行中的任务")
+
+    # 如果是定时占位任务，同时停用关联的定时计划
+    if task.status == "scheduled" and hasattr(task, "scheduled_scan_id") and task.scheduled_scan_id:
+        from app.models.scheduled_scan import ScheduledScan
+        schedule = await db.get(ScheduledScan, task.scheduled_scan_id)
+        if schedule:
+            schedule.is_active = False
     
     # 标记任务为取消
     task_control.cancel_task(id)

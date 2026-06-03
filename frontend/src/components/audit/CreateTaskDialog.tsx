@@ -244,6 +244,30 @@ export default function CreateTaskDialog({
 
     try {
       setCreating(true);
+
+      // 启用定时时，仅创建定时计划，不立即执行扫描
+      // ScheduledScanRunner 会在 next_run_at 时间自动触发首次扫描
+      if (scheduleEnabled) {
+        try {
+          await createScheduleIfEnabled(selectedProject);
+        } catch (error) {
+          const msg = error instanceof Error ? error.message : "创建定时计划失败";
+          toast.error(`创建定时计划失败: ${msg}`);
+          return;
+        }
+
+        onOpenChange(false);
+        onTaskCreated();
+        toast.success("定时计划已创建，扫描将在设定时间自动执行");
+
+        setSelectedProjectId("");
+        setTaskName("");
+        setExcludePatterns(DEFAULT_EXCLUDES);
+        setScheduleEnabled(false);
+        return;
+      }
+
+      // 未启用定时：立即执行扫描
       let taskId: string;
 
       if (auditMode === "agent") {
@@ -258,27 +282,13 @@ export default function CreateTaskDialog({
           sanitizerFunctions,
         });
 
-        let scheduleError: string | null = null;
-        try {
-          await createScheduleIfEnabled(selectedProject);
-        } catch (error) {
-          scheduleError = error instanceof Error ? error.message : "创建定时计划失败";
-        }
-
         onOpenChange(false);
         onTaskCreated();
-        if (scheduleError) {
-          toast.warning(`深度审计任务已创建，但定时计划创建失败: ${scheduleError}`);
-        } else if (scheduleEnabled) {
-          toast.success("深度审计任务已创建，定时计划已创建");
-        } else {
-          toast.success("深度审计任务已创建");
-        }
+        toast.success("深度审计任务已创建");
         navigate(`/agent-audit/${agentTask.id}`);
 
         setSelectedProjectId("");
         setTaskName("");
-        setSelectedFiles(undefined);
         setExcludePatterns(DEFAULT_EXCLUDES);
         setScheduleEnabled(false);
         return;
@@ -331,25 +341,12 @@ export default function CreateTaskDialog({
         });
       }
 
-      let scheduleError: string | null = null;
-      try {
-        await createScheduleIfEnabled(selectedProject);
-      } catch (error) {
-        scheduleError = error instanceof Error ? error.message : "创建定时计划失败";
-      }
-
       onOpenChange(false);
       onTaskCreated();
       if (onFastScanStarted) {
         onFastScanStarted(taskId, isZipProject(selectedProject) ? "zip" : "repository");
       }
-      if (scheduleError) {
-        toast.warning(`扫描任务已启动，但定时计划创建失败: ${scheduleError}`);
-      } else if (scheduleEnabled) {
-        toast.success("扫描任务已启动，定时计划已创建");
-      } else {
-        toast.success("扫描任务已启动");
-      }
+      toast.success("扫描任务已启动");
 
       setSelectedProjectId("");
       setExcludePatterns(DEFAULT_EXCLUDES);
@@ -683,7 +680,12 @@ export default function CreateTaskDialog({
                   {creating ? (
                     <>
                       <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                      启动中...
+                      创建中...
+                    </>
+                  ) : scheduleEnabled ? (
+                    <>
+                      <Shield className="w-4 h-4 mr-2" />
+                      创建定时计划
                     </>
                   ) : auditMode === "agent" ? (
                     <>

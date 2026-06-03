@@ -13,6 +13,7 @@ export interface AuditRule {
   category: string;
   severity: string;
   custom_prompt?: string;
+  code_patterns?: Record<string, string[]>;
   fix_suggestion?: string;
   reference_url?: string;
   enabled: boolean;
@@ -52,6 +53,7 @@ export interface AuditRuleCreate {
   category: string;
   severity?: string;
   custom_prompt?: string;
+  code_patterns?: Record<string, string[]>;
   fix_suggestion?: string;
   reference_url?: string;
   enabled?: boolean;
@@ -86,6 +88,7 @@ export interface AuditRuleUpdate {
   category?: string;
   severity?: string;
   custom_prompt?: string;
+  code_patterns?: Record<string, string[]>;
   fix_suggestion?: string;
   reference_url?: string;
   enabled?: boolean;

@@ -17,6 +17,7 @@ class AuditRuleBase(BaseModel):
     category: str = Field(..., description="规则类别: security/bug/performance/style/maintainability")
     severity: str = Field("medium", description="严重程度: critical/high/medium/low")
     custom_prompt: Optional[str] = Field(None, description="自定义检测提示词")
+    code_patterns: Optional[Dict[str, List[str]]] = Field(None, description="代码检测模式(按语言)")
     fix_suggestion: Optional[str] = Field(None, description="修复建议模板")
     reference_url: Optional[str] = Field(None, max_length=500, description="参考链接")
     enabled: bool = Field(True, description="是否启用")
@@ -36,6 +37,7 @@ class AuditRuleUpdate(BaseModel):
     category: Optional[str] = None
     severity: Optional[str] = None
     custom_prompt: Optional[str] = None
+    code_patterns: Optional[Dict[str, List[str]]] = None
     fix_suggestion: Optional[str] = None
     reference_url: Optional[str] = None
     enabled: Optional[bool] = None

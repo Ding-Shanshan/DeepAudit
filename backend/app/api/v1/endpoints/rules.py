@@ -30,6 +30,56 @@ from app.schemas.audit_rule import (
 router = APIRouter()
 
 
+def _parse_code_patterns(raw: str | None) -> dict | None:
+    """解析 code_patterns JSON 字段"""
+    if not raw:
+        return None
+    try:
+        result = json.loads(raw)
+        return result if result else None
+    except (json.JSONDecodeError, TypeError):
+        return None
+
+
+def _build_rule_response(r: AuditRule) -> AuditRuleResponse:
+    """构建单条规则的响应对象"""
+    return AuditRuleResponse(
+        id=r.id,
+        rule_set_id=r.rule_set_id,
+        rule_code=r.rule_code,
+        name=r.name,
+        description=r.description,
+        category=r.category,
+        severity=r.severity,
+        custom_prompt=r.custom_prompt,
+        code_patterns=_parse_code_patterns(r.code_patterns),
+        fix_suggestion=r.fix_suggestion,
+        reference_url=r.reference_url,
+        enabled=r.enabled,
+        sort_order=r.sort_order,
+        created_at=r.created_at,
+        updated_at=r.updated_at,
+    )
+
+
+def _create_audit_rule(rule_in, rule_set_id: str) -> AuditRule:
+    """创建 AuditRule ORM 对象（含 code_patterns 序列化）"""
+    return AuditRule(
+        rule_set_id=rule_set_id,
+        rule_code=rule_in.rule_code,
+        name=rule_in.name,
+        description=rule_in.description,
+        category=rule_in.category,
+        severity=rule_in.severity,
+        custom_prompt=rule_in.custom_prompt,
+        code_patterns=json.dumps(rule_in.code_patterns) if rule_in.code_patterns else None,
+        fix_suggestion=rule_in.fix_suggestion,
+        reference_url=rule_in.reference_url,
+        enabled=rule_in.enabled,
+        sort_order=rule_in.sort_order,
+    )
+
+
 # ==================== 规则集 API ====================
 
 @router.get("", response_model=AuditRuleSetListResponse)
@@ -89,26 +139,8 @@ async def list_rule_sets(
             except:
                 pass
         
-        rules = [
-            AuditRuleResponse(
-                id=r.id,
-                rule_set_id=r.rule_set_id,
-                rule_code=r.rule_code,
-                name=r.name,
-                description=r.description,
-                category=r.category,
-                severity=r.severity,
-                custom_prompt=r.custom_prompt,
-                fix_suggestion=r.fix_suggestion,
-                reference_url=r.reference_url,
-                enabled=r.enabled,
-                sort_order=r.sort_order,
-                created_at=r.created_at,
-                updated_at=r.updated_at,
-            )
-            for r in rs.rules
-        ]
-        
+        rules = [_build_rule_response(r) for r in rs.rules]
+
         items.append(AuditRuleSetResponse(
             id=rs.id,
             name=rs.name,
@@ -158,26 +190,8 @@ async def get_rule_set(
         except:
             pass
     
-    rules = [
-        AuditRuleResponse(
-            id=r.id,
-            rule_set_id=r.rule_set_id,
-            rule_code=r.rule_code,
-            name=r.name,
-            description=r.description,
-            category=r.category,
-            severity=r.severity,
-            custom_prompt=r.custom_prompt,
-            fix_suggestion=r.fix_suggestion,
-            reference_url=r.reference_url,
-            enabled=r.enabled,
-            sort_order=r.sort_order,
-            created_at=r.created_at,
-            updated_at=r.updated_at,
-        )
-        for r in rule_set.rules
-    ]
-    
+    rules = [_build_rule_response(r) for r in rule_set.rules]
+
     return AuditRuleSetResponse(
         id=rule_set.id,
         name=rule_set.name,
@@ -224,19 +238,7 @@ async def create_rule_set(
     # 创建规则
     rules = []
     for rule_in in (rule_set_in.rules or []):
-        rule = AuditRule(
-            rule_set_id=rule_set.id,
-            rule_code=rule_in.rule_code,
-            name=rule_in.name,
-            description=rule_in.description,
-            category=rule_in.category,
-            severity=rule_in.severity,
-            custom_prompt=rule_in.custom_prompt,
-            fix_suggestion=rule_in.fix_suggestion,
-            reference_url=rule_in.reference_url,
-            enabled=rule_in.enabled,
-            sort_order=rule_in.sort_order,
-        )
+        rule = _create_audit_rule(rule_in, rule_set.id)
         db.add(rule)
         rules.append(rule)
     
@@ -257,25 +259,7 @@ async def create_rule_set(
         created_by=rule_set.created_by,
         created_at=rule_set.created_at,
         updated_at=rule_set.updated_at,
-        rules=[
-            AuditRuleResponse(
-                id=r.id,
-                rule_set_id=r.rule_set_id,
-                rule_code=r.rule_code,
-                name=r.name,
-                description=r.description,
-                category=r.category,
-                severity=r.severity,
-                custom_prompt=r.custom_prompt,
-                fix_suggestion=r.fix_suggestion,
-                reference_url=r.reference_url,
-                enabled=r.enabled,
-                sort_order=r.sort_order,
-                created_at=r.created_at,
-                updated_at=r.updated_at,
-            )
-            for r in rules
-        ],
+        rules=[_build_rule_response(r) for r in rules],
         rules_count=len(rules),
         enabled_rules_count=len([r for r in rules if r.enabled]),
     )
@@ -326,26 +310,8 @@ async def update_rule_set(
         except:
             pass
     
-    rules = [
-        AuditRuleResponse(
-            id=r.id,
-            rule_set_id=r.rule_set_id,
-            rule_code=r.rule_code,
-            name=r.name,
-            description=r.description,
-            category=r.category,
-            severity=r.severity,
-            custom_prompt=r.custom_prompt,
-            fix_suggestion=r.fix_suggestion,
-            reference_url=r.reference_url,
-            enabled=r.enabled,
-            sort_order=r.sort_order,
-            created_at=r.created_at,
-            updated_at=r.updated_at,
-        )
-        for r in rule_set.rules
-    ]
-    
+    rules = [_build_rule_response(r) for r in rule_set.rules]
+
     return AuditRuleSetResponse(
         id=rule_set.id,
         name=rule_set.name,
@@ -434,6 +400,7 @@ async def export_rule_set(
                 "category": r.category,
                 "severity": r.severity,
                 "custom_prompt": r.custom_prompt,
+                "code_patterns": _parse_code_patterns(r.code_patterns),
                 "fix_suggestion": r.fix_suggestion,
                 "reference_url": r.reference_url,
                 "enabled": r.enabled,
@@ -480,19 +447,7 @@ async def import_rule_set(
     
     rules = []
     for rule_in in import_data.rules:
-        rule = AuditRule(
-            rule_set_id=rule_set.id,
-            rule_code=rule_in.rule_code,
-            name=rule_in.name,
-            description=rule_in.description,
-            category=rule_in.category,
-            severity=rule_in.severity,
-            custom_prompt=rule_in.custom_prompt,
-            fix_suggestion=rule_in.fix_suggestion,
-            reference_url=rule_in.reference_url,
-            enabled=rule_in.enabled,
-            sort_order=rule_in.sort_order,
-        )
+        rule = _create_audit_rule(rule_in, rule_set.id)
         db.add(rule)
         rules.append(rule)
     
@@ -513,25 +468,7 @@ async def import_rule_set(
         created_by=rule_set.created_by,
         created_at=rule_set.created_at,
         updated_at=rule_set.updated_at,
-        rules=[
-            AuditRuleResponse(
-                id=r.id,
-                rule_set_id=r.rule_set_id,
-                rule_code=r.rule_code,
-                name=r.name,
-                description=r.description,
-                category=r.category,
-                severity=r.severity,
-                custom_prompt=r.custom_prompt,
-                fix_suggestion=r.fix_suggestion,
-                reference_url=r.reference_url,
-                enabled=r.enabled,
-                sort_order=r.sort_order,
-                created_at=r.created_at,
-                updated_at=r.updated_at,
-            )
-            for r in rules
-        ],
+        rules=[_build_rule_response(r) for r in rules],
         rules_count=len(rules),
         enabled_rules_count=len([r for r in rules if r.enabled]),
     )
@@ -561,40 +498,13 @@ async def add_rule_to_set(
     if rule_set.created_by != current_user.id:
         raise HTTPException(status_code=403, detail="无权修改此规则集")
     
-    rule = AuditRule(
-        rule_set_id=rule_set_id,
-        rule_code=rule_in.rule_code,
-        name=rule_in.name,
-        description=rule_in.description,
-        category=rule_in.category,
-        severity=rule_in.severity,
-        custom_prompt=rule_in.custom_prompt,
-        fix_suggestion=rule_in.fix_suggestion,
-        reference_url=rule_in.reference_url,
-        enabled=rule_in.enabled,
-        sort_order=rule_in.sort_order,
-    )
-    
+    rule = _create_audit_rule(rule_in, rule_set_id)
+
     db.add(rule)
     await db.commit()
     await db.refresh(rule)
-    
-    return AuditRuleResponse(
-        id=rule.id,
-        rule_set_id=rule.rule_set_id,
-        rule_code=rule.rule_code,
-        name=rule.name,
-        description=rule.description,
-        category=rule.category,
-        severity=rule.severity,
-        custom_prompt=rule.custom_prompt,
-        fix_suggestion=rule.fix_suggestion,
-        reference_url=rule.reference_url,
-        enabled=rule.enabled,
-        sort_order=rule.sort_order,
-        created_at=rule.created_at,
-        updated_at=rule.updated_at,
-    )
+
+    return _build_rule_response(rule)
 
 
 @router.put("/{rule_set_id}/rules/{rule_id}", response_model=AuditRuleResponse)
@@ -633,27 +543,15 @@ async def update_rule(
     
     update_data = rule_in.dict(exclude_unset=True)
     for field, value in update_data.items():
-        setattr(rule, field, value)
-    
+        if field == "code_patterns":
+            setattr(rule, field, json.dumps(value) if value is not None else None)
+        else:
+            setattr(rule, field, value)
+
     await db.commit()
     await db.refresh(rule)
-    
-    return AuditRuleResponse(
-        id=rule.id,
-        rule_set_id=rule.rule_set_id,
-        rule_code=rule.rule_code,
-        name=rule.name,
-        description=rule.description,
-        category=rule.category,
-        severity=rule.severity,
-        custom_prompt=rule.custom_prompt,
-        fix_suggestion=rule.fix_suggestion,
-        reference_url=rule.reference_url,
-        enabled=rule.enabled,
-        sort_order=rule.sort_order,
-        created_at=rule.created_at,
-        updated_at=rule.updated_at,
-    )
+
+    return _build_rule_response(rule)
 
 
 @router.delete("/{rule_set_id}/rules/{rule_id}")

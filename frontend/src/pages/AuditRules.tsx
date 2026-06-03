@@ -15,6 +15,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from '@/components/ui/accordion';
 import { toast } from 'sonner';
 import {
   Plus,
@@ -35,6 +36,9 @@ import {
   Terminal,
   Search,
   Share2,
+  ChevronLeft,
+  ChevronRight,
+  X,
 } from 'lucide-react';
 import {
   getRuleSets,
@@ -92,6 +96,112 @@ const RULE_TYPES = [
   { value: 'custom', label: '自定义规则' },
 ];
 
+const PATTERN_LANGUAGES = [
+  { value: 'python', label: 'Python' },
+  { value: 'java', label: 'Java' },
+  { value: 'javascript', label: 'JavaScript' },
+  { value: 'typescript', label: 'TypeScript' },
+  { value: 'go', label: 'Go' },
+  { value: 'php', label: 'PHP' },
+  { value: 'c', label: 'C' },
+  { value: 'cpp', label: 'C++' },
+  { value: 'ruby', label: 'Ruby' },
+  { value: 'rust', label: 'Rust' },
+  { value: 'csharp', label: 'C#' },
+  { value: 'swift', label: 'Swift' },
+  { value: 'kotlin', label: 'Kotlin' },
+  { value: 'scala', label: 'Scala' },
+];
+
+/** 代码检测模式编辑器 */
+function CodePatternsEditor({ value, onChange }: { value: Record<string, string[]>; onChange: (v: Record<string, string[]>) => void }) {
+  const [newLang, setNewLang] = useState('');
+  const [newPatternInputs, setNewPatternInputs] = useState<Record<string, string>>({});
+
+  const addLanguage = () => {
+    if (newLang && !value[newLang]) {
+      onChange({ ...value, [newLang]: [] });
+      setNewLang('');
+    }
+  };
+
+  const addPattern = (lang: string) => {
+    const input = newPatternInputs[lang]?.trim();
+    if (input) {
+      onChange({ ...value, [lang]: [...(value[lang] || []), input] });
+      setNewPatternInputs({ ...newPatternInputs, [lang]: '' });
+    }
+  };
+
+  const removePattern = (lang: string, idx: number) => {
+    const updated = { ...value, [lang]: value[lang].filter((_, i) => i !== idx) };
+    if (updated[lang].length === 0) delete updated[lang];
+    onChange(updated);
+  };
+
+  const removeLanguage = (lang: string) => {
+    const updated = { ...value };
+    delete updated[lang];
+    onChange(updated);
+  };
+
+  const availableLangs = PATTERN_LANGUAGES.filter(l => !value[l.value]);
+
+  return (
+    <div className="space-y-3">
+      {Object.entries(value).map(([lang, patterns]) => (
+        <div key={lang} className="border border-border rounded p-3 space-y-2">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+              {PATTERN_LANGUAGES.find(l => l.value === lang)?.label || lang}
+            </span>
+            <Button variant="ghost" size="icon" className="h-6 w-6 text-destructive hover:bg-destructive/12" onClick={() => removeLanguage(lang)}>
+              <Trash2 className="w-3 h-3" />
+            </Button>
+          </div>
+          {patterns.map((pattern, idx) => (
+            <div key={idx} className="flex items-center gap-2">
+              <code className="bg-muted/50 border border-border/50 rounded px-2 py-1 font-mono text-sm text-primary flex-1 break-all">
+                {pattern}
+              </code>
+              <Button variant="ghost" size="icon" className="h-6 w-6 text-destructive hover:bg-destructive/12 shrink-0" onClick={() => removePattern(lang, idx)}>
+                <X className="w-3 h-3" />
+              </Button>
+            </div>
+          ))}
+          <div className="flex items-center gap-2">
+            <Input
+              value={newPatternInputs[lang] || ''}
+              onChange={e => setNewPatternInputs({ ...newPatternInputs, [lang]: e.target.value })}
+              placeholder="输入新模式..."
+              className="cyber-input h-8 text-sm font-mono"
+              onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addPattern(lang); } }}
+            />
+            <Button variant="ghost" size="sm" className="h-8 text-primary shrink-0" onClick={() => addPattern(lang)}>
+              <Plus className="w-3.5 h-3.5" />
+            </Button>
+          </div>
+        </div>
+      ))}
+      {availableLangs.length > 0 && (
+        <div className="flex items-center gap-2">
+          <Select value={newLang} onValueChange={setNewLang}>
+            <SelectTrigger className="cyber-input h-8 w-[140px] text-sm">
+              <SelectValue placeholder="添加语言" />
+            </SelectTrigger>
+            <SelectContent className="cyber-dialog border-border">
+              {availableLangs.map(l => <SelectItem key={l.value} value={l.value}>{l.label}</SelectItem>)}
+            </SelectContent>
+          </Select>
+          <Button className="cyber-btn-primary h-8" onClick={addLanguage} disabled={!newLang}>
+            <Plus className="w-3.5 h-3.5 mr-1" />添加
+          </Button>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function AuditRules() {
   const [searchParams] = useSearchParams();
   const activeTab = searchParams.get("tab") === "ai" ? "ai" : "static";
@@ -107,6 +217,13 @@ export default function AuditRules() {
   const [filterName, setFilterName] = useState('');
   const [filterRuleSet, setFilterRuleSet] = useState('all');
   const [filterEnabled, setFilterEnabled] = useState('all');
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 20;
+
+  // 篩选变化时回到第 1 页
+  const handleFilterNameChange = (v: string) => { setFilterName(v); setCurrentPage(1); };
+  const handleFilterRuleSetChange = (v: string) => { setFilterRuleSet(v); setCurrentPage(1); };
+  const handleFilterEnabledChange = (v: string) => { setFilterEnabled(v); setCurrentPage(1); };
 
   const [ruleSetForm, setRuleSetForm] = useState<AuditRuleSetCreate>({
     name: '', description: '', language: 'all', rule_type: 'custom',
@@ -238,7 +355,7 @@ export default function AuditRules() {
   const openEditRuleDialog = (ruleSet: AuditRuleSet, rule: AuditRule) => {
     setSelectedRuleSet(ruleSet);
     setSelectedRule(rule);
-    setRuleForm({ rule_code: rule.rule_code, name: rule.name, description: rule.description || '', category: rule.category, severity: rule.severity, custom_prompt: rule.custom_prompt || '', fix_suggestion: rule.fix_suggestion || '', reference_url: rule.reference_url || '', enabled: rule.enabled });
+    setRuleForm({ rule_code: rule.rule_code, name: rule.name, description: rule.description || '', category: rule.category, severity: rule.severity, custom_prompt: rule.custom_prompt || '', code_patterns: rule.code_patterns || undefined, fix_suggestion: rule.fix_suggestion || '', reference_url: rule.reference_url || '', enabled: rule.enabled });
     setShowRuleDialog(true);
   };
 
@@ -270,6 +387,14 @@ export default function AuditRules() {
         return true;
       })
   );
+
+  const totalCount = filteredRules.length;
+  const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
+  // 确保当前页不超出范围
+  const safePage = Math.min(currentPage, totalPages);
+  if (safePage !== currentPage) setCurrentPage(safePage);
+  const startIndex = (safePage - 1) * pageSize;
+  const paginatedRules = filteredRules.slice(startIndex, startIndex + pageSize);
 
   if (loading) {
     return (
@@ -314,12 +439,12 @@ export default function AuditRules() {
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
                 <Input
                   value={filterName}
-                  onChange={e => setFilterName(e.target.value)}
+                  onChange={e => handleFilterNameChange(e.target.value)}
                   placeholder="搜索规则名称"
                   className="h-8 text-sm !pl-9"
                 />
               </div>
-              <Select value={filterRuleSet} onValueChange={setFilterRuleSet}>
+              <Select value={filterRuleSet} onValueChange={handleFilterRuleSetChange}>
                 <SelectTrigger className="cyber-input h-8 w-[160px] text-sm">
                   <SelectValue placeholder="所属集合" />
                 </SelectTrigger>
@@ -328,7 +453,7 @@ export default function AuditRules() {
                   {ruleSets.map(rs => <SelectItem key={rs.id} value={rs.id}>{rs.name}</SelectItem>)}
                 </SelectContent>
               </Select>
-              <Select value={filterEnabled} onValueChange={setFilterEnabled}>
+              <Select value={filterEnabled} onValueChange={handleFilterEnabledChange}>
                 <SelectTrigger className="cyber-input h-8 w-[120px] text-sm">
                   <SelectValue placeholder="启用状态" />
                 </SelectTrigger>
@@ -357,14 +482,14 @@ export default function AuditRules() {
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredRules.length === 0 ? (
+                  {totalCount === 0 ? (
                     <tr>
                       <td colSpan={5} className="py-12 text-center text-muted-foreground">
                         无匹配规则
                       </td>
                     </tr>
                   ) : (
-                    filteredRules.map(({ ruleSet, rule }) => (
+                    paginatedRules.map(({ ruleSet, rule }) => (
                       <tr key={`${ruleSet.id}-${rule.id}`} className="border-b border-border/50 hover:bg-muted/50 transition-colors">
                         <td className="py-2.5 px-6">
                           <span className="font-medium text-foreground">{rule.name}</span>
@@ -400,6 +525,64 @@ export default function AuditRules() {
                 </tbody>
               </table>
             </div>
+            {/* Pagination */}
+            {totalCount > 0 && (
+              <div className="flex items-center justify-between px-6 py-3 border-t border-border">
+                <span className="text-xs text-muted-foreground">
+                  共 {totalCount} 条规则，第 {safePage}/{totalPages} 页
+                </span>
+                <div className="flex items-center gap-1">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-7 w-7"
+                    disabled={safePage <= 1}
+                    onClick={() => setCurrentPage(safePage - 1)}
+                  >
+                    <ChevronLeft className="w-4 h-4" />
+                  </Button>
+                  {Array.from({ length: totalPages }, (_, i) => i + 1)
+                    .filter(page => {
+                      // 显示首页、末页及当前页附近的页码
+                      if (totalPages <= 7) return true;
+                      if (page === 1 || page === totalPages) return true;
+                      if (Math.abs(page - safePage) <= 1) return true;
+                      return false;
+                    })
+                    .reduce<(number | 'ellipsis')[]>((acc, page, idx, arr) => {
+                      if (idx > 0 && page - arr[idx - 1] > 1) {
+                        acc.push('ellipsis');
+                      }
+                      acc.push(page);
+                      return acc;
+                    }, [])
+                    .map((item, idx) =>
+                      item === 'ellipsis' ? (
+                        <span key={`ellipsis-${idx}`} className="w-7 h-7 flex items-center justify-center text-muted-foreground text-xs">…</span>
+                      ) : (
+                        <Button
+                          key={item}
+                          variant={item === safePage ? 'outline' : 'ghost'}
+                          size="icon"
+                          className={`h-7 w-7 text-xs ${item === safePage ? 'bg-primary/12 text-primary font-semibold' : ''}`}
+                          onClick={() => setCurrentPage(item as number)}
+                        >
+                          {item}
+                        </Button>
+                      )
+                    )}
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-7 w-7"
+                    disabled={safePage >= totalPages}
+                    onClick={() => setCurrentPage(safePage + 1)}
+                  >
+                    <ChevronRight className="w-4 h-4" />
+                  </Button>
+                </div>
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -452,6 +635,32 @@ export default function AuditRules() {
                 <div className="space-y-1.5">
                   <Label className="text-xs font-medium text-muted-foreground uppercase">检测规则</Label>
                   <p className="text-sm text-foreground whitespace-pre-wrap">{selectedRule.custom_prompt}</p>
+                </div>
+              )}
+              {selectedRule.code_patterns && Object.keys(selectedRule.code_patterns).length > 0 && (
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-medium text-muted-foreground uppercase">代码检测模式</Label>
+                  <Accordion type="multiple" className="w-full">
+                    {Object.entries(selectedRule.code_patterns).map(([lang, patterns]) => (
+                      <AccordionItem key={lang} value={lang}>
+                        <AccordionTrigger className="text-sm font-medium py-2 hover:no-underline">
+                          <div className="flex items-center gap-2">
+                            <span className="uppercase tracking-wider">{PATTERN_LANGUAGES.find(l => l.value === lang)?.label || lang}</span>
+                            <Badge className="cyber-badge-muted">{patterns.length}</Badge>
+                          </div>
+                        </AccordionTrigger>
+                        <AccordionContent>
+                          <div className="space-y-1.5 pt-1">
+                            {patterns.map((pattern, idx) => (
+                              <div key={idx} className="bg-muted/50 border border-border/50 rounded px-3 py-1.5 font-mono text-sm text-primary break-all">
+                                {pattern}
+                              </div>
+                            ))}
+                          </div>
+                        </AccordionContent>
+                      </AccordionItem>
+                    ))}
+                  </Accordion>
                 </div>
               )}
               {selectedRule.fix_suggestion && (
@@ -627,6 +836,15 @@ export default function AuditRules() {
             <div className="space-y-2">
               <Label className="text-xs font-medium text-muted-foreground uppercase">检测规则</Label>
               <Textarea value={ruleForm.custom_prompt} onChange={e => setRuleForm({ ...ruleForm, custom_prompt: e.target.value })} placeholder={"如：检测SQL拼接模式：execute(f\"...{INPUT}...\")、cursor.execute(\"...\" + input)"} rows={3} className="cyber-input" />
+            </div>
+            {/* 6b. 代码检测模式 */}
+            <div className="space-y-2">
+              <Label className="text-xs font-medium text-muted-foreground uppercase">代码检测模式</Label>
+              <p className="text-xs text-muted-foreground">按语言添加 Semgrep 风格或正则表达式模式，用于静态扫描引擎匹配</p>
+              <CodePatternsEditor
+                value={ruleForm.code_patterns || {}}
+                onChange={v => setRuleForm({ ...ruleForm, code_patterns: Object.keys(v).length > 0 ? v : undefined })}
+              />
             </div>
             {/* 7. 修复建议 */}
             <div className="space-y-2">

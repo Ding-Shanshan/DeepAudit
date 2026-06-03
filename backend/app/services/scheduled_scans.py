@@ -199,119 +199,215 @@ class ScheduledScanRunner:
                     schedule.is_active = False
                     continue
 
-                if not _is_within_time_window(schedule, now):
+                # BUG FIX: 用 next_run_at（预期执行时间）判断是否在时间窗口内，
+                # 而不是用 now（实际调度器循环时间）。
+                scheduled_time = schedule.next_run_at or now
+                if not _is_within_time_window(schedule, scheduled_time):
                     schedule.next_run_at = _next_allowed_time(schedule, now)
                     continue
 
                 file_paths = _json_list(schedule.file_paths)
                 exclude_patterns = _json_list(schedule.exclude_patterns)
+                function_whitelist = _json_list(getattr(schedule, "function_whitelist", None))
+                vulnerability_whitelist = _json_list(getattr(schedule, "vulnerability_whitelist", None))
+                sanitizer_functions = _json_list(getattr(schedule, "sanitizer_functions", None))
 
                 if _schedule_scan_mode(schedule) == "agent":
-                    task = AgentTask(
-                        project_id=project.id,
-                        created_by=schedule.created_by,
-                        name=_agent_task_name(schedule, now),
-                        status=AgentTaskStatus.PENDING,
-                        current_phase=AgentTaskPhase.PLANNING,
-                        audit_scope={
-                            "scheduled_scan_id": schedule.id,
-                            "schedule_name": schedule.name,
-                        },
-                        target_vulnerabilities=[
-                            "sql_injection",
-                            "xss",
-                            "command_injection",
-                            "path_traversal",
-                            "ssrf",
-                        ],
-                        verification_level="sandbox",
-                        branch_name=(
-                            schedule.branch_name or project.default_branch or "main"
-                            if project.source_type == "repository"
-                            else None
-                        ),
-                        exclude_patterns=exclude_patterns,
-                        target_files=file_paths or None,
-                        max_iterations=50,
-                        timeout_seconds=1800,
+                    # 查找已有的 "scheduled" 状态占位任务
+                    existing_task_result = await db.execute(
+                        select(AgentTask).where(
+                            AgentTask.scheduled_scan_id == schedule.id,
+                            AgentTask.status == AgentTaskStatus.SCHEDULED,
+                        )
                     )
-                    db.add(task)
-                    await db.flush()
-                    pending_jobs.append({"mode": "agent", "task_id": task.id})
-                else:
-                    task = AuditTask(
-                        project_id=project.id,
-                        created_by=schedule.created_by,
-                        task_type="scheduled_scan",
-                        status="pending",
-                        branch_name=schedule.branch_name or project.default_branch or "main",
-                        exclude_patterns=schedule.exclude_patterns or "[]",
-                        scan_config=json.dumps(
-                            {
-                                "file_paths": file_paths,
-                                "exclude_patterns": exclude_patterns,
+                    existing_task = existing_task_result.scalar_one_or_none()
+
+                    if existing_task:
+                        # 复用已有占位任务：从 "scheduled" → "pending"
+                        existing_task.status = AgentTaskStatus.PENDING
+                        existing_task.name = _agent_task_name(schedule, now)
+                        await db.flush()
+                        pending_jobs.append({"mode": "agent", "task_id": existing_task.id})
+                        logger.info(
+                            "复用定时占位任务: schedule=%s task=%s",
+                            schedule.id, existing_task.id,
+                        )
+                    else:
+                        # 周期性后续执行：创建新任务
+                        task = AgentTask(
+                            project_id=project.id,
+                            created_by=schedule.created_by,
+                            name=_agent_task_name(schedule, now),
+                            status=AgentTaskStatus.PENDING,
+                            current_phase=AgentTaskPhase.PLANNING,
+                            audit_scope={
                                 "scheduled_scan_id": schedule.id,
-                                "rule_set_id": schedule.rule_set_id,
-                                "prompt_template_id": schedule.prompt_template_id,
-                            }
-                        ),
+                                "schedule_name": schedule.name,
+                            },
+                            target_vulnerabilities=[
+                                "sql_injection",
+                                "xss",
+                                "command_injection",
+                                "path_traversal",
+                                "ssrf",
+                            ],
+                            verification_level="sandbox",
+                            branch_name=(
+                                schedule.branch_name or project.default_branch or "main"
+                                if project.source_type == "repository"
+                                else None
+                            ),
+                            exclude_patterns=exclude_patterns,
+                            target_files=file_paths or None,
+                            max_iterations=50,
+                            timeout_seconds=1800,
+                            scheduled_scan_id=schedule.id,
+                            agent_config=json.dumps({
+                                "functionWhitelist": function_whitelist,
+                                "vulnerabilityWhitelist": vulnerability_whitelist,
+                                "sanitizerFunctions": sanitizer_functions,
+                            }),
+                        )
+                        db.add(task)
+                        await db.flush()
+                        pending_jobs.append({"mode": "agent", "task_id": task.id})
+                else:
+                    # 查找已有的 "scheduled" 状态占位任务
+                    existing_task_result = await db.execute(
+                        select(AuditTask).where(
+                            AuditTask.scheduled_scan_id == schedule.id,
+                            AuditTask.status == "scheduled",
+                        )
                     )
-                    db.add(task)
-                    await db.flush()
+                    existing_task = existing_task_result.scalar_one_or_none()
 
-                    user_config = await _load_user_config(schedule.created_by)
-                    user_config["scan_config"] = {
-                        "file_paths": file_paths,
-                        "exclude_patterns": exclude_patterns,
-                        "rule_set_id": schedule.rule_set_id,
-                        "prompt_template_id": schedule.prompt_template_id,
-                    }
+                    if existing_task:
+                        # 复用已有占位任务：从 "scheduled" → "pending"
+                        existing_task.status = "pending"
+                        await db.flush()
 
-                    if project.source_type == "zip":
-                        archive_path = await load_project_zip(project.id)
-                        if archive_path:
+                        user_config = await _load_user_config(schedule.created_by)
+                        user_config["scan_config"] = {
+                            "file_paths": file_paths,
+                            "exclude_patterns": exclude_patterns,
+                            "rule_set_id": schedule.rule_set_id,
+                            "prompt_template_id": schedule.prompt_template_id,
+                            "functionWhitelist": function_whitelist,
+                            "vulnerabilityWhitelist": vulnerability_whitelist,
+                            "sanitizerFunctions": sanitizer_functions,
+                        }
+
+                        if project.source_type == "zip":
+                            archive_path = await load_project_zip(project.id)
+                            if archive_path:
+                                pending_jobs.append(
+                                    {
+                                        "mode": "zip",
+                                        "task_id": existing_task.id,
+                                        "archive_path": archive_path,
+                                        "user_config": user_config,
+                                    }
+                                )
+                        else:
                             pending_jobs.append(
                                 {
-                                    "mode": "zip",
-                                    "task_id": task.id,
-                                    "archive_path": archive_path,
+                                    "mode": "fast",
+                                    "task_id": existing_task.id,
                                     "user_config": user_config,
                                 }
                             )
-                    else:
-                        pending_jobs.append(
-                            {
-                                "mode": "fast",
-                                "task_id": task.id,
-                                "user_config": user_config,
-                            }
+                        logger.info(
+                            "复用定时占位任务: schedule=%s task=%s",
+                            schedule.id, existing_task.id,
                         )
+                    else:
+                        # 周期性后续执行：创建新任务
+                        task = AuditTask(
+                            project_id=project.id,
+                            created_by=schedule.created_by,
+                            task_type="scheduled_scan",
+                            status="pending",
+                            branch_name=schedule.branch_name or project.default_branch or "main",
+                            exclude_patterns=schedule.exclude_patterns or "[]",
+                            scan_config=json.dumps(
+                                {
+                                    "file_paths": file_paths,
+                                    "exclude_patterns": exclude_patterns,
+                                    "scheduled_scan_id": schedule.id,
+                                    "rule_set_id": schedule.rule_set_id,
+                                    "prompt_template_id": schedule.prompt_template_id,
+                                    "functionWhitelist": function_whitelist,
+                                    "vulnerabilityWhitelist": vulnerability_whitelist,
+                                    "sanitizerFunctions": sanitizer_functions,
+                                }
+                            ),
+                            scheduled_scan_id=schedule.id,
+                        )
+                        db.add(task)
+                        await db.flush()
+
+                        user_config = await _load_user_config(schedule.created_by)
+                        user_config["scan_config"] = {
+                            "file_paths": file_paths,
+                            "exclude_patterns": exclude_patterns,
+                            "rule_set_id": schedule.rule_set_id,
+                            "prompt_template_id": schedule.prompt_template_id,
+                            "functionWhitelist": function_whitelist,
+                            "vulnerabilityWhitelist": vulnerability_whitelist,
+                            "sanitizerFunctions": sanitizer_functions,
+                        }
+
+                        if project.source_type == "zip":
+                            archive_path = await load_project_zip(project.id)
+                            if archive_path:
+                                pending_jobs.append(
+                                    {
+                                        "mode": "zip",
+                                        "task_id": task.id,
+                                        "archive_path": archive_path,
+                                        "user_config": user_config,
+                                    }
+                                )
+                        else:
+                            pending_jobs.append(
+                                {
+                                    "mode": "fast",
+                                    "task_id": task.id,
+                                    "user_config": user_config,
+                                }
+                            )
 
                 schedule.last_run_at = now
-                schedule.next_run_at = _calculate_next_run_at(schedule, now)
+                # 基于 next_run_at（预期执行时间）计算下次执行时间，
+                # 避免基于 now 导致的时间漂移。
+                schedule.next_run_at = _calculate_next_run_at(schedule, scheduled_time)
 
             await db.commit()
 
         for job in pending_jobs:
-            if job["mode"] == "agent":
-                from app.api.v1.endpoints.agent_tasks import _execute_agent_task
+            try:
+                if job["mode"] == "agent":
+                    from app.api.v1.endpoints.agent_tasks import _execute_agent_task
 
-                asyncio.create_task(_execute_agent_task(job["task_id"]))
-            elif job["mode"] == "zip":
-                from app.api.v1.endpoints.scan import process_zip_task
+                    asyncio.create_task(_execute_agent_task(job["task_id"]))
+                elif job["mode"] == "zip":
+                    from app.api.v1.endpoints.scan import process_zip_task
 
-                asyncio.create_task(
-                    process_zip_task(
-                        job["task_id"],
-                        job["archive_path"],
-                        AsyncSessionLocal,
-                        job["user_config"],
+                    asyncio.create_task(
+                        process_zip_task(
+                            job["task_id"],
+                            job["archive_path"],
+                            AsyncSessionLocal,
+                            job["user_config"],
+                        )
                     )
-                )
-            else:
-                asyncio.create_task(
-                    scan_repo_task(job["task_id"], AsyncSessionLocal, job["user_config"])
-                )
+                else:
+                    asyncio.create_task(
+                        scan_repo_task(job["task_id"], AsyncSessionLocal, job["user_config"])
+                    )
+                logger.info("定时扫描已启动: mode=%s task_id=%s", job["mode"], job["task_id"])
+            except Exception as exc:
+                logger.error("定时扫描启动失败: mode=%s task_id=%s error=%s", job["mode"], job["task_id"], exc)
 
 
 scheduled_scan_runner = ScheduledScanRunner()

@@ -103,6 +103,50 @@ def _calculate_next_run_at(
     return _next_allowed_time(candidate, start, end, tz_name)
 
 
+def _calculate_initial_next_run_at(
+    now: datetime,
+    interval_minutes: int,
+    start: Optional[str],
+    end: Optional[str],
+    tz_name: Optional[str],
+) -> datetime:
+    """计算定时计划的首次执行时间。
+
+    优先使用 time_window_end（用户设置的执行时间）确定首次执行时间点，
+    而不是基于 now + interval 的周期计算。
+
+    例如：执行时间 09:20，当前 09:10 → 今天 09:20（10分钟后首次执行）
+    例如：执行时间 09:20，当前 09:30 → 明天 09:20（明天首次执行）
+    例如：周期 2 小时，执行时间 09:20，当前 08:00 → 今天 09:20
+    """
+    # 优先使用 time_window_end（用户设置的执行时间）计算首次执行时间
+    end_time = _parse_window_time(end)
+    if end_time:
+        zone = _zoneinfo(tz_name)
+        local_now = now.astimezone(zone)
+        # 计算今天的执行时间点
+        next_local = local_now.replace(
+            hour=end_time.hour,
+            minute=end_time.minute,
+            second=0,
+            microsecond=0,
+        )
+        # 如果今天的时间已经过了，推到下一个周期
+        if next_local <= local_now:
+            # 计算需要加多少天才能到达下一次执行时间
+            # 对于天级周期，加 1 天；对于小时级周期，按间隔推算
+            if interval_minutes >= 1440:
+                next_local += timedelta(days=1)
+            else:
+                # 小时级周期：从今天执行时间开始，按间隔推算下一次
+                while next_local <= local_now:
+                    next_local += timedelta(minutes=interval_minutes)
+        return next_local.astimezone(timezone.utc)
+
+    # 如果没有设置执行时间，按周期从 now 开始计算
+    return _calculate_next_run_at(now, interval_minutes, start, end, tz_name)
+
+
 class ScheduledScanBase(BaseModel):
     project_id: str
     name: str
@@ -168,6 +212,9 @@ def _serialize_schedule(item: ScheduledScan) -> ScheduledScanResponse:
         prompt_template_id=item.prompt_template_id,
         exclude_patterns=[] if not item.exclude_patterns else json.loads(item.exclude_patterns),
         file_paths=[] if not item.file_paths else json.loads(item.file_paths),
+        functionWhitelist=[] if not item.function_whitelist else json.loads(item.function_whitelist),
+        vulnerabilityWhitelist=[] if not item.vulnerability_whitelist else json.loads(item.vulnerability_whitelist),
+        sanitizerFunctions=[] if not item.sanitizer_functions else json.loads(item.sanitizer_functions),
         is_active=item.is_active,
         created_by=item.created_by,
         last_run_at=item.last_run_at,
@@ -206,6 +253,7 @@ async def create_schedule(
     if project.owner_id != current_user.id:
         raise HTTPException(status_code=403, detail="只能为自己的项目创建计划")
 
+    # 1. 先创建定时计划（需要 schedule.id 来关联任务）
     schedule = ScheduledScan(
         project_id=payload.project_id,
         created_by=current_user.id,
@@ -220,16 +268,85 @@ async def create_schedule(
         prompt_template_id=payload.prompt_template_id,
         exclude_patterns=json.dumps(payload.exclude_patterns),
         file_paths=json.dumps(payload.file_paths),
+        function_whitelist=json.dumps(payload.functionWhitelist),
+        vulnerability_whitelist=json.dumps(payload.vulnerabilityWhitelist),
+        sanitizer_functions=json.dumps(payload.sanitizerFunctions),
         is_active=payload.is_active,
-        next_run_at=_calculate_next_run_at(
+        next_run_at=_calculate_initial_next_run_at(
             datetime.now(timezone.utc),
             payload.interval_minutes,
             payload.time_window_start,
             payload.time_window_end,
             payload.timezone,
         ),
+        last_run_at=None,
     )
     db.add(schedule)
+    await db.flush()  # 刷新以获取 schedule.id
+
+    # 2. 创建占位任务，状态为 "scheduled"（待扫描），出现在任务列表中
+    # ScheduledScanRunner 在 next_run_at 到达时会复用此任务并启动执行
+    if payload.scan_mode == "agent":
+        from app.models.agent_task import AgentTask, AgentTaskStatus, AgentTaskPhase
+
+        task = AgentTask(
+            project_id=project.id,
+            created_by=current_user.id,
+            name=payload.name,
+            status=AgentTaskStatus.SCHEDULED,
+            current_phase=AgentTaskPhase.PLANNING,
+            audit_scope={
+                "scheduled_scan_id": schedule.id,
+                "schedule_name": schedule.name,
+            },
+            target_vulnerabilities=[
+                "sql_injection",
+                "xss",
+                "command_injection",
+                "path_traversal",
+                "ssrf",
+            ],
+            verification_level="sandbox",
+            branch_name=(
+                payload.branch_name or project.default_branch or "main"
+                if project.source_type == "repository"
+                else None
+            ),
+            exclude_patterns=payload.exclude_patterns or [],
+            target_files=payload.file_paths or None,
+            max_iterations=50,
+            timeout_seconds=1800,
+            scheduled_scan_id=schedule.id,
+            agent_config=json.dumps({
+                "functionWhitelist": payload.functionWhitelist or [],
+                "vulnerabilityWhitelist": payload.vulnerabilityWhitelist or [],
+                "sanitizerFunctions": payload.sanitizerFunctions or [],
+            }),
+        )
+    else:
+        from app.models.audit import AuditTask
+
+        task = AuditTask(
+            project_id=project.id,
+            created_by=current_user.id,
+            task_type="scheduled_scan",
+            status="scheduled",
+            branch_name=payload.branch_name or project.default_branch or "main",
+            exclude_patterns=json.dumps(payload.exclude_patterns),
+            scan_config=json.dumps({
+                "file_paths": payload.file_paths,
+                "exclude_patterns": payload.exclude_patterns,
+                "scheduled_scan_id": schedule.id,
+                "rule_set_id": payload.rule_set_id,
+                "prompt_template_id": payload.prompt_template_id,
+                "functionWhitelist": payload.functionWhitelist,
+                "vulnerabilityWhitelist": payload.vulnerabilityWhitelist,
+                "sanitizerFunctions": payload.sanitizerFunctions,
+            }),
+            scheduled_scan_id=schedule.id,
+        )
+
+    db.add(task)
     await db.commit()
     await db.refresh(schedule)
     return _serialize_schedule(schedule)
@@ -269,8 +386,11 @@ async def update_schedule(
         "is_active",
     }
     if recalc_fields.intersection(update_data) and schedule.is_active:
+        # 基于 last_run_at（上次预期执行时间）计算 next_run_at，
+        # 避免基于 now 导致的时间漂移
+        base_time = schedule.last_run_at or datetime.now(timezone.utc)
         schedule.next_run_at = _calculate_next_run_at(
-            datetime.now(timezone.utc),
+            base_time,
             schedule.interval_minutes,
             schedule.time_window_start,
             schedule.time_window_end,

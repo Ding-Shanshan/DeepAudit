@@ -21,6 +21,7 @@ if TYPE_CHECKING:
 
 class AgentTaskStatus:
     """Agent 任务状态"""
+    SCHEDULED = "scheduled"       # 定时计划待执行
     PENDING = "pending"           # 等待执行
     INITIALIZING = "initializing" # 初始化中
     RUNNING = "running"           # 运行中
@@ -85,6 +86,7 @@ class AgentTask(Base):
     current_phase = Column(String(50), nullable=True)
     current_step = Column(String(255), nullable=True)  # 当前执行步骤描述
     error_message = Column(Text, nullable=True)
+    scheduled_scan_id = Column(String(36), ForeignKey("scheduled_scans.id"), nullable=True, index=True)
     
     # 进度统计
     total_files = Column(Integer, default=0)

@@ -70,7 +70,11 @@ class AuditRule(Base):
     
     # 自定义检测提示词（可选，用于增强LLM检测）
     custom_prompt = Column(Text, nullable=True)
-    
+
+    # 代码检测模式 (JSON格式: {"python": ["pattern1"], "java": ["pattern2"]})
+    # 用于静态扫描引擎模式匹配和前端可视化展示
+    code_patterns = Column(Text, nullable=True)
+
     # 修复建议模板
     fix_suggestion = Column(Text, nullable=True)
     

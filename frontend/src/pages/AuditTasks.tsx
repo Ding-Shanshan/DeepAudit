@@ -87,7 +87,7 @@ export default function AuditTasks() {
   // Silently update active tasks progress (no loading state trigger)
   useEffect(() => {
     const activeTasks = tasks.filter(
-      task => task.status === 'running' || task.status === 'pending'
+      task => task.status === 'running' || task.status === 'pending' || task.status === 'scheduled'
     );
 
     if (activeTasks.length === 0) {
@@ -155,7 +155,7 @@ export default function AuditTasks() {
   // 自动刷新Agent任务（静默更新，不显示 loading）
   useEffect(() => {
     const activeAgentTasks = agentTasks.filter(
-      task => task.status === 'running' || task.status === 'pending'
+      task => task.status === 'running' || task.status === 'pending' || task.status === 'scheduled'
     );
 
     if (activeAgentTasks.length === 0) return;
@@ -223,6 +223,8 @@ export default function AuditTasks() {
         return <Badge className="cyber-badge-success">完成</Badge>;
       case 'running':
         return <Badge className="cyber-badge-info">运行中</Badge>;
+      case 'scheduled':
+        return <Badge className="cyber-badge-warning">待扫描</Badge>;
       case 'failed':
         return <Badge className="cyber-badge-danger">失败</Badge>;
       case 'cancelled':
@@ -281,6 +283,7 @@ export default function AuditTasks() {
               </SelectTrigger>
               <SelectContent className="cyber-dialog border-border">
                 <SelectItem value="all">全部</SelectItem>
+                <SelectItem value="scheduled">待扫描</SelectItem>
                 <SelectItem value="running">运行中</SelectItem>
                 <SelectItem value="completed">已完成</SelectItem>
                 <SelectItem value="failed">失败</SelectItem>
@@ -337,7 +340,7 @@ export default function AuditTasks() {
                               <Eye className="w-3.5 h-3.5" />
                             </Button>
                           </Link>
-                          {(task.status === 'running' || task.status === 'pending') && (
+                          {(task.status === 'running' || task.status === 'pending' || task.status === 'scheduled') && (
                             <Button variant="ghost" size="icon" className="h-7 w-7 hover:bg-destructive/12 hover:text-destructive" title="取消任务" onClick={() => handleCancelAgentTask(task.id)} disabled={cancellingAgentTaskId === task.id}>
                               <XCircle className="w-3.5 h-3.5" />
                             </Button>
@@ -372,6 +375,7 @@ export default function AuditTasks() {
               </SelectTrigger>
               <SelectContent className="cyber-dialog border-border">
                 <SelectItem value="all">全部</SelectItem>
+                <SelectItem value="scheduled">待扫描</SelectItem>
                 <SelectItem value="running">运行中</SelectItem>
                 <SelectItem value="completed">已完成</SelectItem>
                 <SelectItem value="failed">失败</SelectItem>
@@ -428,7 +432,7 @@ export default function AuditTasks() {
                               <Eye className="w-3.5 h-3.5" />
                             </Button>
                           </Link>
-                          {(task.status === 'running' || task.status === 'pending') && (
+                          {(task.status === 'running' || task.status === 'pending' || task.status === 'scheduled') && (
                             <Button variant="ghost" size="icon" className="h-7 w-7 hover:bg-destructive/12 hover:text-destructive" title="取消任务" onClick={() => handleCancelTask(task.id)} disabled={cancellingTaskId === task.id}>
                               <XCircle className="w-3.5 h-3.5" />
                             </Button>
@@ -448,7 +452,7 @@ export default function AuditTasks() {
       <CreateTaskDialog
         open={showCreateDialog}
         onOpenChange={setShowCreateDialog}
-        onTaskCreated={loadTasks}
+        onTaskCreated={() => { loadTasks(); loadAgentTasks(); }}
         onFastScanStarted={handleFastScanStarted}
       />
 

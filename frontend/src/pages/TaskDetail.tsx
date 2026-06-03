@@ -447,6 +447,8 @@ export default function TaskDetail() {
         return <Badge className="cyber-badge-success">完成</Badge>;
       case 'running':
         return <Badge className="cyber-badge-info">运行中</Badge>;
+      case 'scheduled':
+        return <Badge className="cyber-badge-warning">待扫描</Badge>;
       case 'failed':
         return <Badge className="cyber-badge-danger">失败</Badge>;
       case 'cancelled':
