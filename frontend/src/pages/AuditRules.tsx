@@ -74,6 +74,7 @@ const CATEGORY_ABBREV: Record<string, string> = {
   security: 'SEC',
   performance: 'PERF',
   quality: 'QLTY',
+  iac: 'IAC',
 };
 
 const LANGUAGES = [
@@ -89,6 +90,7 @@ const RULE_TYPES = [
   { value: 'security', label: '漏洞规则' },
   { value: 'quality', label: '质量规则' },
   { value: 'performance', label: '性能规则' },
+  { value: 'iac', label: 'IaC规则' },
   { value: 'custom', label: '自定义规则' },
 ];
 
