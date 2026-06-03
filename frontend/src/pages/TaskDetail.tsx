@@ -122,7 +122,7 @@ function IssuesTable({ issues, total, hasMore, onLoadMore, loadingMore, onStatus
                     {onStatusChange ? (
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                          <Button variant="outline" size="sm" className={`text-xs font-sans border h-7 ${getStatusBadgeClass(issue.status)}`}>
+                          <Button variant="outline" size="sm" className={`text-xs font-sans border w-[60px] h-[26px] justify-center ${getStatusBadgeClass(issue.status)}`}>
                             {getStatusLabel(issue.status)}
                           </Button>
                         </DropdownMenuTrigger>
@@ -134,7 +134,9 @@ function IssuesTable({ issues, total, hasMore, onLoadMore, loadingMore, onStatus
                         </DropdownMenuContent>
                       </DropdownMenu>
                     ) : (
-                      <span className="text-xs">{getStatusLabel(issue.status)}</span>
+                      <span className={`text-xs border px-2 py-1 rounded w-[52px] h-[22px] inline-flex justify-center items-center ${getStatusBadgeClass(issue.status)}`}>
+                        {getStatusLabel(issue.status)}
+                      </span>
                     )}
                   </td>
                   <td className="py-2.5 px-3 flex items-center gap-1">

@@ -58,16 +58,16 @@ export const ISSUE_STATUS_LABELS: Record<string, string> = {
   duplicate: "误报",
 };
 
-// 状态徽章颜色样式
+// 状态徽章颜色样式（统一最小宽度）
 export const ISSUE_STATUS_BADGE_CLASS: Record<string, string> = {
-  fixed: "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/25",
-  not_fixed: "bg-warning/15 text-warning dark:text-warning border-warning/25",
-  false_positive: "bg-gray-500/20 text-gray-600 dark:text-gray-400 border-gray-500/30",
-  suspicious: "bg-secondary/15 text-secondary dark:text-secondary border-secondary/25",
+  fixed: "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/25 min-w-[48px]",
+  not_fixed: "bg-warning/15 text-warning dark:text-warning border-warning/25 min-w-[48px]",
+  false_positive: "bg-gray-500/20 text-gray-600 dark:text-gray-400 border-gray-500/30 min-w-[48px]",
+  suspicious: "bg-purple-500/15 text-purple-600 dark:text-purple-400 border-purple-500/25 min-w-[48px]",
   // 旧状态兼容
-  open: "bg-warning/15 text-warning dark:text-warning border-warning/25",
-  new: "bg-warning/15 text-warning dark:text-warning border-warning/25",
-  resolved: "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/25",
+  open: "bg-warning/15 text-warning dark:text-warning border-warning/25 min-w-[48px]",
+  new: "bg-warning/15 text-warning dark:text-warning border-warning/25 min-w-[48px]",
+  resolved: "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/25 min-w-[48px]",
 };
 
 // 任务状态

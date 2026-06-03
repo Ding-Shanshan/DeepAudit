@@ -3,11 +3,8 @@
  * 简约行式展示，轻量分隔
  */
 
-import { memo, useRef, useEffect } from "react";
-import {
-  Brain, Wrench, Bug, Zap, Terminal, AlertTriangle,
-  Loader2, Shield, ChevronDown, ChevronRight, ScrollText
-} from "lucide-react";
+import { memo } from "react";
+import { Loader2, ChevronDown, ChevronRight } from "lucide-react";
 import { LOG_TYPE_CONFIG } from "../constants";
 import { AUDIT_PHASE_CONFIG, AUDIT_PHASES } from "../types";
 import type { AuditPhase, LogItem } from "../types";
@@ -21,28 +18,32 @@ const SEVERITY_BADGE: Record<string, { label: string; className: string }> = {
   low: { label: "低危", className: "text-sky-600" },
 };
 
-// ============ 清理标题 ============
+// ============ 清理日志内容 ============
 
-function cleanTitle(title: string): string {
-  return title
-    .replace(/[\u{1F300}-\u{1F9FF}]/gu, "")
-    .replace(/[✅🔗🛑✕⚠️❌⚡🔄🔍💡📁📄🐛🛡️🔧📤📊📦🔬]/g, "")
-    .replace(/^[:\-–—•·\s]+/, "")
-    .trim() || title;
+function cleanLogContent(text: string): string {
+  if (!text) return text;
+  return text
+    // 移除所有 emoji（包括各种范围）
+    .replace(/[\u{1F000}-\u{1FFFF}]/gu, "")
+    .replace(/[\u{2600}-\u{27BF}]/gu, "")
+    .replace(/[\u{FE00}-\u{FE0F}]/gu, "")  // 变体选择符
+    // 移除方括号标签如 [Recon]、[Analysis] 等
+    .replace(/\[[\w\s]+\]\s*/g, "")
+    // 移除特定 emoji 和符号
+    .replace(/[✅🔗🛑✕⚠️❌⚡🔄🔍💡📁📄🐛🛡️🔧📤📊📦🔬🔴🟠🟡🟢🔵🟣⚫⚪📍📋🎯💪📝🔥💯✨🎉🚀💾🔐🔑🚫✔️✓❶❷❸❹❺]/g, "")
+    // 移除 @Agent 名
+    .replace(/@\w+\s*/g, "")
+    // 移除开头的特殊字符和分隔符
+    .replace(/^[:\-–—•·│┃┆┇┊┋╎╏║▪▫□▢■▣▤▥▦▧▨▩░▒▓°∞∑∈√∫≈≠≤≥◊○●◦◉◎★☆♠♣♥♦♤♧♨♬♩♪♭♯♮✦✧✩✪✫✬✭✮✯✰✱✲✳✴✵✶✷✸✹✺✻✼✽✾✿❀❁❂❃❄❅❆❇❈❉❊❋]+\s*/gm, "")
+    // 清理多余空格和换行
+    .replace(/\s{2,}/g, " ")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim() || text;
 }
 
-// ============ 图标映射 ============
-
-const typeIcons: Record<string, React.ReactNode> = {
-  thinking: <Brain className="w-3.5 h-3.5 text-violet-400" />,
-  tool: <Wrench className="w-3.5 h-3.5 text-amber-400" />,
-  finding: <Bug className="w-3.5 h-3.5 text-rose-400" />,
-  dispatch: <Zap className="w-3.5 h-3.5 text-sky-400" />,
-  info: <Terminal className="w-3.5 h-3.5 text-slate-300" />,
-  error: <AlertTriangle className="w-3.5 h-3.5 text-red-400" />,
-  progress: <Loader2 className="w-3.5 h-3.5 text-emerald-400 animate-spin" />,
-  user: <Shield className="w-3.5 h-3.5 text-indigo-400" />,
-};
+function cleanTitle(title: string): string {
+  return cleanLogContent(title);
+}
 
 // ============ 单条日志行 ============
 
@@ -67,8 +68,6 @@ function LogCard({
     >
       {/* 标题行 */}
       <div className="flex items-center gap-2">
-        {typeIcons[item.type] || typeIcons.info}
-
         {/* 类型标签 - 极简 */}
         <span className={`text-[10px] font-medium ${
           item.type === 'thinking' ? 'text-violet-500' :
@@ -132,15 +131,15 @@ function LogCard({
 
       {/* 思考内容 */}
       {isThinking && item.content && (
-        <div className="mt-1 ml-6 text-xs text-slate-400 whitespace-pre-wrap break-words leading-relaxed">
-          {item.content}
+        <div className="mt-1 ml-4 text-xs text-slate-400 whitespace-pre-wrap break-words leading-relaxed">
+          {cleanLogContent(item.content)}
         </div>
       )}
 
       {/* 可展开内容 */}
       {isCollapsible && isExpanded && item.content && (
-        <div className="mt-1 ml-6 text-xs text-slate-400 whitespace-pre-wrap break-words leading-relaxed max-h-48 overflow-y-auto bg-slate-50 rounded p-2">
-          {item.content}
+        <div className="mt-1 ml-4 text-xs text-slate-400 whitespace-pre-wrap break-words leading-relaxed max-h-48 overflow-y-auto bg-slate-50 rounded p-2">
+          {cleanLogContent(item.content)}
         </div>
       )}
     </div>
@@ -170,8 +169,6 @@ export const LogStream = memo(function LogStream({
   phaseLogMap,
   expandedLogIds,
   onToggleLogExpanded,
-  isAutoScroll,
-  onToggleAutoScroll,
   scrollRef,
 }: LogStreamProps) {
   const startedPhases = AUDIT_PHASES.filter((phase) => {
@@ -186,21 +183,11 @@ export const LogStream = memo(function LogStream({
   return (
     <div className="flex flex-col h-full min-h-0">
       {/* 头部 - 简化 */}
-      <div className="flex items-center justify-between px-3 py-2 border-b border-slate-100">
+      <div className="flex items-center px-3 py-2 border-b border-slate-100">
         <div className="flex items-center gap-2">
-          <span className="text-xs font-medium text-slate-500">日志</span>
-          <span className="text-[10px] text-slate-300">{totalLogs}</span>
+          <span className="text-sm font-semibold text-slate-700">日志</span>
+          <span className="text-xs font-medium text-slate-600">{totalLogs}</span>
         </div>
-        <button
-          onClick={onToggleAutoScroll}
-          className={`text-[10px] px-2 py-0.5 rounded font-medium transition-colors ${
-            isAutoScroll
-              ? "text-indigo-500 bg-indigo-50"
-              : "text-slate-400 hover:bg-slate-50"
-          }`}
-        >
-          {isAutoScroll ? "自动滚动" : "手动"}
-        </button>
       </div>
 
       {/* 日志流 */}

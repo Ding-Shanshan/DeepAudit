@@ -7,7 +7,7 @@
 
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useParams } from "react-router-dom";
-import { Loader2, Radio, ArrowLeft, Download } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { useAgentStream } from "@/hooks/useAgentStream";
@@ -18,6 +18,7 @@ import {
   cancelAgentTask,
   getAgentTree,
   getAgentEvents,
+  updateAgentFinding,
   AgentEvent,
 } from "@/shared/api/agentTasks";
 import CreateAgentTaskDialog from "@/components/agent/CreateAgentTaskDialog";
@@ -26,14 +27,14 @@ import CreateAgentTaskDialog from "@/components/agent/CreateAgentTaskDialog";
 import {
   SplashScreen,
   Header,
-  AgentTreeNodeItem,
-  AgentDetailPanel,
   StatsPanel,
   AgentErrorBoundary,
   PhaseTimeline,
   LogStream,
+  FindingsTable,
 } from "./components";
 import ReportExportDialog from "./components/ReportExportDialog";
+import IssueDetailSheet from "@/components/issues/IssueDetailSheet";
 import { useAgentAuditState } from "./hooks";
 import { ACTION_VERBS, POLLING_INTERVALS } from "./constants";
 import { cleanThinkingContent, truncateOutput, inferPhaseFromEvent, inferInitialPhase } from "./utils";
@@ -62,6 +63,30 @@ function AgentAuditPageContent() {
   const [statusVerb, setStatusVerb] = useState(ACTION_VERBS[0]);
   const [statusDots, setStatusDots] = useState(0);
   const [expandedPhases, setExpandedPhases] = useState<Set<AuditPhase>>(new Set());
+
+  // 问题详情 Sheet
+  const [detailOpen, setDetailOpen] = useState(false);
+  const [selectedFinding, setSelectedFinding] = useState<typeof findings[0] | null>(null);
+
+  const handleViewFindingDetail = (finding: typeof findings[0]) => {
+    setSelectedFinding(finding);
+    setDetailOpen(true);
+  };
+
+  // 问题状态修改
+  const handleFindingStatusChange = async (finding: typeof findings[0], newStatus: string) => {
+    if (!taskId) return;
+    try {
+      await updateAgentFinding(taskId, finding.id, { status: newStatus });
+      toast.success("状态已更新");
+      // 重新加载问题列表
+      const data = await getAgentFindings(taskId);
+      setFindings(data);
+    } catch (error) {
+      console.error("Failed to update finding status:", error);
+      toast.error("状态更新失败");
+    }
+  };
 
   const logEndRef = useRef<HTMLDivElement>(null);
   const phaseScrollRef = useRef<HTMLDivElement>(null);
@@ -752,8 +777,8 @@ function AgentAuditPageContent() {
 
       {/* 主内容区 */}
       <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
-        {/* 日志流 */}
-        <div className="flex-1 min-h-0 flex flex-col overflow-hidden border-b border-slate-100">
+        {/* 日志流 - 高度减小50% */}
+        <div className="h-[40%] min-h-0 flex flex-col overflow-hidden">
           <LogStream
             currentPhase={currentPhase}
             completedPhases={completedPhases}
@@ -768,74 +793,24 @@ function AgentAuditPageContent() {
           />
         </div>
 
-        {/* Agent 面板 */}
-        <div className="flex-shrink-0">
+        {/* 分界线 */}
+        <div className="h-1.5 bg-slate-200 mx-4 rounded-full" />
+
+        {/* 问题列表 */}
+        <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
           <div className="flex items-center justify-between px-4 py-2 border-b border-slate-100">
             <div className="flex items-center gap-2">
-              <Radio className="w-3.5 h-3.5 text-slate-400" />
-              <span className="text-xs font-medium text-slate-500">
-                {selectedAgentId ? 'Agent 详情' : 'Agent'}
-              </span>
-              {!selectedAgentId && agentTree && (
-                <span className="text-[10px] text-slate-300 tabular-nums">
-                  {agentTree.total_agents}
-                </span>
-              )}
-            </div>
-
-            <div className="flex items-center gap-2">
-              {task && isComplete && (
-                <button
-                  onClick={handleExportReport}
-                  className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-indigo-600 transition-colors"
-                >
-                  <Download className="w-3.5 h-3.5" />
-                  导出
-                </button>
-              )}
-
-              {selectedAgentId && (
-                <button
-                  onClick={() => selectAgent(null)}
-                  className="flex items-center gap-1 text-[10px] text-slate-400 hover:text-slate-600 transition-colors"
-                >
-                  <ArrowLeft className="w-3 h-3" />
-                  返回
-                </button>
-              )}
+              <span className="text-sm font-semibold text-slate-700">问题列表</span>
+              <span className="text-xs font-medium text-slate-600">{findings.length}</span>
             </div>
           </div>
-
-          <div className="max-h-[180px] overflow-y-auto custom-scrollbar">
-            {selectedAgentId ? (
-              <AgentDetailPanel
-                agentId={selectedAgentId}
-                treeNodes={treeNodes}
-                onClose={() => selectAgent(null)}
-              />
-            ) : treeNodes.length > 0 ? (
-              <div className="py-1">
-                {treeNodes.map(node => (
-                  <AgentTreeNodeItem
-                    key={node.agent_id}
-                    node={node}
-                    selectedId={selectedAgentId}
-                    onSelect={handleAgentSelect}
-                  />
-                ))}
-              </div>
-            ) : (
-              <div className="py-4 text-center">
-                {isRunning ? (
-                  <div className="flex items-center justify-center gap-1.5 text-slate-300">
-                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                    <span className="text-[10px]">初始化 Agent...</span>
-                  </div>
-                ) : (
-                  <span className="text-[10px] text-slate-300">暂无 Agent</span>
-                )}
-              </div>
-            )}
+          <div className="flex-1 overflow-y-auto p-4">
+            <FindingsTable
+              findings={findings}
+              taskId={taskId}
+              onViewDetail={handleViewFindingDetail}
+              onStatusChange={handleFindingStatusChange}
+            />
           </div>
         </div>
       </div>
@@ -849,6 +824,13 @@ function AgentAuditPageContent() {
         onOpenChange={setShowExportDialog}
         task={task}
         findings={findings}
+      />
+
+      {/* 问题详情 Sheet */}
+      <IssueDetailSheet
+        open={detailOpen}
+        onOpenChange={setDetailOpen}
+        agentFinding={selectedFinding as any}
       />
     </div>
   );

@@ -13,3 +13,4 @@ export { ConnectionStatus } from './ConnectionStatus';
 export { ReportExportDialog } from './ReportExportDialog';
 export { PhaseTimeline } from './PhaseTimeline';
 export { LogStream } from './LogStream';
+export { FindingsTable } from './FindingsTable';

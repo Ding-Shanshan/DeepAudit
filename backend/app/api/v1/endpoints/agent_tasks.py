@@ -2397,7 +2397,8 @@ async def update_finding_status(
     VALID_FINDING_STATUSES = {
         FindingStatus.NEW, FindingStatus.ANALYZING, FindingStatus.VERIFIED,
         FindingStatus.FALSE_POSITIVE, FindingStatus.NEEDS_REVIEW,
-        FindingStatus.FIXED, FindingStatus.WONT_FIX, FindingStatus.DUPLICATE,
+        FindingStatus.FIXED, FindingStatus.NOT_FIXED, FindingStatus.WONT_FIX,
+        FindingStatus.DUPLICATE, FindingStatus.SUSPICIOUS,
     }
     if status not in VALID_FINDING_STATUSES:
         raise HTTPException(status_code=400, detail=f"无效的状态: {status}")
