@@ -36,11 +36,18 @@ def test_pe_detects_system_import():
 
 
 @pytest.mark.skipif(not (FIXTURES / "libssl-fake-1.0.0.so").exists(), reason="fixture missing")
-def test_string_extraction_finds_openssl_string():
+def test_analyzer_handles_libssl_fixture_and_extracts_strings():
+    """The libssl fixture is non-parseable as ELF in some environments (it's a
+    synthesized byte fixture), but contains an AKIA secret. We assert the
+    analyzer returns a list (no crash) AND surfaces the AKIA secret via the
+    string-extraction path."""
     a = BinaryAnalyzer()
     findings = a.analyze(FIXTURES / "libssl-fake-1.0.0.so", {})
-    # No secret-pattern hit expected here, just ensure analyze() doesn't crash on a shared object.
     assert isinstance(findings, list)
+    rules = {f.rule_id for f in findings}
+    assert "compiled.binary.secret.aws_access_key" in rules, (
+        f"expected AKIA secret to be detected, got rules: {rules}"
+    )
 
 
 def test_analyze_unparseable_file_produces_warning_not_exception(tmp_path: Path):

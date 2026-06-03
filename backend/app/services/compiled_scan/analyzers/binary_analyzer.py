@@ -39,14 +39,12 @@ class BinaryAnalyzer(CompiledAnalyzer):
 
         # 1. Symbol extraction (format-specific). Failures fall through to string scan.
         symbols: set[str] = set()
-        parse_failed = False
         try:
             if file_path.suffix.lower() in {".elf", ".so"}:
                 symbols = self._elf_symbols(file_path)
             elif file_path.suffix.lower() in {".exe", ".dll"}:
                 symbols = self._pe_symbols(file_path)
         except Exception as exc:   # noqa: BLE001 — analyzers must never raise
-            parse_failed = True
             findings.append(
                 Finding(
                     file_path=rel,
@@ -96,10 +94,6 @@ class BinaryAnalyzer(CompiledAnalyzer):
                     )
                     break   # one hit per rule per file is enough
 
-        if parse_failed:
-            # No symbol-based hits possible; string-based hits below are still useful.
-            pass
-
         return findings
 
     # ----- helpers ---------------------------------------------------------
@@ -132,10 +126,7 @@ class BinaryAnalyzer(CompiledAnalyzer):
             for entry in getattr(pe, "DIRECTORY_ENTRY_IMPORT", []) or []:
                 for imp in entry.imports:
                     if imp.name:
-                        try:
-                            out.add(imp.name.decode("ascii", errors="ignore"))
-                        except Exception:
-                            continue
+                        out.add(imp.name.decode("ascii", errors="ignore"))
         finally:
             pe.close()
         return out
