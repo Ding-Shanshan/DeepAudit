@@ -577,3 +577,120 @@ async def scan_repo_task(task_id: str, db_session_factory, user_config: dict = N
             task.completed_at = datetime.now(timezone.utc)
             await db.commit()
             task_control.cleanup_task(task_id)
+
+
+# ============ IaC 扫描入口 ============
+
+IAC_FILE_GLOBS = [
+    "**/Dockerfile",
+    "**/Dockerfile.*",
+    "**/*.dockerfile",
+    "**/docker-compose*.yml",
+    "**/docker-compose*.yaml",
+    "**/compose.yml",
+    "**/compose.yaml",
+    "**/.github/workflows/*.yml",
+    "**/.github/workflows/*.yaml",
+]
+
+
+def _collect_iac_files(workspace: Path) -> list[dict[str, Any]]:
+    """收集 IaC 文件，返回 run_semgrep_scan 所需 source_files 结构。"""
+    seen: set[Path] = set()
+    files: list[dict[str, Any]] = []
+    for pattern in IAC_FILE_GLOBS:
+        for abs_path in workspace.glob(pattern):
+            if not abs_path.is_file() or abs_path in seen:
+                continue
+            seen.add(abs_path)
+            rel = abs_path.relative_to(workspace).as_posix()
+            files.append({
+                "path": rel,
+                "absolute_path": str(abs_path),
+                "language": "yaml" if abs_path.suffix in {".yml", ".yaml"} else "generic",
+            })
+    return files
+
+
+async def scan_iac_task(task_id: str, db_session_factory, user_config: Optional[Dict[str, Any]] = None):
+    """IaC 扫描任务入口：克隆仓库 → 收集 IaC 文件 → 跑 IaC Semgrep 规则 → 落 Issue。"""
+    from app.services.quick_scan import run_semgrep_scan
+
+    iac_rules_path = Path(__file__).resolve().parents[3] / "rules" / "semgrep" / "iac-rules.yml"
+
+    # 1) Mark running
+    async with db_session_factory() as db:
+        task = await db.get(AuditTask, task_id)
+        if not task:
+            print(f"❌ IaC 任务 {task_id} 不存在")
+            return
+        task.status = "running"
+        task.started_at = datetime.now(timezone.utc)
+        await db.commit()
+
+    workspace_dir: Optional[str] = None
+    try:
+        # 2) Load project info
+        async with db_session_factory() as db:
+            task = await db.get(AuditTask, task_id)
+            project = await db.get(Project, task.project_id)
+            branch = task.branch_name or project.default_branch or "main"
+
+        # 3) Materialize workspace (clone/checkout/zip-extract handled inside)
+        workspace_dir = await materialize_repository_workspace(
+            project=project,
+            branch=branch,
+            user_config=user_config,
+        )
+        workspace_path = Path(workspace_dir)
+
+        # 4) Collect IaC files
+        iac_files = _collect_iac_files(workspace_path)
+        print(f"📦 IaC 扫描发现 {len(iac_files)} 个文件")
+
+        # 5) Run Semgrep with IaC ruleset
+        findings = []
+        if iac_files:
+            findings = run_semgrep_scan(
+                workspace_dir=workspace_path,
+                source_files=iac_files,
+                rules_file=iac_rules_path,
+            )
+
+        # 6) Persist issues
+        async with db_session_factory() as db:
+            task = await db.get(AuditTask, task_id)
+            for f in findings:
+                issue = AuditIssue(
+                    task_id=task.id,
+                    file_path=f["file_path"],
+                    line_number=f.get("line_number"),
+                    column_number=f.get("column_number"),
+                    issue_type="iac",
+                    severity=f.get("severity", "medium"),
+                    title=f.get("title"),
+                    message=f.get("title"),
+                    description=f.get("description"),
+                    suggestion=f.get("suggestion"),
+                    code_snippet=f.get("code_snippet"),
+                )
+                db.add(issue)
+            task.total_files = len(iac_files)
+            task.scanned_files = len(iac_files)
+            task.issues_count = len(findings)
+            task.status = "completed"
+            task.completed_at = datetime.now(timezone.utc)
+            await db.commit()
+        print(f"✅ IaC 任务 {task_id} 完成，共 {len(findings)} 条 issue")
+
+    except Exception as exc:
+        print(f"❌ IaC 任务 {task_id} 失败: {exc}")
+        async with db_session_factory() as db:
+            task = await db.get(AuditTask, task_id)
+            if task:
+                task.status = "failed"
+                task.completed_at = datetime.now(timezone.utc)
+                await db.commit()
+    finally:
+        if workspace_dir and Path(workspace_dir).exists():
+            shutil.rmtree(workspace_dir, ignore_errors=True)
