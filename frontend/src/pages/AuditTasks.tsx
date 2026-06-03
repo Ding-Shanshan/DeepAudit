@@ -27,17 +27,23 @@ import TerminalProgressDialog from "@/components/audit/TerminalProgressDialog";
 import { calculateTaskProgress } from "@/shared/utils/utils";
 import { getAgentTasks, cancelAgentTask, type AgentTask } from "@/shared/api/agentTasks";
 import CreateAgentTaskDialog from "@/components/agent/CreateAgentTaskDialog";
+import CreateIacTaskDialog from "@/components/audit/CreateIacTaskDialog";
 
 // Zombie task detection config
 const ZOMBIE_TIMEOUT = 180000; // 3 minutes without progress is potentially stuck
 
 // 任务类型标签
-type TaskTab = "regular" | "agent";
+type TaskTab = "regular" | "agent" | "iac";
 
 export default function AuditTasks() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const activeTab: TaskTab = searchParams.get("tab") === "agent" ? "agent" : "regular";
+  const activeTab: TaskTab = (() => {
+    const t = searchParams.get("tab");
+    if (t === "agent") return "agent";
+    if (t === "iac") return "iac";
+    return "regular";
+  })();
 
   // 普通任务状态
   const [tasks, setTasks] = useState<AuditTask[]>([]);
@@ -55,6 +61,7 @@ export default function AuditTasks() {
   const [agentLoading, setAgentLoading] = useState(true);
   const [cancellingAgentTaskId, setCancellingAgentTaskId] = useState<string | null>(null);
   const [showCreateAgentDialog, setShowCreateAgentDialog] = useState(false);
+  const [iacDialogOpen, setIacDialogOpen] = useState(false);
 
   // Zombie task detection: track progress and time for each task
   const taskProgressRef = useRef<Map<string, { progress: number; time: number }>>(new Map());
@@ -248,7 +255,7 @@ export default function AuditTasks() {
     return matchesSearch && matchesStatus;
   });
 
-  if ((activeTab === "regular" && loading) || (activeTab === "agent" && agentLoading)) {
+  if ((activeTab === "regular" && loading) || (activeTab === "agent" && agentLoading) || (activeTab === "iac" && loading)) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
         <div className="text-center space-y-4">
@@ -448,6 +455,67 @@ export default function AuditTasks() {
         </div>
       )}
 
+      {/* IaC Task List */}
+      {activeTab === "iac" && (
+        <div className="cyber-card p-0 relative z-10">
+          <div className="p-4 flex items-center gap-3 border-b border-border flex-wrap">
+            <h2 className="text-sm font-semibold">IaC 扫描任务</h2>
+            <div className="ml-auto flex gap-2">
+              <Button className="cyber-btn-primary h-8" onClick={() => setIacDialogOpen(true)}>
+                <Plus className="w-4 h-4 mr-2" />
+                新建 IaC 扫描
+              </Button>
+            </div>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-border text-muted-foreground">
+                  <th className="text-left py-2 px-6 font-medium">项目</th>
+                  <th className="text-left py-2 px-3 font-medium">分支</th>
+                  <th className="text-left py-2 px-3 font-medium">状态</th>
+                  <th className="text-left py-2 px-3 font-medium">问题数</th>
+                  <th className="text-left py-2 px-3 font-medium">创建时间</th>
+                  <th className="text-left py-2 px-3 font-medium">操作</th>
+                </tr>
+              </thead>
+              <tbody>
+                {tasks.filter((t) => (t.task_type as string) === "iac_scan").length === 0 ? (
+                  <tr>
+                    <td colSpan={6} className="py-8 text-center text-muted-foreground">
+                      暂无 IaC 扫描任务
+                    </td>
+                  </tr>
+                ) : (
+                  tasks
+                    .filter((t) => (t.task_type as string) === "iac_scan")
+                    .map((t) => (
+                      <tr key={t.id} className="border-b border-border/50 hover:bg-muted/50 transition-colors">
+                        <td className="py-2.5 px-6">
+                          <span className="font-medium text-foreground">{t.project?.name || '未知项目'}</span>
+                        </td>
+                        <td className="py-2.5 px-3 text-muted-foreground">{t.branch_name || "-"}</td>
+                        <td className="py-2.5 px-3">{getStatusBadge(t.status)}</td>
+                        <td className="py-2.5 px-3">
+                          <span className="font-bold text-warning">{t.issues_count ?? 0}</span>
+                        </td>
+                        <td className="py-2.5 px-3 text-muted-foreground">{t.created_at}</td>
+                        <td className="py-2.5 px-3">
+                          <Link to={`/tasks/${t.id}`}>
+                            <Button variant="ghost" size="icon" className="cyber-btn-ghost h-7 w-7" title="查看详情">
+                              <Eye className="w-3.5 h-3.5" />
+                            </Button>
+                          </Link>
+                        </td>
+                      </tr>
+                    ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
       {/* Create Task Dialog */}
       <CreateTaskDialog
         open={showCreateDialog}
@@ -460,6 +528,13 @@ export default function AuditTasks() {
       <CreateAgentTaskDialog
         open={showCreateAgentDialog}
         onOpenChange={setShowCreateAgentDialog}
+      />
+
+      {/* Create IaC Task Dialog */}
+      <CreateIacTaskDialog
+        open={iacDialogOpen}
+        onOpenChange={setIacDialogOpen}
+        onCreated={() => loadTasks()}
       />
 
       {/* Terminal Progress Dialog for Fast Scan */}
