@@ -24,7 +24,10 @@ export default defineConfig({
     rollupOptions: {
       output: {
         manualChunks: {
-          vendor: ['react', 'react-dom', 'react-router-dom'],
+          // 注意：reactflow 必须和 react 在同一个 chunk，否则它内部的
+          // useContext 取到的 dispatcher 是 null，运行时抛
+          // "Cannot read properties of null (reading 'useContext')"
+          vendor: ['react', 'react-dom', 'react-router-dom', 'reactflow'],
           ui: [
             '@radix-ui/react-dialog',
             '@radix-ui/react-select',
@@ -90,6 +93,7 @@ export default defineConfig({
       'react',
       'react-dom',
       'react-router-dom',
+      'reactflow',
       '@google/generative-ai',
       'recharts',
       'sonner'

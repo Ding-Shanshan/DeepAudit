@@ -11,7 +11,7 @@ import os
 import logging
 from typing import Dict, List, Any, Optional
 from pathlib import Path
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, asdict, is_dataclass
 
 from .parser import TreeSitterParser
 from .extractors import (
@@ -90,20 +90,54 @@ class CodeAnalysisService:
     """
 
     # 支持的语言及其文件扩展名
+    # 注意：实际可解析的语言由 TreeSitterParser.LANGUAGE_MAP 决定（由 tree-sitter-language-pack 加载）。
+    # 这里列出所有"候选语言"。若某语言 tree-sitter 没加载，对应文件会在 parse_file() 处优雅返回 None。
     LANGUAGE_EXTENSIONS = {
+        # Java / JVM
         '.java': 'java',
+        '.kt': 'kotlin',
+        '.kts': 'kotlin',
+        '.scala': 'scala',
+        '.groovy': 'groovy',
+        # C / C++ / Obj-C
         '.c': 'c',
         '.h': 'c',
         '.cpp': 'cpp',
         '.hpp': 'cpp',
         '.cc': 'cpp',
         '.cxx': 'cpp',
+        '.hh': 'cpp',
+        '.hxx': 'cpp',
+        '.m': 'objc',
+        '.mm': 'objc',
+        # JS / TS
         '.js': 'javascript',
         '.jsx': 'javascript',
         '.mjs': 'javascript',
         '.cjs': 'javascript',
         '.ts': 'typescript',
-        '.tsx': 'typescript',
+        '.tsx': 'tsx',
+        '.mts': 'typescript',
+        '.cts': 'typescript',
+        # Python
+        '.py': 'python',
+        '.pyi': 'python',
+        '.pyw': 'python',
+        # Go
+        '.go': 'go',
+        # PHP
+        '.php': 'php',
+        '.phtml': 'php',
+        # Ruby
+        '.rb': 'ruby',
+        # C#
+        '.cs': 'csharp',
+        # Rust
+        '.rs': 'rust',
+        # Swift
+        '.swift': 'swift',
+        # Lua
+        '.lua': 'lua',
     }
 
     # 默认排除模式
@@ -394,24 +428,27 @@ class CodeAnalysisService:
         # 提取 API 端点
         if extract_api:
             endpoints = self._api_endpoint_extractor.extract(tree, source_code, rel_path, language)
-            result["api_endpoints"] = endpoints
+            # 将 dataclass 对象转换为字典，确保 JSON 序列化正常
+            result["api_endpoints"] = [asdict(ep) if is_dataclass(ep) else ep for ep in endpoints]
 
         # 提取调用图
         if extract_calls:
             calls = self._call_graph_extractor.extract(tree, source_code, rel_path, language)
-            result["call_graph"] = calls
+            # 将 dataclass 对象转换为字典
+            result["call_graph"] = [asdict(call) if is_dataclass(call) else call for call in calls]
 
         # 提取文件依赖
         if extract_dependencies:
             imports = self._file_dependency_extractor.extract(tree, source_code, rel_path, language)
+            # 将 dataclass 对象转换为字典
             result["file_dependencies"] = [
-                FileDependency(
+                asdict(FileDependency(
                     source_file=rel_path,
                     target_file=imp.module_name,
                     dependency_type=imp.import_type,
                     line_number=imp.line_number,
                     is_external=imp.is_external,
-                )
+                ))
                 for imp in imports
             ]
 
@@ -460,26 +497,38 @@ class CodeAnalysisService:
         """
         files = []
         target_set = set(target_files) if target_files else None
+        # 诊断计数器
+        seen_files = 0
+        skipped_by_dir_exclude = 0
+        skipped_by_file_exclude = 0
+        skipped_unsupported = 0
+        skipped_not_target = 0
 
         try:
             for root, dirs, filenames in os.walk(self.project_root):
                 # 过滤排除的目录
+                before = len(dirs)
                 dirs[:] = [d for d in dirs if not self._should_exclude_dir(d, exclude_patterns)]
+                skipped_by_dir_exclude += (before - len(dirs))
 
                 for filename in filenames:
+                    seen_files += 1
                     file_path = os.path.join(root, filename)
                     rel_path = os.path.relpath(file_path, self.project_root)
 
                     # 检查排除模式
                     if self._should_exclude_file(rel_path, exclude_patterns):
+                        skipped_by_file_exclude += 1
                         continue
 
                     # 检查是否是目标语言文件
                     if not self.detect_language(file_path):
+                        skipped_unsupported += 1
                         continue
 
                     # 如果指定了目标文件，只处理目标文件
                     if target_set and rel_path not in target_set:
+                        skipped_not_target += 1
                         continue
 
                     files.append(file_path)
@@ -487,27 +536,90 @@ class CodeAnalysisService:
         except Exception as e:
             logger.error(f"Error scanning files: {e}")
 
+        # 诊断输出：帮助排查 "Found 0 files" 类问题
+        logger.info(
+            f"[scan_files] root={self.project_root} "
+            f"seen={seen_files} kept={len(files)} "
+            f"skip_dir={skipped_by_dir_exclude} skip_file_exclude={skipped_by_file_exclude} "
+            f"skip_unsupported_ext={skipped_unsupported} skip_not_target={skipped_not_target} "
+            f"target_files_filter={'on' if target_set else 'off'}"
+        )
+        if len(files) == 0 and seen_files > 0:
+            logger.warning(
+                f"[scan_files] No files matched out of {seen_files} seen. "
+                f"Possible causes: all files excluded by patterns ({skipped_by_file_exclude}), "
+                f"unsupported extensions ({skipped_unsupported}), "
+                f"or target_files filter mismatched ({skipped_not_target})."
+            )
+
         return files
 
     def _should_exclude_dir(self, dir_name: str, exclude_patterns: List[str]) -> bool:
-        """检查目录是否应该被排除"""
-        for pattern in exclude_patterns:
-            if pattern.endswith('/') and pattern[:-1] == dir_name:
-                return True
-            if dir_name in pattern:
+        """检查目录是否应该被排除
+
+        匹配规则（按精确度优先）：
+        - pattern 以 `/` 结尾且去掉 `/` 后与 dir_name 相等：精确匹配（如 'node_modules/' 排除 'node_modules'）
+        - pattern 中不含 `/`，且与 dir_name 相等：精确匹配（如 'node_modules'）
+        - 含 glob 通配符则用 fnmatch
+        - 否则一律不匹配（避免子串误杀，如旧逻辑 `'node' in 'node_modules/'` 会把 'node' 目录也排除）
+        """
+        import fnmatch
+        for raw_pattern in exclude_patterns:
+            pattern = (raw_pattern or "").strip()
+            if not pattern:
+                continue
+            # 精确目录匹配
+            if pattern.endswith('/'):
+                if pattern[:-1] == dir_name:
+                    return True
+                continue
+            # glob 通配
+            if any(ch in pattern for ch in '*?['):
+                if fnmatch.fnmatch(dir_name, pattern):
+                    return True
+                continue
+            # 不含 / 的纯名字，按精确匹配
+            if '/' not in pattern and pattern == dir_name:
                 return True
         return False
 
     def _should_exclude_file(self, rel_path: str, exclude_patterns: List[str]) -> bool:
-        """检查文件是否应该被排除"""
-        for pattern in exclude_patterns:
+        """检查文件是否应该被排除
+
+        匹配规则：
+        - pattern 以 `.` 开头（如 '.min.js'）：按文件名后缀匹配
+        - pattern 以 `/` 结尾（如 'dist/'）：路径中包含该目录段则匹配
+        - pattern 含通配符：fnmatch 全路径或 basename
+        - 否则按"路径段精确匹配"（如 pattern='vendor' 匹配 'a/vendor/b.js'）
+          —— 不再用 `if pattern in rel_path` 这种子串匹配（避免 'targeting.ts' 命中 'target'）。
+        """
+        import fnmatch
+        # 规范化分隔符
+        norm_path = rel_path.replace('\\', '/')
+        segments = set(norm_path.split('/'))
+        basename = norm_path.rsplit('/', 1)[-1]
+
+        for raw_pattern in exclude_patterns:
+            pattern = (raw_pattern or "").strip()
+            if not pattern:
+                continue
+            # 后缀 / 隐藏文件型
             if pattern.startswith('.'):
-                if rel_path.endswith(pattern) or f"/{pattern}" in f"/{rel_path}":
+                if basename.endswith(pattern) or pattern in segments:
                     return True
+                continue
+            # 目录段匹配
             if pattern.endswith('/'):
-                if f"/{pattern}" in f"/{rel_path}/":
+                if pattern[:-1] in segments:
                     return True
-            if pattern in rel_path:
+                continue
+            # glob
+            if any(ch in pattern for ch in '*?['):
+                if fnmatch.fnmatch(norm_path, pattern) or fnmatch.fnmatch(basename, pattern):
+                    return True
+                continue
+            # 路径段精确匹配（兼容用户传入裸目录名）
+            if pattern in segments:
                 return True
         return False
 

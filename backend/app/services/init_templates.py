@@ -6,6 +6,7 @@ import json
 import logging
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
+from sqlalchemy.orm import selectinload
 
 from app.models.prompt_template import PromptTemplate
 from app.models.audit_rule import AuditRuleSet, AuditRule

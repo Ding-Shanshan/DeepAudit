@@ -1,49 +1,82 @@
 // frontend/src/components/code-analysis/FileDepsTree.tsx
+//
+// 文件依赖视图：按源文件分组的依赖列表（右侧 reactflow 图已隐藏）。
 
-import { useState } from 'react';
-import { FileDependency } from './types';
-import { ChevronDown, ChevronRight, File } from 'lucide-react';
+import { useMemo, useState } from 'react';
+import { ChevronDown, ChevronRight, File, FileCode } from 'lucide-react';
+
+import { toFileDepsView } from './adapters';
 
 interface Props {
-  data: FileDependency[];
+  data: unknown[] | unknown;
 }
 
 export function FileDepsTree({ data }: Props) {
-  if (!data || data.length === 0) {
-    return <div className="text-muted-foreground text-xs">暂无数据</div>;
+  const view = useMemo(() => toFileDepsView(data), [data]);
+  const [openFiles, setOpenFiles] = useState<Set<string>>(new Set());
+
+  if (view.edges.length === 0) {
+    return <div className="text-muted-foreground text-xs py-4 px-2">暂无依赖关系</div>;
   }
 
-  const [expanded, setExpanded] = useState<Set<number>>(new Set());
+  const toggle = (file: string) => {
+    setOpenFiles((prev) => {
+      const next = new Set(prev);
+      next.has(file) ? next.delete(file) : next.add(file);
+      return next;
+    });
+  };
 
   return (
-    <div className="space-y-1">
-      {data.map((item, idx) => (
-        <div key={idx}>
-          <button
-            className="w-full flex items-center gap-2 text-xs p-1 hover:bg-muted/30 rounded"
-            onClick={() => setExpanded(prev => {
-              const newSet = new Set(prev);
-              newSet.has(idx) ? newSet.delete(idx) : newSet.add(idx);
-              return newSet;
-            })}
-          >
-            {expanded.has(idx) ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
-            <File className="w-3 h-3 text-primary" />
-            <span className="truncate">{item.file}</span>
-            <span className="text-muted-foreground ml-auto">{item.includes?.length || 0}</span>
-          </button>
-          {expanded.has(idx) && item.includes && (
-            <div className="ml-4 mt-1 space-y-0.5">
-              {item.includes.map((inc, i) => (
-                <div key={i} className="flex items-center gap-1 text-xs text-muted-foreground">
-                  <span className="truncate">{inc.target}</span>
-                  <span className="text-xs">:{inc.line}</span>
+    <div className="h-[420px]">
+      {/* 按源文件分组（占满整宽，图视图已隐藏） */}
+      <div className="h-full overflow-auto border border-border rounded p-1">
+        {view.fileGroups.map((g) => {
+          const open = openFiles.has(g.file);
+          const externalCount = g.includes.filter((i) => i.external).length;
+          return (
+            <div key={g.file} className="mb-1">
+              <button
+                className="w-full flex items-center gap-1 text-xs px-1.5 py-1 hover:bg-muted/40 rounded font-medium"
+                onClick={() => toggle(g.file)}
+              >
+                {open ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
+                <FileCode className="w-3 h-3 text-primary" />
+                <span className="truncate flex-1 text-left">{g.file}</span>
+                <span
+                  className="text-[10px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground"
+                  title={`${g.includes.length} 个依赖，其中 ${externalCount} 个外部`}
+                >
+                  {g.includes.length}
+                </span>
+              </button>
+              {open && (
+                <div className="ml-4 mt-0.5 space-y-0.5">
+                  {g.includes.map((inc) => (
+                    <div
+                      key={inc.id}
+                      className="flex items-center gap-1 text-[11px] px-1 py-0.5 rounded hover:bg-muted/30"
+                    >
+                      <File className="w-3 h-3 shrink-0 text-muted-foreground" />
+                      <span className="truncate flex-1">{inc.target}</span>
+                      <span
+                        className={`text-[10px] shrink-0 px-1 rounded ${
+                          inc.external
+                            ? 'bg-orange-500/10 text-orange-600 dark:text-orange-400'
+                            : 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
+                        }`}
+                      >
+                        {inc.type}
+                      </span>
+                      <span className="text-muted-foreground text-[10px] shrink-0">:{inc.line}</span>
+                    </div>
+                  ))}
                 </div>
-              ))}
+              )}
             </div>
-          )}
-        </div>
-      ))}
+          );
+        })}
+      </div>
     </div>
   );
 }

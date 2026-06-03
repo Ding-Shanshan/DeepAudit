@@ -55,7 +55,8 @@ class ControlFlowExtractor(BaseExtractor):
 
     # 各语言的控制流节点类型
     BRANCH_TYPES = {
-        'java': {'if_statement', 'switch_expression'},
+        # Java 普通 switch 是 switch_statement；JDK 14+ switch 表达式才是 switch_expression
+        'java': {'if_statement', 'switch_statement', 'switch_expression'},
         'c': {'if_statement', 'switch_statement'},
         'cpp': {'if_statement', 'switch_statement'},
         'javascript': {'if_statement', 'switch_statement'},

@@ -47,18 +47,19 @@ langgraph>=0.0.40
 chromadb>=0.4.22
 
 # ============ Code Parsing ============
-# tree-sitter-languages 1.10.x 与 tree-sitter 0.22+ 不兼容
-tree-sitter>=0.21.0,<0.22.0
-tree-sitter-languages>=1.10.0
+# 使用 tree-sitter 0.23+ 和 tree-sitter-language-pack (推荐方案)
+tree-sitter>=0.23.0
+tree-sitter-language-pack>=0.4.0
 pygments>=2.17.0
 
-# ============ Tree-sitter Language Bindings ============
-# Individual language packages for code analysis service
-tree-sitter-java>=0.21.0
-tree-sitter-c>=0.21.0
-tree-sitter-cpp>=0.21.0
-tree-sitter-javascript>=0.21.0
-tree-sitter-typescript>=0.21.0
+# ============ Tree-sitter Language Bindings (备用) ============
+# 如果 tree-sitter-language-pack 安装失败，可以使用单独的语言包
+# 注意：tree-sitter 0.23+ 需要使用新版本语言包 (>=0.21)
+# tree-sitter-java>=0.21.0
+# tree-sitter-c>=0.21.0
+# tree-sitter-cpp>=0.21.0
+# tree-sitter-javascript>=0.21.0
+# tree-sitter-typescript>=0.21.0
 
 # ============ Docker Sandbox ============
 docker>=7.0.0

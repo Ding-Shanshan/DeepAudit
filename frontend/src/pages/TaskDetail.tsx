@@ -284,12 +284,17 @@ export default function TaskDetail() {
               clearInterval(intervalId);
             }
           }
-        } catch (error) {
+        } catch (error: unknown) {
           console.error('静默更新任务失败:', error);
-          toast.error("获取任务状态失败，请检查网络连接", {
-            id: 'network-error',
-            duration: 5000,
-          });
+          // 区分临时性错误 vs 严重错误，临时性错误不弹窗
+          const isTransient = typeof error === 'object' && error !== null && 'isTransient' in error;
+          if (!isTransient) {
+            toast.error("获取任务状态失败，请检查网络连接", {
+              id: 'network-error',
+              duration: 5000,
+            });
+          }
+          // 临时性错误静默重试，不中断轮询
         }
       }, 3000);
 

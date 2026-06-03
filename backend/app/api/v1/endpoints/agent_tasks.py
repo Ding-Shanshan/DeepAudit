@@ -515,6 +515,10 @@ async def _execute_agent_task(task_id: str):
                 code_analysis_results = analysis_service.analyze(
                     exclude_patterns=task.exclude_patterns,
                     target_files=task.target_files,
+                    extract_api=True,
+                    extract_calls=True,
+                    extract_dependencies=True,
+                    extract_control_flow=True,
                 )
                 task.code_analysis_results = code_analysis_results
                 await db.commit()
@@ -523,7 +527,11 @@ async def _execute_agent_task(task_id: str):
                 api_count = len(code_analysis_results.get("api_endpoints", []))
                 call_count = len(code_analysis_results.get("call_graph", []))
                 dep_count = len(code_analysis_results.get("file_dependencies", []))
-                await event_emitter.emit_info(f"✅ 代码分析完成: {api_count} API端点, {call_count} 调用关系, {dep_count} 文件依赖")
+                cf_count = len(code_analysis_results.get("control_flow", {}) or {})
+                by_lang = code_analysis_results["statistics"].get("by_language", {})
+                await event_emitter.emit_info(
+                    f"✅ 代码分析完成: {api_count} API端点, {call_count} 调用关系, {dep_count} 文件依赖, {cf_count} 文件控制流 | 按语言: {by_lang}"
+                )
             except Exception as e:
                 logger.warning(f"Code analysis failed: {e}")
                 await event_emitter.emit_warning(f"⚠️ 代码分析失败: {e}")

@@ -20,32 +20,13 @@ except ImportError:
     Parser = None
     logger.warning("tree-sitter not installed, AST parsing will be disabled")
 
-# 语言包导入
-_LANGUAGE_MODULES = {}
-
-def _load_language_modules():
-    """延迟加载语言模块"""
-    global _LANGUAGE_MODULES
-
-    if _LANGUAGE_MODULES:
-        return _LANGUAGE_MODULES
-
-    language_imports = [
-        ("java", "tree_sitter_java"),
-        ("c", "tree_sitter_c"),
-        ("cpp", "tree_sitter_cpp"),
-        ("javascript", "tree_sitter_javascript"),
-        ("typescript", "tree_sitter_typescript"),
-    ]
-
-    for lang_name, module_name in language_imports:
-        try:
-            module = __import__(module_name)
-            _LANGUAGE_MODULES[lang_name] = module
-        except ImportError:
-            logger.debug(f"Language module {module_name} not available")
-
-    return _LANGUAGE_MODULES
+# 尝试导入 tree_sitter_language_pack (推荐方式)
+try:
+    import tree_sitter_language_pack
+    LANGUAGE_PACK_AVAILABLE = True
+except ImportError:
+    LANGUAGE_PACK_AVAILABLE = False
+    logger.debug("tree_sitter_language_pack not available, trying individual packages")
 
 
 class TreeSitterParser:
@@ -53,7 +34,7 @@ class TreeSitterParser:
     Tree-sitter 统一解析器
 
     提供统一的 AST 解析接口，支持多种编程语言。
-    使用延迟加载模式，按需加载语言模块。
+    优先使用 tree_sitter_language_pack，回退到单独的语言包。
     """
 
     # 语言映射: 语言名 -> Language 对象
@@ -65,27 +46,72 @@ class TreeSitterParser:
     # 支持的语言列表
     SUPPORTED_LANGUAGES = {
         "java",
+        "kotlin",
+        "scala",
+        "groovy",
         "c",
         "cpp",
+        "objc",
         "javascript",
         "typescript",
+        "tsx",
+        "python",
+        "go",
+        "php",
+        "ruby",
+        "csharp",
+        "rust",
+        "swift",
+        "lua",
     }
 
     # 文件扩展名映射
     EXTENSION_MAP = {
+        # Java / JVM
         ".java": "java",
+        ".kt": "kotlin",
+        ".kts": "kotlin",
+        ".scala": "scala",
+        ".groovy": "groovy",
+        # C / C++ / Obj-C
         ".c": "c",
         ".h": "c",
         ".cpp": "cpp",
         ".hpp": "cpp",
         ".cc": "cpp",
         ".cxx": "cpp",
+        ".hh": "cpp",
+        ".hxx": "cpp",
+        ".m": "objc",
+        ".mm": "objc",
+        # JS / TS
         ".js": "javascript",
         ".jsx": "javascript",
         ".mjs": "javascript",
         ".cjs": "javascript",
         ".ts": "typescript",
-        ".tsx": "typescript",
+        ".tsx": "tsx",
+        ".mts": "typescript",
+        ".cts": "typescript",
+        # Python
+        ".py": "python",
+        ".pyi": "python",
+        ".pyw": "python",
+        # Go
+        ".go": "go",
+        # PHP
+        ".php": "php",
+        ".phtml": "php",
+        # Ruby
+        ".rb": "ruby",
+        # C#
+        ".cs": "csharp",
+        # Rust
+        ".rs": "rust",
+        # Swift
+        ".swift": "swift",
+        # Lua
+        ".lua": "lua",
     }
 
     def __init__(self):
@@ -103,23 +129,43 @@ class TreeSitterParser:
             self._initialized = True
             return
 
-        modules = _load_language_modules()
+        # 方式1: 使用 tree_sitter_language_pack (推荐)
+        if LANGUAGE_PACK_AVAILABLE:
+            for lang_name in self.SUPPORTED_LANGUAGES:
+                try:
+                    lang = tree_sitter_language_pack.get_language(lang_name)
+                    self.LANGUAGE_MAP[lang_name] = lang
+                    logger.debug(f"Loaded {lang_name} from language_pack")
+                except Exception as e:
+                    logger.debug(f"Failed to load {lang_name} from language_pack: {e}")
 
-        for lang_name, module in modules.items():
-            try:
-                # 获取语言对象
-                if hasattr(module, 'language'):
-                    lang_func = module.language
-                    if callable(lang_func):
-                        self.LANGUAGE_MAP[lang_name] = Language(lang_func())
-                    else:
-                        # 某些版本直接返回语言对象
-                        self.LANGUAGE_MAP[lang_name] = Language(lang_func)
-            except Exception as e:
-                logger.warning(f"Failed to initialize language {lang_name}: {e}")
+        # 方式2: 回退到单独的语言包
+        if not self.LANGUAGE_MAP:
+            self._load_individual_packages()
 
         self._initialized = True
         logger.info(f"Initialized tree-sitter with languages: {list(self.LANGUAGE_MAP.keys())}")
+
+    def _load_individual_packages(self):
+        """加载单独的语言包（回退方案）"""
+        language_imports = [
+            ("java", "tree_sitter_java", "language"),
+            ("c", "tree_sitter_c", "language"),
+            ("cpp", "tree_sitter_cpp", "language"),
+            ("javascript", "tree_sitter_javascript", "language"),
+            ("typescript", "tree_sitter_typescript", "language_typescript"),
+            ("tsx", "tree_sitter_typescript", "language_tsx"),
+        ]
+
+        for lang_name, module_name, attr_name in language_imports:
+            try:
+                module = __import__(module_name)
+                if hasattr(module, attr_name):
+                    lang_func = getattr(module, attr_name)
+                    self.LANGUAGE_MAP[lang_name] = Language(lang_func())
+                    logger.debug(f"Loaded {lang_name} from {module_name}")
+            except Exception as e:
+                logger.debug(f"Failed to load {lang_name}: {e}")
 
     def get_language(self, language: str) -> Optional[Any]:
         """

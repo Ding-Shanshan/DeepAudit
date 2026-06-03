@@ -1,13 +1,21 @@
 // frontend/src/components/code-analysis/CodeAnalysisPanel.tsx
 
-import { useState, useEffect } from 'react';
-import { ChevronDown, ChevronRight, Api, GitBranch, FileCode, Network } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
+import { ChevronDown, ChevronRight, FileCode, GitBranch, Globe, Network } from 'lucide-react';
+
 import { apiClient } from '@/shared/api/serverClient';
-import { CodeAnalysisResult } from './types';
+
 import { APIAssetsList } from './APIAssetsList';
 import { CallGraphTree } from './CallGraphTree';
-import { FileDepsTree } from './FileDepsTree';
 import { ControlFlowTree } from './ControlFlowTree';
+import { FileDepsTree } from './FileDepsTree';
+import {
+  toApiView,
+  toCallGraphView,
+  toControlFlowView,
+  toFileDepsView,
+} from './adapters';
+import type { CodeAnalysisResult } from './types';
 
 interface Props {
   taskId: string;
@@ -19,30 +27,24 @@ export function CodeAnalysisPanel({ taskId, taskType }: Props) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // 展开/折叠状态
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
 
   const toggleSection = (section: string) => {
-    setExpanded(prev => {
-      const newSet = new Set(prev);
-      if (newSet.has(section)) {
-        newSet.delete(section);
-      } else {
-        newSet.add(section);
-      }
-      return newSet;
+    setExpanded((prev) => {
+      const next = new Set(prev);
+      next.has(section) ? next.delete(section) : next.add(section);
+      return next;
     });
   };
 
-  // 获取分析数据
   useEffect(() => {
-    const endpoint = taskType === 'quick'
-      ? `/tasks/${taskId}/code-analysis`
-      : `/agent-tasks/${taskId}/code-analysis`;
+    const endpoint =
+      taskType === 'quick' ? `/tasks/${taskId}/code-analysis` : `/agent-tasks/${taskId}/code-analysis`;
 
-    apiClient.get(endpoint)
+    apiClient
+      .get(endpoint)
       .then((res) => {
-        setData(res.data || {});
+        setData((res.data as CodeAnalysisResult) || {});
         setLoading(false);
       })
       .catch((err) => {
@@ -52,15 +54,26 @@ export function CodeAnalysisPanel({ taskId, taskType }: Props) {
       });
   }, [taskId, taskType]);
 
+  // 计数用适配器的视图模型，避免后端字段错位导致计数为 0
+  const counts = useMemo(() => {
+    if (!data) return { api: 0, call: 0, deps: 0, cfg: 0 };
+    return {
+      api: toApiView(data.api_endpoints ?? []).length,
+      call: toCallGraphView(data.call_graph ?? []).edges.length,
+      deps: toFileDepsView(data.file_dependencies ?? []).edges.length,
+      cfg: toControlFlowView(data.control_flow ?? {}).files.length,
+    };
+  }, [data]);
+
   if (loading) return <div className="p-4 text-muted-foreground">加载中...</div>;
   if (error) return <div className="p-4 text-destructive">{error}</div>;
   if (!data) return <div className="p-4 text-muted-foreground">暂无数据</div>;
 
   const sections = [
-    { key: 'api', title: 'API接口资产', icon: Api, count: data.api_endpoints?.length || 0 },
-    { key: 'call', title: '函数调用图', icon: Network, count: data.call_graph?.length || 0 },
-    { key: 'deps', title: '文件包含关系', icon: FileCode, count: data.file_dependencies?.length || 0 },
-    { key: 'cfg', title: '函数控制流图', icon: GitBranch, count: data.control_flow?.length || 0 },
+    { key: 'api', title: 'API 接口资产', icon: Globe, count: counts.api },
+    { key: 'call', title: '函数调用图', icon: Network, count: counts.call },
+    { key: 'deps', title: '文件包含关系', icon: FileCode, count: counts.deps },
+    { key: 'cfg', title: '函数控制流图', icon: GitBranch, count: counts.cfg },
   ];
 
   return (
@@ -68,32 +81,39 @@ export function CodeAnalysisPanel({ taskId, taskType }: Props) {
       <h3 className="text-sm font-bold uppercase mb-3 text-foreground">代码结构分析</h3>
 
       <div className="space-y-2">
-        {sections.map((section) => (
-          <div key={section.key} className="border border-border rounded">
-            <button
-              className="w-full flex items-center justify-between p-2 text-sm hover:bg-muted/50"
-              onClick={() => toggleSection(section.key)}
-            >
-              <div className="flex items-center gap-2">
-                {expanded.has(section.key) ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
-                <section.icon className="w-4 h-4 text-primary" />
-                <span className="font-medium">{section.title}</span>
-              </div>
-              <span className="text-muted-foreground text-xs bg-muted px-2 py-0.5 rounded">
-                {section.count}
-              </span>
-            </button>
+        {sections.map((section) => {
+          const open = expanded.has(section.key);
+          return (
+            <div key={section.key} className="border border-border rounded">
+              <button
+                className="w-full flex items-center justify-between p-2 text-sm hover:bg-muted/50"
+                onClick={() => toggleSection(section.key)}
+              >
+                <div className="flex items-center gap-2">
+                  {open ? (
+                    <ChevronDown className="w-4 h-4" />
+                  ) : (
+                    <ChevronRight className="w-4 h-4" />
+                  )}
+                  <section.icon className="w-4 h-4 text-primary" />
+                  <span className="font-medium">{section.title}</span>
+                </div>
+                <span className="text-muted-foreground text-xs bg-muted px-2 py-0.5 rounded">
+                  {section.count}
+                </span>
+              </button>
 
-            {expanded.has(section.key) && (
-              <div className="p-2 border-t border-border max-h-64 overflow-auto">
-                {section.key === 'api' && <APIAssetsList data={data.api_endpoints || []} />}
-                {section.key === 'call' && <CallGraphTree data={data.call_graph || []} />}
-                {section.key === 'deps' && <FileDepsTree data={data.file_dependencies || []} />}
-                {section.key === 'cfg' && <ControlFlowTree data={data.control_flow || []} />}
-              </div>
-            )}
-          </div>
-        ))}
+              {open && (
+                <div className="p-2 border-t border-border">
+                  {section.key === 'api' && <APIAssetsList data={data.api_endpoints ?? []} />}
+                  {section.key === 'call' && <CallGraphTree data={data.call_graph ?? []} />}
+                  {section.key === 'deps' && <FileDepsTree data={data.file_dependencies ?? []} />}
+                  {section.key === 'cfg' && <ControlFlowTree data={data.control_flow ?? {}} />}
+                </div>
+              )}
+            </div>
+          );
+        })}
       </div>
     </div>
   );

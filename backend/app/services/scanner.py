@@ -443,13 +443,24 @@ async def scan_local_workspace(
             extract_api=True,
             extract_calls=True,
             extract_dependencies=True,
-            extract_control_flow=False,  # 快速审计暂不提取控制流
+            extract_control_flow=True,
         )
+
+        # 调试日志：检查分析结果
+        api_count = len(code_analysis_results.get('api_endpoints', []))
+        call_count = len(code_analysis_results.get('call_graph', []))
+        dep_count = len(code_analysis_results.get('file_dependencies', []))
+        cf_count = len(code_analysis_results.get('control_flow', {}) or {})
+        by_lang = code_analysis_results['statistics'].get('by_language', {})
+        print(f"📊 代码分析结果: API端点={api_count}, 调用图={call_count}, 依赖={dep_count}, 控制流文件={cf_count}, 按语言={by_lang}")
+
         task.code_analysis_results = code_analysis_results
         await db.commit()
         print(f"✅ 代码分析完成: 分析了 {code_analysis_results['statistics']['analyzed_files']} 个文件")
     except Exception as e:
         print(f"⚠️ 代码分析失败: {e}")
+        import traceback
+        traceback.print_exc()
         # 不影响主流程，继续执行扫描
 
     # Phase 1: 规则扫描（Semgrep + 正则）
