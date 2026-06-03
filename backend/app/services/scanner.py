@@ -410,6 +410,12 @@ async def scan_local_workspace(
     user_config: Optional[Dict[str, Any]] = None,
 ) -> None:
     scan_config = (user_config or {}).get("scan_config", {})
+
+    # --- compiled-artifact mode: skip source-scan pipeline entirely ---
+    if scan_config.get("scan_mode") == "compiled":
+        await _run_compiled_scan(task, db, workspace_dir, scan_config)
+        return
+
     exclude_patterns = scan_config.get("exclude_patterns", [])
     target_files = scan_config.get("file_paths", [])
     analysis_config = get_analysis_config(user_config)
@@ -694,3 +700,74 @@ async def scan_iac_task(task_id: str, db_session_factory, user_config: Optional[
     finally:
         if workspace_dir and Path(workspace_dir).exists():
             shutil.rmtree(workspace_dir, ignore_errors=True)
+
+
+async def _run_compiled_scan(
+    task: AuditTask,
+    db: AsyncSession,
+    workspace_dir: str,
+    scan_config: Dict[str, Any],
+) -> None:
+    """Compiled-artifact scan path. Mirrors the persistence shape of the
+    source-scan branch above (scanner.py:482-509) so the rest of the system
+    treats these findings identically."""
+    from app.services.compiled_scan.engine import CompiledScanEngine
+    from app.services.compiled_scan.collector import collect_compiled_artifacts
+
+    compiled_opts = scan_config.get("compiled_options", {}) or {}
+    options = {
+        "enable_sca": compiled_opts.get("enable_sca", True),
+        "max_binary_size_mb": compiled_opts.get("max_binary_size_mb", 200),
+        "exclude_patterns": scan_config.get("exclude_patterns", []) or [],
+    }
+
+    task.status = "running"
+    task.scanned_files = 0
+    await db.commit()
+
+    engine = CompiledScanEngine()
+    findings = engine.scan(workspace_dir, options)
+
+    for finding in findings:
+        db.add(
+            AuditIssue(
+                task_id=task.id,
+                file_path=finding["file_path"],
+                line_number=finding.get("line_number", 0),
+                column_number=finding.get("column_number"),
+                issue_type=finding.get("issue_type", "security"),
+                severity=finding.get("severity", "medium"),
+                title=finding.get("title"),
+                message=finding.get("description"),
+                description=finding.get("description"),
+                suggestion=finding.get("suggestion"),
+                code_snippet=finding.get("code_snippet"),
+                ai_explanation=json.dumps(
+                    {
+                        "review_status": "rule_hit",
+                        "tool": finding.get("tool"),
+                        "rule_id": finding.get("rule_id"),
+                    },
+                    ensure_ascii=False,
+                ),
+                source=finding.get("source"),
+                sink=finding.get("sink"),
+                status="not_fixed",
+            )
+        )
+
+    await db.flush()
+    await db.commit()
+
+    # Count artifacts as "files" for UI progress accounting.
+    artifacts = collect_compiled_artifacts(
+        workspace_dir,
+        exclude_patterns=options["exclude_patterns"],
+        max_size_mb=options["max_binary_size_mb"],
+    )
+    task.total_files = len(artifacts)
+    task.scanned_files = len(artifacts)
+    task.issues_count = len(findings)
+    task.status = "completed"
+    task.completed_at = datetime.now(timezone.utc)
+    await db.commit()

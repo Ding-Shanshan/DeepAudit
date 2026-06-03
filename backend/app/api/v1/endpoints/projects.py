@@ -1,4 +1,4 @@
-from typing import Any, List, Optional
+from typing import Any, Dict, List, Optional
 from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks, UploadFile, File
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
@@ -544,6 +544,9 @@ class ScanRequest(BaseModel):
     vulnerabilityWhitelist: Optional[List[str]] = None
     sanitizerFunctions: Optional[List[str]] = None
     task_type: Optional[str] = "repository"  # "repository" | "iac_scan"
+    # --- compiled-artifact mode ---
+    scan_mode: Optional[str] = "source"           # "source" | "compiled"
+    compiled_options: Optional[Dict[str, Any]] = None
 
 
 @router.post("/{id}/scan")
@@ -560,6 +563,12 @@ async def scan_project(
     project = await db.get(Project, id)
     if not project:
         raise HTTPException(status_code=404, detail="项目不存在")
+
+    if scan_request and scan_request.scan_mode == "compiled":
+        raise HTTPException(
+            status_code=400,
+            detail="编译后产物扫描仅支持通过压缩包上传方式，不支持 Git 仓库。"
+        )
 
     # 获取分支和排除模式
     branch_name = scan_request.branch_name if scan_request else None
@@ -631,6 +640,8 @@ async def scan_project(
             'functionWhitelist': scan_request.functionWhitelist or [],
             'vulnerabilityWhitelist': scan_request.vulnerabilityWhitelist or [],
             'sanitizerFunctions': scan_request.sanitizerFunctions or [],
+            'scan_mode': scan_request.scan_mode or 'source',
+            'compiled_options': scan_request.compiled_options or {},
         }
 
     # Trigger Background Task

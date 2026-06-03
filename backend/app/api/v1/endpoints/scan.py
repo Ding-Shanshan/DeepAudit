@@ -1,7 +1,7 @@
 from fastapi import APIRouter, UploadFile, File, Form, Depends, BackgroundTasks, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
-from typing import Any, List, Optional
+from typing import Any, Dict, List, Optional
 from pydantic import BaseModel
 from datetime import datetime, timezone
 from pathlib import Path
@@ -145,6 +145,8 @@ async def scan_zip(
             'functionWhitelist': parsed_scan_config.get('functionWhitelist', []),
             'vulnerabilityWhitelist': parsed_scan_config.get('vulnerabilityWhitelist', []),
             'sanitizerFunctions': parsed_scan_config.get('sanitizerFunctions', []),
+            'scan_mode': parsed_scan_config.get('scan_mode') or 'source',
+            'compiled_options': parsed_scan_config.get('compiled_options') or {},
         }
 
     # Trigger Background Task - 使用持久化存储的文件路径
@@ -163,6 +165,9 @@ class ScanRequest(BaseModel):
     functionWhitelist: Optional[List[str]] = None
     vulnerabilityWhitelist: Optional[List[str]] = None
     sanitizerFunctions: Optional[List[str]] = None
+    # --- compiled-artifact mode ---
+    scan_mode: Optional[str] = "source"           # "source" | "compiled"
+    compiled_options: Optional[Dict[str, Any]] = None
 
 
 @router.post("/scan-stored-zip")
@@ -215,6 +220,8 @@ async def scan_stored_zip(
             'functionWhitelist': scan_request.functionWhitelist or [],
             'vulnerabilityWhitelist': scan_request.vulnerabilityWhitelist or [],
             'sanitizerFunctions': scan_request.sanitizerFunctions or [],
+            'scan_mode': scan_request.scan_mode or 'source',
+            'compiled_options': scan_request.compiled_options or {},
         }
 
     # Trigger Background Task
