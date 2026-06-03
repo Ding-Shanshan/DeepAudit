@@ -27,6 +27,7 @@ import {
   Users,
   BookOpen,
   Bug,
+  Container,
 } from "lucide-react";
 import routes from "@/app/routes";
 import { useAuth } from "@/shared/context/AuthContext";
@@ -52,6 +53,7 @@ const routeIcons: Record<string, ReactNode> = {
 const auditSubItems = [
   { path: "/audit-tasks?tab=regular", name: "快速审计", icon: <FileSearch className="h-[18px] w-[18px]" /> },
   { path: "/audit-tasks?tab=agent", name: "深度审计", icon: <Bot className="h-[18px] w-[18px]" /> },
+  { path: "/audit-tasks?tab=iac", name: "IaC扫描", icon: <Container className="h-[18px] w-[18px]" /> },
 ];
 
 const rulesSubItems = [
