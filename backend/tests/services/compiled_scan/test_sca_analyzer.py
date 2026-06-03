@@ -38,3 +38,15 @@ def test_no_findings_for_clean_binary(tmp_path: Path):
 def test_handles_unreadable_file(tmp_path: Path):
     a = SCAAnalyzer()
     assert a.analyze(tmp_path / "missing.so", {"enable_sca": True}) == []
+
+
+def test_detects_zlib_cve_via_no_capture_group_regex(tmp_path: Path):
+    """The zlib known_libs entry uses `1\\.2\\.\\d+` with no capture group,
+    so the analyzer falls back to `m.group(0)` for the version. This test
+    pins that fallback path."""
+    f = tmp_path / "libz.so"
+    f.write_bytes(b"... inflate 1.2.11 from zlib copyright ...")
+    a = SCAAnalyzer()
+    findings = a.analyze(f, {"enable_sca": True})
+    rules = {finding.rule_id for finding in findings}
+    assert "compiled.sca.CVE-2018-25032" in rules
