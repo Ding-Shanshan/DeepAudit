@@ -10,6 +10,11 @@ const SUPPORTED_ARCHIVE_EXTENSIONS = [
   ".tar.gz",
 ];
 
+export interface CompiledScanOptions {
+  enable_sca: boolean;
+  max_binary_size_mb: number;
+}
+
 /**
  * 上传本地文件并启动扫描
  */
@@ -24,6 +29,8 @@ export async function scanZipFile(params: {
   functionWhitelist?: string[];
   vulnerabilityWhitelist?: string[];
   sanitizerFunctions?: string[];
+  scanMode?: "source" | "compiled";
+  compiledOptions?: CompiledScanOptions;
 }): Promise<string> {
   const formData = new FormData();
   formData.append("file", params.zipFile);
@@ -38,6 +45,8 @@ export async function scanZipFile(params: {
     functionWhitelist: params.functionWhitelist || [],
     vulnerabilityWhitelist: params.vulnerabilityWhitelist || [],
     sanitizerFunctions: params.sanitizerFunctions || [],
+    scan_mode: params.scanMode || "source",
+    compiled_options: params.compiledOptions || null,
   };
   formData.append("scan_config", JSON.stringify(scanConfig));
 
@@ -63,6 +72,8 @@ export async function scanStoredZipFile(params: {
   functionWhitelist?: string[];
   vulnerabilityWhitelist?: string[];
   sanitizerFunctions?: string[];
+  scanMode?: "source" | "compiled";
+  compiledOptions?: CompiledScanOptions;
 }): Promise<string> {
   const scanRequest = {
     file_paths: params.filePaths,
@@ -73,6 +84,8 @@ export async function scanStoredZipFile(params: {
     functionWhitelist: params.functionWhitelist || [],
     vulnerabilityWhitelist: params.vulnerabilityWhitelist || [],
     sanitizerFunctions: params.sanitizerFunctions || [],
+    scan_mode: params.scanMode || "source",
+    compiled_options: params.compiledOptions || null,
   };
   const res = await apiClient.post(`/scan/scan-stored-zip`, scanRequest, {
     params: { project_id: params.projectId },
