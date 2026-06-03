@@ -20,9 +20,11 @@ import type { CodeAnalysisResult } from './types';
 interface Props {
   taskId: string;
   taskType: 'quick' | 'agent';
+  /** 隐藏 API 接口资产那一栏（在外部 Tab 里单独展示时使用） */
+  hideApi?: boolean;
 }
 
-export function CodeAnalysisPanel({ taskId, taskType }: Props) {
+export function CodeAnalysisPanel({ taskId, taskType, hideApi = false }: Props) {
   const [data, setData] = useState<CodeAnalysisResult | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -74,7 +76,7 @@ export function CodeAnalysisPanel({ taskId, taskType }: Props) {
     { key: 'call', title: '函数调用图', icon: Network, count: counts.call },
     { key: 'deps', title: '文件包含关系', icon: FileCode, count: counts.deps },
     { key: 'cfg', title: '函数控制流图', icon: GitBranch, count: counts.cfg },
-  ];
+  ].filter((s) => !(hideApi && s.key === 'api'));
 
   return (
     <div className="cyber-card p-4 h-full overflow-auto">

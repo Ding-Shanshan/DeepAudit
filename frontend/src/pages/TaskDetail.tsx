@@ -42,6 +42,9 @@ import { toast } from "sonner";
 import { calculateTaskProgress, safeJsonParseArray } from "@/shared/utils/utils";
 import IssueDetailSheet from "@/components/issues/IssueDetailSheet";
 import { CodeAnalysisPanel } from "@/components/code-analysis/CodeAnalysisPanel";
+import { APIAssetsList } from "@/components/code-analysis/APIAssetsList";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { apiClient } from "@/shared/api/serverClient";
 
 // Issues Table Component
 function IssuesTable({ issues, total, hasMore, onLoadMore, loadingMore, onStatusChange, onViewDetail, onAiInvestigate }: {
@@ -224,6 +227,21 @@ export default function TaskDetail() {
   // Issue detail Sheet
   const [detailOpen, setDetailOpen] = useState(false);
   const [selectedIssue, setSelectedIssue] = useState<AuditIssue | null>(null);
+
+  // API 资产（与问题列表同一 Tab 区域展示）
+  const [apiEndpoints, setApiEndpoints] = useState<unknown[]>([]);
+
+  // 加载 API 资产（独立加载，不阻塞主流程）
+  useEffect(() => {
+    if (!id) return;
+    apiClient
+      .get(`/tasks/${id}/code-analysis`)
+      .then((res) => {
+        const data = (res.data as { api_endpoints?: unknown[] }) || {};
+        setApiEndpoints(Array.isArray(data.api_endpoints) ? data.api_endpoints : []);
+      })
+      .catch(() => setApiEndpoints([]));
+  }, [id]);
 
   const handleViewDetail = (issue: AuditIssue) => {
     setSelectedIssue(issue);
@@ -636,76 +654,96 @@ export default function TaskDetail() {
             <div className="border-t border-border" />
           </div>
         </div>
-        <CodeAnalysisPanel taskId={id!} taskType="quick" />
+        <CodeAnalysisPanel taskId={id!} taskType="quick" hideApi />
       </div>
 
-      {/* 问题列表 */}
+      {/* 问题列表 / API 资产（Tab 切换） */}
       <div className="relative z-10">
-        <div className="flex items-center gap-3 p-4 border-b border-border flex-wrap">
-          <span className="font-sans font-bold uppercase text-foreground bg-primary text-primary-foreground border border-primary/20 px-6 py-2.5 rounded-xl text-sm tracking-wider min-w-[240px] text-center">问题列表</span>
-          <div className="relative flex-1 min-w-[180px] max-w-[240px] ml-2">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
-            <Input
-              value={nameFilter}
-              onChange={e => setNameFilter(e.target.value)}
-              placeholder="搜索问题名称"
-              className="h-8 text-sm !pl-9"
-            />
-          </div>
-          <Select value={severityFilter} onValueChange={setSeverityFilter}>
-            <SelectTrigger className="cyber-input h-8 w-[120px] text-sm">
-              <SelectValue placeholder="全部程度" />
-            </SelectTrigger>
-            <SelectContent className="cyber-dialog border-border">
-              <SelectItem value="all">全部程度</SelectItem>
-              <SelectItem value="critical">严重 ({issues.filter(i => i.severity === 'critical').length})</SelectItem>
-              <SelectItem value="high">高 ({issues.filter(i => i.severity === 'high').length})</SelectItem>
-              <SelectItem value="medium">中 ({issues.filter(i => i.severity === 'medium').length})</SelectItem>
-              <SelectItem value="low">低 ({issues.filter(i => i.severity === 'low').length})</SelectItem>
-            </SelectContent>
-          </Select>
-          <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="cyber-input h-8 w-[120px] text-sm">
-              <SelectValue placeholder="全部状态" />
-            </SelectTrigger>
-            <SelectContent className="cyber-dialog border-border">
-              <SelectItem value="all">全部状态</SelectItem>
-              {Object.entries(
-                issues.reduce((acc: Record<string, number>, i) => {
-                  const key = i.status || 'not_fixed';
-                  acc[key] = (acc[key] || 0) + 1;
-                  return acc;
-                }, {})
-              ).map(([key, count]) => (
-                <SelectItem key={key} value={key}>
-                  {ISSUE_STATUS_LABELS[key] || key} ({count})
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          {/* 批量AI排查按钮 */}
-          <Button
-            variant="outline"
-            size="sm"
-            className="h-8 text-sm border-purple-500/30 hover:bg-purple-500/12 hover:text-purple-500 hover:border-purple-500/50"
-            disabled={aiBatchInProgress}
-            onClick={handleBatchAiInvestigate}
-          >
-            <Sparkles className="w-3.5 h-3.5 mr-1" />
-            {aiBatchInProgress ? `排查中 (${aiBatchProgress.completed}/${aiBatchProgress.total})` : '批量AI排查'}
-          </Button>
-        </div>
+        <Tabs defaultValue="issues" className="w-full">
+          <TabsList className="mb-3">
+            <TabsTrigger value="issues">
+              问题列表
+              <span className="ml-1 text-[11px] text-muted-foreground">({totalIssues})</span>
+            </TabsTrigger>
+            <TabsTrigger value="api">
+              API 接口资产
+              <span className="ml-1 text-[11px] text-muted-foreground">({apiEndpoints.length})</span>
+            </TabsTrigger>
+          </TabsList>
 
-        <IssuesTable
-          issues={filteredIssues}
-          total={totalIssues}
-          hasMore={filteredIssues.length < totalIssues}
-          onLoadMore={loadMoreIssues}
-          loadingMore={loadingMore}
-          onStatusChange={handleIssueStatusChange}
-          onViewDetail={handleViewDetail}
-          onAiInvestigate={handleAiInvestigate}
-        />
+          <TabsContent value="issues">
+            <div className="flex items-center gap-3 p-4 border-b border-border flex-wrap">
+              <div className="relative flex-1 min-w-[180px] max-w-[240px]">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+                <Input
+                  value={nameFilter}
+                  onChange={e => setNameFilter(e.target.value)}
+                  placeholder="搜索问题名称"
+                  className="h-8 text-sm !pl-9"
+                />
+              </div>
+              <Select value={severityFilter} onValueChange={setSeverityFilter}>
+                <SelectTrigger className="cyber-input h-8 w-[120px] text-sm">
+                  <SelectValue placeholder="全部程度" />
+                </SelectTrigger>
+                <SelectContent className="cyber-dialog border-border">
+                  <SelectItem value="all">全部程度</SelectItem>
+                  <SelectItem value="critical">严重 ({issues.filter(i => i.severity === 'critical').length})</SelectItem>
+                  <SelectItem value="high">高 ({issues.filter(i => i.severity === 'high').length})</SelectItem>
+                  <SelectItem value="medium">中 ({issues.filter(i => i.severity === 'medium').length})</SelectItem>
+                  <SelectItem value="low">低 ({issues.filter(i => i.severity === 'low').length})</SelectItem>
+                </SelectContent>
+              </Select>
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger className="cyber-input h-8 w-[120px] text-sm">
+                  <SelectValue placeholder="全部状态" />
+                </SelectTrigger>
+                <SelectContent className="cyber-dialog border-border">
+                  <SelectItem value="all">全部状态</SelectItem>
+                  {Object.entries(
+                    issues.reduce((acc: Record<string, number>, i) => {
+                      const key = i.status || 'not_fixed';
+                      acc[key] = (acc[key] || 0) + 1;
+                      return acc;
+                    }, {})
+                  ).map(([key, count]) => (
+                    <SelectItem key={key} value={key}>
+                      {ISSUE_STATUS_LABELS[key] || key} ({count})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {/* 批量AI排查按钮 */}
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-8 text-sm border-purple-500/30 hover:bg-purple-500/12 hover:text-purple-500 hover:border-purple-500/50"
+                disabled={aiBatchInProgress}
+                onClick={handleBatchAiInvestigate}
+              >
+                <Sparkles className="w-3.5 h-3.5 mr-1" />
+                {aiBatchInProgress ? `排查中 (${aiBatchProgress.completed}/${aiBatchProgress.total})` : '批量AI排查'}
+              </Button>
+            </div>
+
+            <IssuesTable
+              issues={filteredIssues}
+              total={totalIssues}
+              hasMore={filteredIssues.length < totalIssues}
+              onLoadMore={loadMoreIssues}
+              loadingMore={loadingMore}
+              onStatusChange={handleIssueStatusChange}
+              onViewDetail={handleViewDetail}
+              onAiInvestigate={handleAiInvestigate}
+            />
+          </TabsContent>
+
+          <TabsContent value="api">
+            <div className="cyber-card p-4">
+              <APIAssetsList data={apiEndpoints} />
+            </div>
+          </TabsContent>
+        </Tabs>
       </div>
 
       {/* Issue detail Sheet */}
