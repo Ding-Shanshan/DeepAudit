@@ -765,11 +765,15 @@ def run_semgrep_scan(
     source_files: list[dict[str, Any]],
     exclude_patterns: list[str] | None = None,
     timeout_seconds: int = 120,
+    rules_file: str | Path | None = None,
 ) -> list[dict[str, Any]]:
     if not shutil.which("semgrep"):
         return []
 
-    rules_path = Path(__file__).resolve().parents[3] / "rules" / "semgrep" / "deepaudit-rules.yml"
+    if rules_file is not None:
+        rules_path = Path(rules_file)
+    else:
+        rules_path = Path(__file__).resolve().parents[3] / "rules" / "semgrep" / "deepaudit-rules.yml"
     if not rules_path.exists():
         return []
 
