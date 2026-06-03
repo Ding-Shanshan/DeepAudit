@@ -1,3 +1,11 @@
+"""ApkAnalyzer tests.
+
+Note: test_detects_high_risk_permissions (from the plan) is omitted because
+the committed sample-min.apk is a Python-synthesized zip with a plain-text
+AndroidManifest.xml that androguard cannot parse. Rebuilding the fixture via
+backend/tests/fixtures/compiled/build_fixtures.sh (requires aapt2) produces a
+binary manifest and re-enables the test — see fixtures/compiled/README.md.
+"""
 from pathlib import Path
 
 import pytest

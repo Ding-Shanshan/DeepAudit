@@ -11,6 +11,7 @@ import yaml
 from app.services.compiled_scan.analyzers.base import CompiledAnalyzer, Finding
 
 _RULES_DIR = Path(__file__).resolve().parent.parent / "rules"
+_PRINTABLE_RE = re.compile(rb"[\x20-\x7e]{6,}")    # ASCII printable runs, length >= 6
 
 
 def _load_yaml(name: str) -> list[dict]:
@@ -109,7 +110,6 @@ class ApkAnalyzer(CompiledAnalyzer):
         return list(apk.get_permissions())
 
     def _extract_apk_strings(self, file_path: Path) -> list[str]:
-        printable = re.compile(rb"[\x20-\x7e]{6,}")
         out: list[str] = []
         with zipfile.ZipFile(file_path) as zf:
             for info in zf.infolist():
@@ -119,21 +119,20 @@ class ApkAnalyzer(CompiledAnalyzer):
                     blob = zf.read(info)
                 except (RuntimeError, zipfile.BadZipFile):
                     continue
-                for m in printable.finditer(blob):
+                for m in _PRINTABLE_RE.finditer(blob):
                     out.append(m.group(0).decode("ascii", errors="ignore"))
-                    if len(out) >= 5000:
+                    if len(out) >= 5000:   # bounded memory: cap is per-file (across all entries)
                         return out
         return out
 
     def _scan_dex(self, file_path: Path, rel: str) -> list[Finding]:
-        printable = re.compile(rb"[\x20-\x7e]{6,}")
         try:
             blob = file_path.read_bytes()
         except OSError:
             return []
         findings: list[Finding] = []
         for rule in self._secrets:
-            for m in printable.finditer(blob):
+            for m in _PRINTABLE_RE.finditer(blob):
                 s = m.group(0).decode("ascii", errors="ignore")
                 if rule["_compiled"].search(s):
                     findings.append(
