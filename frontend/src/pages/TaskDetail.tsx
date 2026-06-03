@@ -126,7 +126,15 @@ function IssuesTable({ issues, total, hasMore, onLoadMore, loadingMore, onStatus
                   <td className="py-2.5 px-3">
                     <span className="text-muted-foreground text-xs bg-muted px-2 py-0.5 rounded border border-border">
                       {issue.file_path || "-"}
-                      {issue.line_number ? `:${issue.line_number}` : ""}
+                      {issue.line_number && issue.line_number > 0 ? `:${issue.line_number}` : (() => {
+                        const rid = (issue as { rule_id?: string }).rule_id || "";
+                        if (rid.startsWith("compiled.binary.dangerous_func.")) return " [符号引用]";
+                        if (rid.startsWith("compiled.binary.secret.") || rid.startsWith("compiled.apk.secret.")) return " [字符串匹配]";
+                        if (rid.startsWith("compiled.apk.permission.")) return " [Manifest 权限]";
+                        if (rid.startsWith("compiled.sca.")) return " [CVE]";
+                        if (rid.startsWith("compiled.engine.")) return " [扫描引擎]";
+                        return "";
+                      })()}
                     </span>
                   </td>
                   <td className="py-2.5 px-3">
@@ -531,6 +539,15 @@ export default function TaskDetail() {
     );
   }
 
+  const scanConfig = (() => {
+    try {
+      return task?.scan_config ? JSON.parse(task.scan_config) : {};
+    } catch {
+      return {};
+    }
+  })();
+  const isCompiledScan = (scanConfig as { scan_mode?: string }).scan_mode === "compiled";
+
   return (
     <div className="space-y-4 px-6 pt-1 pb-6 cyber-bg-elevated min-h-screen font-sans relative">
       {/* Grid background */}
@@ -544,7 +561,18 @@ export default function TaskDetail() {
               <ArrowLeft className="w-5 h-5" />
             </Button>
           </Link>
-          <h1 className="text-2xl font-semibold text-foreground uppercase tracking-wider">{task.task_type === 'repository' ? '仓库审计任务' : '即时分析任务'}</h1>
+          <h1 className="text-2xl font-semibold text-foreground uppercase tracking-wider">
+            {task.task_type === 'repository' ? '仓库审计任务' : '即时分析任务'}
+            {isCompiledScan ? (
+              <span className="ml-2 rounded bg-purple-100 px-2 py-0.5 text-xs text-purple-700">
+                编译后扫描
+              </span>
+            ) : (
+              <span className="ml-2 rounded bg-blue-100 px-2 py-0.5 text-xs text-blue-700">
+                源代码扫描
+              </span>
+            )}
+          </h1>
         </div>
 
         <div className="flex items-center space-x-3">
