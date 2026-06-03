@@ -36,6 +36,7 @@ from app.services.scanner import (
     get_gitea_branches,
     materialize_repository_workspace,
     scan_repo_task,
+    scan_iac_task,
 )
 from app.services.zip_storage import (
     save_project_zip, load_project_zip, get_project_zip_meta,
@@ -542,6 +543,7 @@ class ScanRequest(BaseModel):
     functionWhitelist: Optional[List[str]] = None
     vulnerabilityWhitelist: Optional[List[str]] = None
     sanitizerFunctions: Optional[List[str]] = None
+    task_type: Optional[str] = "repository"  # "repository" | "iac_scan"
 
 
 @router.post("/{id}/scan")
@@ -567,7 +569,11 @@ async def scan_project(
     task = AuditTask(
         project_id=project.id,
         created_by=current_user.id,
-        task_type="repository",
+        task_type=(
+            scan_request.task_type
+            if scan_request and scan_request.task_type in {"repository", "iac_scan"}
+            else "repository"
+        ),
         status="pending",
         branch_name=branch_name or project.default_branch or "main",
         exclude_patterns=json.dumps(exclude_patterns or []),
@@ -628,7 +634,10 @@ async def scan_project(
         }
 
     # Trigger Background Task
-    background_tasks.add_task(scan_repo_task, task.id, AsyncSessionLocal, user_config)
+    if task.task_type == "iac_scan":
+        background_tasks.add_task(scan_iac_task, task.id, AsyncSessionLocal, user_config)
+    else:
+        background_tasks.add_task(scan_repo_task, task.id, AsyncSessionLocal, user_config)
 
     return {"task_id": task.id, "status": "started"}
 
