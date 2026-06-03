@@ -59,10 +59,8 @@ import {
 
 const CATEGORIES = [
   { value: 'security', label: '安全', icon: Shield, color: 'text-destructive', bg: 'bg-destructive/12' },
-  { value: 'bug', label: 'Bug', icon: Bug, color: 'text-orange-400', bg: 'bg-orange-500/20' },
   { value: 'performance', label: '性能', icon: Zap, color: 'text-warning', bg: 'bg-amber-500/20' },
-  { value: 'style', label: '代码风格', icon: Code, color: 'text-secondary', bg: 'bg-secondary/15' },
-  { value: 'maintainability', label: '可维护性', icon: Settings, color: 'text-secondary', bg: 'bg-violet-500/20' },
+  { value: 'quality', label: '代码质量', icon: Code, color: 'text-secondary', bg: 'bg-violet-500/20' },
 ];
 
 const SEVERITIES = [
@@ -74,10 +72,8 @@ const SEVERITIES = [
 
 const CATEGORY_ABBREV: Record<string, string> = {
   security: 'SEC',
-  bug: 'BUG',
   performance: 'PERF',
-  style: 'STYLE',
-  maintainability: 'MAINT',
+  quality: 'QLTY',
 };
 
 const LANGUAGES = [

@@ -1,10 +1,10 @@
 /**
  * 状态徽章组件
- * 实心色鲜明配色，中文标签
+ * 简约轻量样式，小圆点+文字
  */
 
 import { memo } from "react";
-import { CheckCircle2, XCircle, Clock, Loader2, Square, AlertCircle } from "lucide-react";
+import { Loader2 } from "lucide-react";
 
 interface StatusBadgeProps {
   status: string;
@@ -12,52 +12,40 @@ interface StatusBadgeProps {
 }
 
 const STATUS_CONFIG: Record<string, {
-  icon: React.ReactNode;
-  iconSm: React.ReactNode;
-  bg: string;
-  text: string;
+  dotColor: string;
+  textColor: string;
   label: string;
+  animate?: boolean;
 }> = {
   pending: {
-    icon: <Clock className="h-3.5 w-3.5" />,
-    iconSm: <Clock className="h-3 w-3" />,
-    bg: "bg-slate-500",
-    text: "text-white",
+    dotColor: "bg-slate-400",
+    textColor: "text-slate-500",
     label: "待处理",
   },
   running: {
-    icon: <Loader2 className="h-3.5 w-3.5 animate-spin" />,
-    iconSm: <Loader2 className="h-3 w-3 animate-spin" />,
-    bg: "bg-emerald-500",
-    text: "text-white",
+    dotColor: "bg-emerald-500",
+    textColor: "text-emerald-600",
     label: "运行中",
+    animate: true,
   },
   completed: {
-    icon: <CheckCircle2 className="h-3.5 w-3.5" />,
-    iconSm: <CheckCircle2 className="h-3 w-3" />,
-    bg: "bg-indigo-600",
-    text: "text-white",
+    dotColor: "bg-indigo-500",
+    textColor: "text-indigo-600",
     label: "已完成",
   },
   failed: {
-    icon: <XCircle className="h-3.5 w-3.5" />,
-    iconSm: <XCircle className="h-3 w-3" />,
-    bg: "bg-rose-500",
-    text: "text-white",
+    dotColor: "bg-rose-500",
+    textColor: "text-rose-600",
     label: "失败",
   },
   cancelled: {
-    icon: <Square className="h-3.5 w-3.5" />,
-    iconSm: <Square className="h-3 w-3" />,
-    bg: "bg-amber-500",
-    text: "text-white",
+    dotColor: "bg-amber-500",
+    textColor: "text-amber-600",
     label: "已取消",
   },
   error: {
-    icon: <AlertCircle className="h-3.5 w-3.5" />,
-    iconSm: <AlertCircle className="h-3 w-3" />,
-    bg: "bg-red-500",
-    text: "text-white",
+    dotColor: "bg-red-500",
+    textColor: "text-red-600",
     label: "异常",
   },
 };
@@ -67,17 +55,15 @@ export const StatusBadge = memo(function StatusBadge({ status, size = "default" 
   const isSmall = size === "sm";
 
   return (
-    <div
-      className={`
-        inline-flex items-center gap-1.5 rounded-full font-medium
-        transition-all duration-200
-        ${config.bg}
-        ${config.text}
-        ${isSmall ? "px-2 py-0.5 text-xs" : "px-3 py-1 text-xs"}
-      `}
-    >
-      {isSmall ? config.iconSm : config.icon}
-      <span>{config.label}</span>
+    <div className={`inline-flex items-center gap-1.5 ${config.textColor}`}>
+      {status === 'running' ? (
+        <Loader2 className={`${isSmall ? 'w-3 h-3' : 'w-3.5 h-3.5'} animate-spin`} />
+      ) : (
+        <span className={`${config.dotColor} ${isSmall ? 'w-1.5 h-1.5' : 'w-2 h-2'} rounded-full ${config.animate ? 'animate-pulse' : ''}`} />
+      )}
+      <span className={`${isSmall ? 'text-[10px]' : 'text-xs'} font-medium`}>
+        {config.label}
+      </span>
     </div>
   );
 });

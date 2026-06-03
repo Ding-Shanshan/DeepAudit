@@ -84,7 +84,7 @@ export interface AuditIssue {
   file_path: string;
   line_number?: number;
   column_number?: number;
-  issue_type: 'bug' | 'security' | 'performance' | 'style' | 'maintainability';
+  issue_type: 'security' | 'performance' | 'quality';
   severity: 'critical' | 'high' | 'medium' | 'low';
   title: string;
   description?: string;

@@ -316,7 +316,7 @@ PATTERN_RULES = [
     {
         "rule_id": "DA-CPP-001",
         "title": "C/C++ 不安全字符串操作",
-        "issue_type": "bug",
+        "issue_type": "security",
         "severity": "high",
         "suggestion": "避免使用 strcpy/gets/sprintf 等不安全函数，改用带边界检查的实现。",
         "source_desc": "外部输入拷贝至固定缓冲区",
@@ -329,7 +329,7 @@ PATTERN_RULES = [
     {
         "rule_id": "DA-JAVA-RESOURCE-001",
         "title": "Java 资源对象可能未释放",
-        "issue_type": "bug",
+        "issue_type": "security",
         "severity": "medium",
         "suggestion": "使用 try-with-resources 或 finally 块确保流、socket、数据库连接被正确关闭。",
         "source_desc": None,
@@ -476,7 +476,7 @@ PATTERN_RULES = [
     {
         "rule_id": "DA-JAVA-RESOURCE-002",
         "title": "Java 数据库连接/网络资源可能未释放",
-        "issue_type": "bug",
+        "issue_type": "security",
         "severity": "medium",
         "suggestion": "对 Connection、Statement、Socket 等资源使用 try-with-resources 或在 finally 中确保 close()。",
         "source_desc": None,
@@ -578,7 +578,7 @@ PATTERN_RULES = [
     {
         "rule_id": "DA-CPP-BOF-002",
         "title": "C/C++ 可能存在缓冲区溢出（格式化字符串变体）",
-        "issue_type": "bug",
+        "issue_type": "security",
         "severity": "high",
         "suggestion": "使用带边界检查的替代函数（vsprintf 改为 vsnprintf，vscanf 改为更安全的输入接口）。",
         "source_desc": "格式化字符串用户输入",
@@ -593,7 +593,7 @@ PATTERN_RULES = [
     {
         "rule_id": "DA-CPP-NULL-001",
         "title": "C/C++ 可能存在空指针解引用风险",
-        "issue_type": "bug",
+        "issue_type": "security",
         "severity": "high",
         "suggestion": "malloc/calloc/realloc 返回后必须检查 NULL，避免直接解引用；在指针解引用前做 NULL 检查。",
         "source_desc": None,

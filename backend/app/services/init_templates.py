@@ -13,6 +13,38 @@ from app.models.audit_rule import AuditRuleSet, AuditRule
 logger = logging.getLogger(__name__)
 
 
+# ==================== 规则分类函数 ====================
+
+def classify_rule_category(name: str) -> str:
+    """
+    根据规则名称自动分类规则类别:
+    - 规则名带有"性能"的统一归为性能规则 → 'performance'
+    - 规则名带有"质量"的统一归为质量规则 → 'quality'
+    - 其他均归为漏洞规则 → 'security'
+    """
+    if "性能" in name:
+        return "performance"
+    elif "质量" in name:
+        return "quality"
+    else:
+        return "security"
+
+
+def classify_rule_set_type(name: str) -> str:
+    """
+    根据规则集名称自动分类规则集类型:
+    - 规则集名带有"性能"的归为性能规则集 → 'performance'
+    - 规则集名带有"质量"的归为质量规则集 → 'quality'
+    - 其他均归为漏洞规则集 → 'security'
+    """
+    if "性能" in name:
+        return "performance"
+    elif "质量" in name:
+        return "quality"
+    else:
+        return "security"
+
+
 # ==================== 系统提示词模板 ====================
 
 SYSTEM_PROMPT_TEMPLATES = [
@@ -483,7 +515,7 @@ SYSTEM_RULE_SETS = [
                 "rule_code": "SEC-INJ-008",
                 "name": "格式化字符串漏洞",
                 "description": "检测printf类函数中使用不可信输入作为格式化字符串 (CWE-134)",
-                "category": "bug",
+                "category": "security",
                 "severity": "critical",
                 "custom_prompt": "【CWE-134】检测格式化字符串漏洞：检查是否存在将不可信输入直接作为printf/sprintf/fprintf等函数的格式化字符串参数。重点关注：C/C++的printf/fprintf/sprintf/snprintf/vsprintf/vprintf中使用用户输入作为format参数(而非后续参数)；Python的格式化字符串中使用可控模板；所有语言中类似'%s'被外部输入替换format字符串的模式",
                 "fix_suggestion": "将不可信输入作为格式化函数的值参数(而非格式字符串参数)，使用常量格式字符串",
@@ -664,7 +696,7 @@ SYSTEM_RULE_SETS = [
                 "rule_code": "SEC-AUTH-005",
                 "name": "暴力破解防护缺失 - 缺少速率限制和账户锁定",
                 "description": "检测登录等认证接口缺少速率限制和账户锁定机制 (CWE-307)",
-                "category": "performance",
+                "category": "security",
                 "severity": "high",
                 "custom_prompt": "【CWE-307】检测暴力破解防护缺失：检查是否存在登录/注册等认证接口缺少速率限制(rate limiting)和账户锁定机制的情况。重点关注：登录接口无IP/账户级别的频率限制；无登录失败次数锁定；无验证码(CAPTCHA)防自动化攻击；密码重置接口无频率限制；API认证接口无速率限制",
                 "fix_suggestion": "实施多维度速率限制(IP+账户)、渐进式账户锁定、验证码(CAPTCHA)防自动化",
@@ -1003,7 +1035,7 @@ SYSTEM_RULE_SETS = [
                 "rule_code": "SEC-RACE-001",
                 "name": "竞态条件/TOCTOU - 检查与使用时间差",
                 "description": "检测检查与使用之间的时间差(Time-of-Check to Time-of-Use)漏洞 (CWE-362)",
-                "category": "bug",
+                "category": "security",
                 "severity": "medium",
                 "custom_prompt": "【CWE-362】检测竞态条件/TOCTOU漏洞：检查是否存在先检查条件后执行操作但中间可被其他线程/进程修改的竞态条件。重点关注：文件access()检查后open()使用(中间文件可被替换)；数据库余额检查后扣款(中间可被并发修改)；临时文件mktemp()创建后使用(中间可被抢占)；所有check-then-act操作无原子性保证的模式；缺少锁/事务保护",
                 "fix_suggestion": "使用原子操作替代check-then-act模式、使用数据库事务保证一致性、使用锁保护共享资源",
@@ -1014,7 +1046,7 @@ SYSTEM_RULE_SETS = [
                 "rule_code": "SEC-RACE-002",
                 "name": "时间侧信道攻击 - 操作时间依赖秘密数据",
                 "description": "检测操作执行时间依赖于秘密数据导致信息泄露 (CWE-208)",
-                "category": "bug",
+                "category": "security",
                 "severity": "medium",
                 "custom_prompt": "【CWE-208】检测时间侧信道攻击风险：检查是否存在操作执行时间依赖于秘密数据(密码/密钥)导致可通过时间差异推断秘密的情况。重点关注：字符串比较使用==而非恒定时间函数(hmac.compare_digest)；密码校验逐字符比较导致时间差异；RSA解密时间依赖于密钥内容；排序/搜索操作泄露数据特征",
                 "fix_suggestion": "使用恒定时间比较函数(如hmac.compare_digest/Crypto.Util.Counter)，避免操作时间依赖秘密数据",
@@ -1087,7 +1119,7 @@ SYSTEM_RULE_SETS = [
                 "rule_code": "SEC-MEM-001",
                 "name": "缓冲区溢出 - 不安全的字符串/内存操作",
                 "description": "检测C/C++中使用不安全的字符串/内存操作函数导致缓冲区溢出 (CWE-119/CWE-787)",
-                "category": "bug",
+                "category": "security",
                 "severity": "critical",
                 "custom_prompt": "【CWE-119/CWE-787】检测缓冲区溢出漏洞：检查C/C++中使用不安全的字符串/内存操作函数导致缓冲区越界写入的情况。重点关注：strcpy()/strcat()/gets()/sprintf()/vsprintf()无边界检查；memcpy()/memmove()长度参数可被控制；数组访问未做边界检查；所有固定大小缓冲区接收可变长度输入的模式",
                 "fix_suggestion": "使用安全替代函数(strncpy/snprintf/strncat)、做边界检查、使用安全字符串库",
@@ -1099,7 +1131,7 @@ SYSTEM_RULE_SETS = [
                 "rule_code": "SEC-MEM-002",
                 "name": "整数溢出 - 算术运算溢出导致安全问题",
                 "description": "检测整数溢出/环绕导致的内存分配或逻辑错误 (CWE-190)",
-                "category": "bug",
+                "category": "security",
                 "severity": "high",
                 "custom_prompt": "【CWE-190】检测整数溢出漏洞：检查是否存在整数运算溢出/环绕导致安全问题的情况。重点关注：malloc(n*sizeof(type))中n*sizeof可能溢出导致分配过小缓冲区；循环变量/索引使用有符号整数可能变负；无符号整数减法溢出；大小计算溢出后用于内存分配；所有整数运算用于安全决策(内存分配/长度计算/权限判断)但缺少溢出检查",
                 "fix_suggestion": "对用于内存分配/安全决策的整数运算做溢出检查，使用足够宽的整数类型",
@@ -1111,7 +1143,7 @@ SYSTEM_RULE_SETS = [
                 "rule_code": "SEC-MEM-003",
                 "name": "Use After Free - 释放后使用",
                 "description": "检测C/C++中内存释放后继续使用导致的Use After Free漏洞 (CWE-416)",
-                "category": "bug",
+                "category": "security",
                 "severity": "critical",
                 "custom_prompt": "【CWE-416】检测Use After Free漏洞：检查C/C++中是否存在内存释放后继续使用的情况。重点关注：free()/delete后继续通过指针访问该内存；realloc()返回新指针但继续使用旧指针；双重释放(double free)；释放后指针未置NULL(悬空指针)；对象析构后回调仍引用该对象",
                 "fix_suggestion": "释放内存后立即将指针置NULL、使用RAII/智能指针管理内存生命周期、避免双重释放",
@@ -1123,7 +1155,7 @@ SYSTEM_RULE_SETS = [
                 "rule_code": "SEC-MEM-004",
                 "name": "NULL指针解引用 - 未检查NULL直接使用指针",
                 "description": "检测指针/引用未做NULL检查直接使用 (CWE-476)",
-                "category": "bug",
+                "category": "security",
                 "severity": "high",
                 "custom_prompt": "【CWE-476】检测NULL指针解引用漏洞：检查是否存在指针/引用/对象在未做NULL/空值检查的情况下直接使用的模式。重点关注：C/C++的malloc/calloc/realloc返回值未检查NULL直接使用；Java的对象方法调用前未检查null；Python的Optional/None未检查；所有函数返回可能为NULL/None/null但调用方未检查直接使用的模式",
                 "fix_suggestion": "对所有可能返回NULL/None/null的函数返回值做空值检查后再使用",
@@ -1136,7 +1168,7 @@ SYSTEM_RULE_SETS = [
                 "rule_code": "SEC-RES-001",
                 "name": "资源未限制 - 无上限分配或缺少速率限制",
                 "description": "检测资源分配无上限或缺少速率限制导致DoS (CWE-770/CWE-400)",
-                "category": "performance",
+                "category": "security",
                 "severity": "high",
                 "custom_prompt": "【CWE-770/CWE-400】检测资源未限制漏洞：检查是否存在资源分配无上限或缺少速率限制导致拒绝服务的情况。重点关注：文件上传无大小限制；API请求无速率限制；内存/连接池无上限配置；循环/递归无深度限制；正则表达式可能导致ReDoS；解压缩无大小限制(zip bomb)；所有可被恶意消耗无限资源的模式",
                 "fix_suggestion": "对所有资源分配设置上限、实施速率限制、限制递归深度、使用非贪婪正则",
@@ -1148,7 +1180,7 @@ SYSTEM_RULE_SETS = [
                 "rule_code": "SEC-RES-002",
                 "name": "连接/流资源泄漏 - 未关闭数据库连接/网络连接/文件流",
                 "description": "检测数据库连接/网络连接/文件流等资源未正确关闭 (CWE-404)",
-                "category": "bug",
+                "category": "security",
                 "severity": "medium",
                 "custom_prompt": "【CWE-404】检测资源泄漏：检查是否存在数据库连接/网络连接/文件流等资源未正确关闭的情况。重点关注：Java的Connection/Statement/Socket未使用try-with-resources；Python的文件/连接未使用with语句；Go的HTTP Response Body未defer Close()；C/C++的malloc后未free/fopen后未fclose；所有资源创建但不在finally/with/defer中确保释放的模式",
                 "fix_suggestion": "使用try-with-resources/with语句/defer确保资源释放、资源池化管理",
@@ -1160,7 +1192,7 @@ SYSTEM_RULE_SETS = [
                 "rule_code": "SEC-RES-003",
                 "name": "拒绝服务(DoS)风险 - 可被恶意触发的资源消耗",
                 "description": "检测可被恶意请求触发的资源消耗导致DoS (CWE-400)",
-                "category": "performance",
+                "category": "security",
                 "severity": "medium",
                 "custom_prompt": "【CWE-400】检测DoS(拒绝服务)风险：检查是否存在可被恶意请求触发大量资源消耗导致服务不可用的情况。重点关注：正则表达式回溯爆炸(ReDoS)；XML实体扩展攻击(billion laughs)；解压炸弹(zip bomb)；大文件/大请求体无限制处理；数据库慢查询可被构造；JSON解析深度无限制；所有可被外部输入触发无限或超量资源消耗的模式",
                 "fix_suggestion": "限制正则复杂度、限制XML/JSON解析深度、限制解压大小、设置请求体大小上限",
@@ -1171,7 +1203,7 @@ SYSTEM_RULE_SETS = [
                 "rule_code": "SEC-RES-004",
                 "name": "不安全的临时文件 - mktemp/可预测文件名",
                 "description": "检测临时文件创建不安全(可预测文件名/不安全权限) (CWE-377)",
-                "category": "bug",
+                "category": "security",
                 "severity": "medium",
                 "custom_prompt": "【CWE-377】检测不安全的临时文件：检查是否存在临时文件创建方式不安全的情况。重点关注：Python的tempfile.mktemp()(可预测文件名+TOCTOU风险)而非mkstemp()/NamedTemporaryFile；C的mktemp()/tmpnam()；临时文件权限过于开放(0666/0777)；临时文件放在共享目录；临时文件名可被预测",
                 "fix_suggestion": "使用mkstemp()/NamedTemporaryFile()创建临时文件、设置安全权限(0600)、放在专用目录",
@@ -1194,7 +1226,7 @@ SYSTEM_RULE_SETS = [
                 "rule_code": "SEC-BIZ-002",
                 "name": "速率限制缺失 - 关键接口无频率控制",
                 "description": "检测关键业务接口缺少速率限制 (CWE-770)",
-                "category": "performance",
+                "category": "security",
                 "severity": "high",
                 "custom_prompt": "【CWE-770】检测速率限制缺失：检查是否存在关键业务接口(登录/注册/短信发送/支付/密码重置)缺少速率限制的情况。重点关注：短信/邮件发送接口无频率限制(可被刷短信费用)；支付接口无频率限制；优惠券/抽奖接口无限制(可被批量薅羊毛)；API接口全局无速率限制；Redis/数据库限流未配置",
                 "fix_suggestion": "对所有关键接口实施多维度速率限制(IP+用户+接口)、使用Redis/令牌桶限流",
@@ -1206,7 +1238,7 @@ SYSTEM_RULE_SETS = [
                 "rule_code": "SEC-BIZ-003",
                 "name": "数字精度/金额计算错误 - 浮点数精度问题",
                 "description": "检测金融/金额计算中使用浮点数导致精度问题 (CWE-682)",
-                "category": "bug",
+                "category": "security",
                 "severity": "medium",
                 "custom_prompt": "【CWE-682】检测数字精度/金额计算错误：检查是否存在金融/金额计算中使用浮点数(float/double)导致精度丢失的情况。重点关注：金额计算使用float/double而非整数/BigDecimal/Decimal；货币转换中的精度丢失；利息/折扣计算使用浮点数导致金额偏差；所有涉及金钱/积分/库存的数值计算使用非精确类型",
                 "fix_suggestion": "金额计算使用BigDecimal/Decimal/整数(以最小单位如分存储)，禁止float/double用于金融计算",
@@ -1227,72 +1259,72 @@ SYSTEM_RULE_SETS = [
         "rules": [
             {
                 "rule_code": "CQ001",
-                "name": "函数过长",
+                "name": "函数过长 - 代码质量问题",
                 "description": "函数超过50行，建议拆分",
-                "category": "maintainability",
+                "category": "quality",
                 "severity": "medium",
                 "custom_prompt": "检查函数是否过长（超过50行），是否应该拆分为更小的函数",
                 "fix_suggestion": "将大函数拆分为多个小函数，每个函数只做一件事",
             },
             {
                 "rule_code": "CQ002",
-                "name": "重复代码",
+                "name": "重复代码 - 代码质量问题",
                 "description": "检测重复的代码块",
-                "category": "maintainability",
+                "category": "quality",
                 "severity": "medium",
                 "custom_prompt": "检查是否存在重复的代码块，可以提取为公共函数或类",
                 "fix_suggestion": "提取重复代码为公共函数、类或模块",
             },
             {
                 "rule_code": "CQ003",
-                "name": "嵌套过深",
+                "name": "嵌套过深 - 代码质量问题",
                 "description": "代码嵌套层级超过4层",
-                "category": "maintainability",
+                "category": "quality",
                 "severity": "low",
                 "custom_prompt": "检查代码嵌套是否过深（超过4层），影响可读性",
                 "fix_suggestion": "使用早返回、提取函数等方式减少嵌套",
             },
             {
                 "rule_code": "CQ004",
-                "name": "魔法数字",
+                "name": "魔法数字 - 代码质量问题",
                 "description": "代码中使用未命名的常量",
-                "category": "style",
+                "category": "quality",
                 "severity": "low",
                 "custom_prompt": "检查是否存在魔法数字或魔法字符串，应该定义为常量",
                 "fix_suggestion": "将魔法数字定义为有意义的常量",
             },
             {
                 "rule_code": "CQ005",
-                "name": "缺少错误处理",
+                "name": "缺少错误处理 - 代码质量问题",
                 "description": "缺少异常捕获或错误处理",
-                "category": "bug",
+                "category": "quality",
                 "severity": "high",
                 "custom_prompt": "检查是否缺少必要的错误处理，可能导致程序崩溃",
                 "fix_suggestion": "添加适当的try-catch或错误检查",
             },
             {
                 "rule_code": "CQ006",
-                "name": "未使用的变量",
+                "name": "未使用的变量 - 代码质量问题",
                 "description": "声明但未使用的变量",
-                "category": "style",
+                "category": "quality",
                 "severity": "low",
                 "custom_prompt": "检查是否存在声明但未使用的变量",
                 "fix_suggestion": "删除未使用的变量或使用它们",
             },
             {
                 "rule_code": "CQ007",
-                "name": "命名不规范",
+                "name": "命名不规范 - 代码质量问题",
                 "description": "变量、函数、类命名不符合规范",
-                "category": "style",
+                "category": "quality",
                 "severity": "low",
                 "custom_prompt": "检查命名是否符合语言规范和最佳实践",
                 "fix_suggestion": "使用有意义的、符合规范的命名",
             },
             {
                 "rule_code": "CQ008",
-                "name": "注释缺失",
+                "name": "注释缺失 - 代码质量问题",
                 "description": "复杂逻辑缺少必要注释",
-                "category": "maintainability",
+                "category": "quality",
                 "severity": "low",
                 "custom_prompt": "检查复杂逻辑是否缺少必要的注释说明",
                 "fix_suggestion": "为复杂逻辑添加清晰的注释",
@@ -1310,7 +1342,7 @@ SYSTEM_RULE_SETS = [
         "rules": [
             {
                 "rule_code": "PERF001",
-                "name": "N+1查询",
+                "name": "N+1查询 - 性能问题",
                 "description": "检测数据库N+1查询问题",
                 "category": "performance",
                 "severity": "high",
@@ -1319,7 +1351,7 @@ SYSTEM_RULE_SETS = [
             },
             {
                 "rule_code": "PERF002",
-                "name": "内存泄漏",
+                "name": "内存泄漏 - 性能问题",
                 "description": "检测潜在的内存泄漏",
                 "category": "performance",
                 "severity": "critical",
@@ -1328,7 +1360,7 @@ SYSTEM_RULE_SETS = [
             },
             {
                 "rule_code": "PERF003",
-                "name": "低效算法",
+                "name": "低效算法 - 性能问题",
                 "description": "检测时间复杂度过高的算法",
                 "category": "performance",
                 "severity": "medium",
@@ -1337,7 +1369,7 @@ SYSTEM_RULE_SETS = [
             },
             {
                 "rule_code": "PERF004",
-                "name": "不必要的对象创建",
+                "name": "不必要的对象创建 - 性能问题",
                 "description": "在循环中创建不必要的对象",
                 "category": "performance",
                 "severity": "medium",
@@ -1346,7 +1378,7 @@ SYSTEM_RULE_SETS = [
             },
             {
                 "rule_code": "PERF005",
-                "name": "同步阻塞",
+                "name": "同步阻塞 - 性能问题",
                 "description": "检测同步阻塞操作",
                 "category": "performance",
                 "severity": "medium",
@@ -1436,6 +1468,230 @@ SYSTEM_RULE_SETS = [
             },
         ]
     },
+    {
+        "name": "批量规则集 - 第1批",
+        "description": "批量生成的第1批10条规则",
+        "language": "all",
+        "rule_type": "security",
+        "is_default": False,
+        "is_system": True,
+        "sort_order": 100,
+        "severity_weights": {"critical": 10, "high": 5, "medium": 2, "low": 1},
+        "rules": [
+            {
+                "rule_code": "BATCH-001",
+                "name": "不安全的字符串拼接 - 可能导致注入",
+                "description": "检测使用字符串拼接而非参数化的代码",
+                "category": "security",
+                "severity": "medium",
+                "custom_prompt": "检查是否存在使用字符串拼接的代码，可能导致各种注入风险。应该使用参数化查询。",
+                "fix_suggestion": "使用参数化查询或预编译语句",
+                "sort_order": 1,
+            },
+            {
+                "rule_code": "BATCH-002",
+                "name": "硬编码的API密钥 - 安全风险",
+                "description": "检测代码中硬编码的API密钥",
+                "category": "security",
+                "severity": "critical",
+                "custom_prompt": "检查是否存在硬编码在代码中的API密钥、密码等敏感信息。这些应该放在环境变量或密钥管理系统中。",
+                "fix_suggestion": "将敏感信息移到环境变量或密钥管理系统",
+                "sort_order": 2,
+            },
+            {
+                "rule_code": "BATCH-003",
+                "name": "未使用的导入 - 代码质量问题",
+                "description": "检测导入但未使用的包或模块",
+                "category": "quality",
+                "severity": "low",
+                "custom_prompt": "检查是否存在导入但未使用的包或模块，这会增加代码复杂度。",
+                "fix_suggestion": "删除未使用的导入",
+                "sort_order": 3,
+            },
+            {
+                "rule_code": "BATCH-004",
+                "name": "缺少输入验证 - 用户输入未验证",
+                "description": "检测对用户输入缺少验证的代码",
+                "category": "security",
+                "severity": "high",
+                "custom_prompt": "检查是否存在对用户输入缺少验证的代码，这可能导致各种安全问题。",
+                "fix_suggestion": "对所有用户输入进行严格的验证和过滤",
+                "sort_order": 4,
+            },
+            {
+                "rule_code": "BATCH-005",
+                "name": "使用不安全的加密算法 - 安全问题",
+                "description": "检测使用弱加密算法的代码",
+                "category": "security",
+                "severity": "critical",
+                "custom_prompt": "检查是否使用了不安全的加密算法，如MD5、SHA1、DES等。应该使用更强的算法。",
+                "fix_suggestion": "使用更安全的加密算法如AES-256、SHA-256等",
+                "sort_order": 5,
+            },
+            {
+                "rule_code": "BATCH-006",
+                "name": "缺少速率限制 - 可能导致暴力破解",
+                "description": "检测缺少速率限制的接口",
+                "category": "security",
+                "severity": "high",
+                "custom_prompt": "检查是否存在缺少速率限制的接口，这可能导致暴力破解或DoS攻击。",
+                "fix_suggestion": "为敏感接口添加速率限制",
+                "sort_order": 6,
+            },
+            {
+                "rule_code": "BATCH-007",
+                "name": "不安全的文件操作 - 路径遍历风险",
+                "description": "检测不安全的文件操作代码",
+                "category": "security",
+                "severity": "high",
+                "custom_prompt": "检查是否存在不安全的文件操作，可能导致路径遍历或其他文件安全问题。",
+                "fix_suggestion": "确保文件操作路径在安全目录内，使用白名单验证",
+                "sort_order": 7,
+            },
+            {
+                "rule_code": "BATCH-008",
+                "name": "缺少权限检查 - 可能导致未授权访问",
+                "description": "检测缺少权限检查的代码",
+                "category": "security",
+                "severity": "critical",
+                "custom_prompt": "检查是否存在缺少权限检查的代码，这可能导致未授权访问。",
+                "fix_suggestion": "在关键操作前添加权限验证",
+                "sort_order": 8,
+            },
+            {
+                "rule_code": "BATCH-009",
+                "name": "不安全的随机数 - 使用非密码学安全随机",
+                "description": "检测使用非密码学安全随机数生成器的代码",
+                "category": "security",
+                "severity": "medium",
+                "custom_prompt": "检查是否使用了非密码学安全的随机数生成器，在安全场景下应该使用安全的随机数生成器。",
+                "fix_suggestion": "使用密码学安全的随机数生成器",
+                "sort_order": 9,
+            },
+            {
+                "rule_code": "BATCH-010",
+                "name": "调试代码未移除 - 质量问题",
+                "description": "检测生产环境中遗留的调试代码",
+                "category": "quality",
+                "severity": "medium",
+                "custom_prompt": "检查是否存在生产环境中不应该存在的调试代码，如console.log、print调试信息等。",
+                "fix_suggestion": "移除或禁用生产环境中的调试代码",
+                "sort_order": 10,
+            },
+        ]
+    },
+    {
+        "name": "批量规则集 - 第2批",
+        "description": "批量生成的第2批10条规则",
+        "language": "all",
+        "rule_type": "security",
+        "is_default": False,
+        "is_system": True,
+        "sort_order": 101,
+        "severity_weights": {"critical": 10, "high": 5, "medium": 2, "low": 1},
+        "rules": [
+            {
+                "rule_code": "BATCH-011",
+                "name": "缺少HTTPS - 数据传输不安全",
+                "description": "检测使用HTTP而非HTTPS的代码",
+                "category": "security",
+                "severity": "high",
+                "custom_prompt": "检查是否存在使用HTTP而非HTTPS的代码，这可能导致数据传输过程中被窃取或篡改。",
+                "fix_suggestion": "使用HTTPS加密数据传输",
+                "sort_order": 11,
+            },
+            {
+                "rule_code": "BATCH-012",
+                "name": "不安全的反序列化 - 可能导致RCE",
+                "description": "检测不安全的反序列化操作",
+                "category": "security",
+                "severity": "critical",
+                "custom_prompt": "检查是否存在不安全的反序列化操作，这可能导致远程代码执行漏洞。",
+                "fix_suggestion": "使用安全的序列化格式，或对反序列化输入进行严格验证",
+                "sort_order": 12,
+            },
+            {
+                "rule_code": "BATCH-013",
+                "name": "硬编码的数据库连接信息",
+                "description": "检测硬编码的数据库连接信息",
+                "category": "security",
+                "severity": "critical",
+                "custom_prompt": "检查是否存在硬编码的数据库连接字符串、用户名、密码等敏感信息。",
+                "fix_suggestion": "将数据库连接信息移到环境变量或配置文件中",
+                "sort_order": 13,
+            },
+            {
+                "rule_code": "BATCH-014",
+                "name": "缺少日志记录 - 质量问题",
+                "description": "检测关键操作缺少日志记录的代码",
+                "category": "quality",
+                "severity": "low",
+                "custom_prompt": "检查是否存在关键操作缺少日志记录的代码，这会影响问题追踪和安全审计。",
+                "fix_suggestion": "为关键操作添加适当的日志记录",
+                "sort_order": 14,
+            },
+            {
+                "rule_code": "BATCH-015",
+                "name": "不安全的正则表达式 - ReDoS风险",
+                "description": "检测可能导致正则表达式拒绝服务的代码",
+                "category": "security",
+                "severity": "medium",
+                "custom_prompt": "检查是否存在可能导致正则表达式拒绝服务(ReDoS)的复杂正则表达式。",
+                "fix_suggestion": "简化正则表达式，使用非贪婪匹配，添加超时限制",
+                "sort_order": 15,
+            },
+            {
+                "rule_code": "BATCH-016",
+                "name": "缺少数据验证 - 质量问题",
+                "description": "检测缺少数据验证的代码",
+                "category": "quality",
+                "severity": "medium",
+                "custom_prompt": "检查是否存在缺少数据验证的代码，这可能导致数据完整性问题。",
+                "fix_suggestion": "添加数据类型、范围、格式等验证",
+                "sort_order": 16,
+            },
+            {
+                "rule_code": "BATCH-017",
+                "name": "不安全的SQL查询 - 注入风险",
+                "description": "检测可能导致SQL注入的代码",
+                "category": "security",
+                "severity": "critical",
+                "custom_prompt": "检查是否存在SQL拼接或其他可能导致SQL注入的代码。",
+                "fix_suggestion": "使用参数化查询或ORM框架",
+                "sort_order": 17,
+            },
+            {
+                "rule_code": "BATCH-018",
+                "name": "缺少异常处理 - 质量问题",
+                "description": "检测缺少适当异常处理的代码",
+                "category": "quality",
+                "severity": "medium",
+                "custom_prompt": "检查是否存在缺少适当异常处理的代码，这可能导致程序崩溃或异常行为。",
+                "fix_suggestion": "添加适当的try-catch或异常处理机制",
+                "sort_order": 18,
+            },
+            {
+                "rule_code": "BATCH-019",
+                "name": "不安全的跨域资源共享 - CORS",
+                "description": "检测CORS配置过于宽松的代码",
+                "category": "security",
+                "severity": "high",
+                "custom_prompt": "检查是否存在CORS配置过于宽松的代码，如Access-Control-Allow-Origin设置为*。",
+                "fix_suggestion": "限制允许访问的域名，避免使用通配符",
+                "sort_order": 19,
+            },
+            {
+                "rule_code": "BATCH-020",
+                "name": "硬编码的IP地址 - 质量问题",
+                "description": "检测硬编码的IP地址",
+                "category": "quality",
+                "severity": "low",
+                "custom_prompt": "检查是否存在硬编码的IP地址，这会降低代码的可移植性和可维护性。",
+                "fix_suggestion": "将IP地址移到配置文件中",
+                "sort_order": 20,
+            },
+        ]
+    },
 ]
 
 
@@ -1471,18 +1727,21 @@ async def init_system_templates(db: AsyncSession) -> None:
 
 
 async def init_system_rule_sets(db: AsyncSession) -> None:
-    """初始化系统审计规则集"""
+    """初始化系统审计规则集 - 会添加新规则集，也会添加缺失的规则"""
     for rule_set_data in SYSTEM_RULE_SETS:
         # 检查是否已存在
         result = await db.execute(
-            select(AuditRuleSet).where(
+            select(AuditRuleSet)
+            .options(selectinload(AuditRuleSet.rules))
+            .where(
                 AuditRuleSet.name == rule_set_data["name"],
                 AuditRuleSet.is_system == True
             )
         )
         existing = result.scalar_one_or_none()
-        
+
         if not existing:
+            # 规则集不存在，创建新的
             rule_set = AuditRuleSet(
                 name=rule_set_data["name"],
                 description=rule_set_data["description"],
@@ -1496,7 +1755,7 @@ async def init_system_rule_sets(db: AsyncSession) -> None:
             )
             db.add(rule_set)
             await db.flush()
-            
+
             # 创建规则
             for rule_data in rule_set_data.get("rules", []):
                 rule = AuditRule(
@@ -1514,9 +1773,56 @@ async def init_system_rule_sets(db: AsyncSession) -> None:
                     sort_order=rule_data.get("sort_order", 0),
                 )
                 db.add(rule)
-            
+
             logger.info(f"✓ 创建系统规则集: {rule_set_data['name']} ({len(rule_set_data.get('rules', []))} 条规则)")
-    
+        else:
+            # 规则集已存在，检查是否有新规则需要添加，并同步已有规则的名称和类别
+            existing_rule_codes = {r.rule_code for r in existing.rules}
+            existing_rules_map = {r.rule_code: r for r in existing.rules}
+            new_rules_added = 0
+            rules_updated = 0
+
+            for rule_data in rule_set_data.get("rules", []):
+                if rule_data["rule_code"] not in existing_rule_codes:
+                    # 添加缺失的规则
+                    rule = AuditRule(
+                        rule_set_id=existing.id,
+                        rule_code=rule_data["rule_code"],
+                        name=rule_data["name"],
+                        description=rule_data.get("description"),
+                        category=rule_data["category"],
+                        severity=rule_data.get("severity", "medium"),
+                        custom_prompt=rule_data.get("custom_prompt"),
+                        code_patterns=json.dumps(rule_data.get("code_patterns")) if rule_data.get("code_patterns") else None,
+                        fix_suggestion=rule_data.get("fix_suggestion"),
+                        reference_url=rule_data.get("reference_url"),
+                        enabled=True,
+                        sort_order=rule_data.get("sort_order", 0),
+                    )
+                    db.add(rule)
+                    new_rules_added += 1
+                else:
+                    # 同步已有规则的名称和类别（以代码定义为准）
+                    existing_rule = existing_rules_map[rule_data["rule_code"]]
+                    updated_fields = []
+                    if existing_rule.name != rule_data["name"]:
+                        existing_rule.name = rule_data["name"]
+                        updated_fields.append("name")
+                    if existing_rule.category != rule_data["category"]:
+                        existing_rule.category = rule_data["category"]
+                        updated_fields.append("category")
+                    if updated_fields:
+                        rules_updated += 1
+
+            # 同步规则集的 rule_type（基于分类函数）
+            expected_rule_type = classify_rule_set_type(rule_set_data["name"])
+            if existing.rule_type != expected_rule_type:
+                existing.rule_type = expected_rule_type
+                rules_updated += 1
+
+            if new_rules_added > 0 or rules_updated > 0:
+                logger.info(f"✓ 更新系统规则集: {rule_set_data['name']} (新增 {new_rules_added} 条规则, 同步 {rules_updated} 条规则)")
+
     await db.flush()
 
 
@@ -1528,6 +1834,7 @@ async def init_templates_and_rules(db: AsyncSession) -> None:
         await init_system_templates(db)
         await init_system_rule_sets(db)
         await ensure_code_patterns(db)
+        await sync_rule_categories(db)
         await db.commit()
         logger.info("✓ 系统模板和规则初始化完成")
     except Exception as e:
@@ -1562,4 +1869,43 @@ async def ensure_code_patterns(db: AsyncSession) -> None:
 
     if updated > 0:
         logger.info(f"✓ 回填 {updated} 条系统规则的 code_patterns 字段")
+    await db.flush()
+
+
+async def sync_rule_categories(db: AsyncSession) -> None:
+    """
+    根据分类规则同步所有规则的 category 和规则集的 rule_type:
+    - 规则名带有"性能"的统一归为性能规则 → category='performance'
+    - 规则名带有"质量"的统一归为质量规则 → category='quality'
+    - 其他均归为漏洞规则 → category='security'
+    - 规则集 rule_type 同理
+    """
+    # 同步所有规则的 category
+    result = await db.execute(select(AuditRule))
+    all_rules = result.scalars().all()
+
+    rules_updated = 0
+    for rule in all_rules:
+        expected_category = classify_rule_category(rule.name)
+        if rule.category != expected_category:
+            rule.category = expected_category
+            rules_updated += 1
+
+    if rules_updated > 0:
+        logger.info(f"✓ 同步 {rules_updated} 条规则的 category 字段")
+
+    # 同步所有规则集的 rule_type
+    result = await db.execute(select(AuditRuleSet))
+    all_rule_sets = result.scalars().all()
+
+    rule_sets_updated = 0
+    for rule_set in all_rule_sets:
+        expected_type = classify_rule_set_type(rule_set.name)
+        if rule_set.rule_type != expected_type:
+            rule_set.rule_type = expected_type
+            rule_sets_updated += 1
+
+    if rule_sets_updated > 0:
+        logger.info(f"✓ 同步 {rule_sets_updated} 个规则集的 rule_type 字段")
+
     await db.flush()

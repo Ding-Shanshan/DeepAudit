@@ -191,7 +191,7 @@ class LLMService:
         schema = """{
     "issues": [
         {
-            "type": "security|bug|performance|style|maintainability",
+            "type": "security|performance|quality",
             "severity": "critical|high|medium|low",
             "title": "string",
             "description": "string",
@@ -218,7 +218,7 @@ class LLMService:
     },
     "metrics": {
         "complexity": 0-100,
-        "maintainability": 0-100,
+        "quality": 0-100,
         "security": 0-100,
         "performance": 0-100
     }
@@ -242,11 +242,8 @@ class LLMService:
 
 请从以下维度全面、彻底地分析代码，找出所有问题：
 - 安全漏洞（SQL注入、XSS、命令注入、路径遍历、SSRF、XXE、反序列化、硬编码密钥等）
-- 潜在的 Bug 和逻辑错误
 - 性能问题和优化建议
-- 编码规范和代码风格
-- 可维护性和可读性
-- 最佳实践和设计模式
+- 代码质量问题（Bug和逻辑错误、编码规范、可维护性、可读性等）
 
 【重要】请尽可能多地找出代码中的所有问题，不要遗漏任何安全漏洞或潜在风险！
 
@@ -297,11 +294,8 @@ You are a professional code auditing assistant. Your task is to analyze code and
 
 Please comprehensively and thoroughly analyze the code, finding ALL issues from the following dimensions:
 - Security vulnerabilities (SQL injection, XSS, command injection, path traversal, SSRF, XXE, deserialization, hardcoded secrets, etc.)
-- Potential bugs and logical errors
 - Performance issues and optimization suggestions
-- Coding standards and code style
-- Maintainability and readability
-- Best practices and design patterns
+- Code quality issues (bugs, logical errors, coding standards, maintainability, readability, etc.)
 
 【IMPORTANT】Find as many issues as possible! Do NOT miss any security vulnerabilities or potential risks!
 
@@ -844,7 +838,7 @@ Please analyze the following code:
             },
             "metrics": {
                 "complexity": 80,
-                "maintainability": 80,
+                "quality": 80,
                 "security": 80,
                 "performance": 80
             }
@@ -881,7 +875,7 @@ Please analyze the following code:
         
         # 构建规则提示词，并提取启用的规则类别
         rules_prompt = ""
-        all_categories = ["security", "bug", "performance", "style", "maintainability"]
+        all_categories = ["security", "performance", "quality"]
         enabled_categories = None  # None 表示不限制（无规则时使用全部类别）
 
         if rules:
@@ -907,17 +901,13 @@ Please analyze the following code:
             if enabled_categories:
                 category_type_map_zh = {
                     "security": "安全漏洞",
-                    "bug": "Bug和逻辑错误",
                     "performance": "性能问题",
-                    "style": "编码规范和代码风格",
-                    "maintainability": "可维护性和可读性",
+                    "quality": "代码质量问题",
                 }
                 category_type_map_en = {
                     "security": "Security vulnerabilities",
-                    "bug": "Bugs and logical errors",
                     "performance": "Performance issues",
-                    "style": "Coding standards and code style",
-                    "maintainability": "Maintainability and readability",
+                    "quality": "Code quality issues",
                 }
                 if is_chinese:
                     enabled_names = "、".join(category_type_map_zh.get(c, c) for c in enabled_categories)

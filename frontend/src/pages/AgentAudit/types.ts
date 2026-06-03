@@ -43,7 +43,7 @@ export const AUDIT_PHASE_CONFIG: Record<AuditPhase, {
   },
   reporting: {
     key: 'reporting',
-    label: '报告',
+    label: '总结',
     description: '结果汇总、评分计算',
     icon: '📄',
   },

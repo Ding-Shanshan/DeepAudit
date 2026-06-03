@@ -1,9 +1,9 @@
 /**
  * 顶部栏组件
- * 深色渐变背景，白色文字，全中文标签
+ * 简约白色背景，信息平铺展示
  */
 
-import { Square, Loader2, Download, Wifi, WifiOff } from "lucide-react";
+import { Square, Loader2 } from "lucide-react";
 import { StatusBadge } from "./StatusBadge";
 import type { HeaderProps } from "../types";
 
@@ -14,28 +14,40 @@ export function Header({
   onCancel,
 }: HeaderProps) {
   return (
-    <div className="bg-gradient-to-r from-indigo-700 via-indigo-800 to-indigo-900 px-6 py-3.5">
+    <div className="bg-white border-b border-slate-200 px-6 py-3">
       <div className="flex items-center justify-between">
         {/* 左侧：任务信息 */}
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3">
           {task && (
-            <div className="flex items-center gap-3">
-              <span className="max-w-[320px] truncate text-white font-semibold text-base">
+            <>
+              <span className="max-w-[360px] truncate text-slate-800 font-medium text-sm">
                 {task.name || task.id.slice(0, 8)}
               </span>
               <StatusBadge status={task.status} size="sm" />
-            </div>
+              {/* 统计指标 */}
+              <div className="hidden sm:flex items-center gap-3 ml-3 text-xs text-slate-400">
+                {task.analyzed_files != null && (
+                  <span>已分析 <span className="text-slate-600 font-medium">{task.analyzed_files}</span>/{task.total_files} 文件</span>
+                )}
+                {(task.findings_count ?? 0) > 0 && (
+                  <span>发现 <span className="text-rose-500 font-medium">{task.findings_count}</span> 个问题</span>
+                )}
+                {task.progress_percentage != null && isRunning && (
+                  <span>{task.progress_percentage.toFixed(0)}%</span>
+                )}
+              </div>
+            </>
           )}
         </div>
 
-        {/* 右侧：状态+操作 */}
-        <div className="flex items-center gap-3">
-          {/* 连接状态指示 */}
+        {/* 右侧：操作 */}
+        <div className="flex items-center gap-2">
+          {/* 运行指示 */}
           {isRunning && (
-            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/10 border border-white/15">
-              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-              <span className="text-xs font-medium text-emerald-300">实时</span>
-            </div>
+            <span className="flex items-center gap-1.5 text-xs text-emerald-600">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+              实时
+            </span>
           )}
 
           {/* 终止按钮 */}
@@ -44,22 +56,22 @@ export function Header({
               onClick={onCancel}
               disabled={isCancelling}
               className="
-                flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium
-                bg-white/10 text-white border border-white/20
-                hover:bg-rose-500/30 hover:border-rose-400/40 hover:text-rose-100
-                transition-all duration-200
+                flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium
+                text-slate-600 border border-slate-200
+                hover:text-rose-600 hover:border-rose-300 hover:bg-rose-50
+                transition-colors duration-150
                 disabled:opacity-50 disabled:cursor-not-allowed
               "
             >
               {isCancelling ? (
                 <>
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  <span>正在终止</span>
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  终止中
                 </>
               ) : (
                 <>
-                  <Square className="h-4 w-4" />
-                  <span>终止审计</span>
+                  <Square className="h-3.5 w-3.5" />
+                  终止
                 </>
               )}
             </button>

@@ -1,7 +1,8 @@
 /**
- * Agent 审计页 - 仪表盘布局
- * 左侧：阶段时间线 + 统计摘要
- * 右侧：日志流 + Agent面板
+ * Agent 审计页 - 简约单栏布局
+ * 顶部：信息栏 + 阶段步骤条 + 统计
+ * 主体：日志流
+ * 底部：Agent面板
  */
 
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
@@ -718,18 +719,18 @@ function AgentAuditPageContent() {
 
   if (isLoading && !task) {
     return (
-      <div className="h-screen bg-slate-50/30 flex items-center justify-center font-sans relative">
-        <div className="flex items-center gap-3 text-slate-500">
+      <div className="h-screen bg-white flex items-center justify-center font-sans">
+        <div className="flex items-center gap-2 text-slate-400">
           <div className="loading-spinner" />
-          <span className="font-sans text-sm tracking-wide">加载审计任务...</span>
+          <span className="text-sm">加载审计任务...</span>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="h-screen bg-slate-50/30 flex flex-col overflow-hidden font-sans relative">
-      {/* 顶部栏 */}
+    <div className="h-screen bg-white flex flex-col overflow-hidden font-sans">
+      {/* 顶部信息栏 */}
       <Header
         task={task}
         isRunning={isRunning}
@@ -737,119 +738,104 @@ function AgentAuditPageContent() {
         onCancel={handleCancel}
       />
 
-      {/* 主内容区：左面板 + 右主区 */}
-      <div className="flex-1 min-h-0 flex gap-0 overflow-hidden">
-        {/* 左侧面板：阶段时间线 + 统计 */}
-        <div className="w-64 bg-gradient-to-b from-slate-800 to-slate-900 flex flex-col overflow-hidden border-r border-slate-700">
-          {/* 阶段时间线 */}
-          <div className="flex-1 overflow-y-auto custom-scrollbar px-4 py-4">
-            <PhaseTimeline
-              currentPhase={currentPhase}
-              completedPhases={completedPhases}
-              isRunning={isRunning}
-              isComplete={isComplete}
-              phaseLogMap={phaseLogMap}
-            />
-          </div>
+      {/* 阶段步骤条 + 统计 */}
+      <div className="border-b border-slate-100 px-6 py-2.5 flex items-center justify-between">
+        <PhaseTimeline
+          currentPhase={currentPhase}
+          completedPhases={completedPhases}
+          isRunning={isRunning}
+          isComplete={isComplete}
+          phaseLogMap={phaseLogMap}
+        />
+        <StatsPanel task={task} findings={findings} />
+      </div>
 
-          {/* 统计摘要 */}
-          <div className="flex-shrink-0 border-t border-slate-700/60 px-4 py-4">
-            <StatsPanel task={task} findings={findings} />
-          </div>
+      {/* 主内容区 */}
+      <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
+        {/* 日志流 */}
+        <div className="flex-1 min-h-0 flex flex-col overflow-hidden border-b border-slate-100">
+          <LogStream
+            currentPhase={currentPhase}
+            completedPhases={completedPhases}
+            isRunning={isRunning}
+            isComplete={isComplete}
+            phaseLogMap={phaseLogMap}
+            expandedLogIds={expandedLogIds}
+            onToggleLogExpanded={toggleLogExpanded}
+            isAutoScroll={isAutoScroll}
+            onToggleAutoScroll={() => setAutoScroll(!isAutoScroll)}
+            scrollRef={phaseScrollRef}
+          />
         </div>
 
-        {/* 右侧主区：日志流 + Agent面板 */}
-        <div className="flex-1 flex flex-col overflow-hidden p-4 gap-3">
-          {/* 导出按钮（右上角） */}
-          {task && isComplete && (
-            <div className="flex-shrink-0 flex items-center gap-2">
-              <button
-                onClick={handleExportReport}
-                className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium
-                  bg-indigo-600 text-white hover:bg-indigo-500 transition-colors shadow-sm"
-              >
-                <Download className="w-4 h-4" />
-                导出报告
-              </button>
+        {/* Agent 面板 */}
+        <div className="flex-shrink-0">
+          <div className="flex items-center justify-between px-4 py-2 border-b border-slate-100">
+            <div className="flex items-center gap-2">
+              <Radio className="w-3.5 h-3.5 text-slate-400" />
+              <span className="text-xs font-medium text-slate-500">
+                {selectedAgentId ? 'Agent 详情' : 'Agent'}
+              </span>
+              {!selectedAgentId && agentTree && (
+                <span className="text-[10px] text-slate-300 tabular-nums">
+                  {agentTree.total_agents}
+                </span>
+              )}
             </div>
-          )}
 
-          {/* 日志流 */}
-          <div className="flex-1 min-h-0">
-            <LogStream
-              currentPhase={currentPhase}
-              completedPhases={completedPhases}
-              isRunning={isRunning}
-              isComplete={isComplete}
-              phaseLogMap={phaseLogMap}
-              expandedLogIds={expandedLogIds}
-              onToggleLogExpanded={toggleLogExpanded}
-              isAutoScroll={isAutoScroll}
-              onToggleAutoScroll={() => setAutoScroll(!isAutoScroll)}
-              scrollRef={phaseScrollRef}
-            />
-          </div>
-
-          {/* Agent 面板（底部可折叠） */}
-          <div className="flex-shrink-0 bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
-            <div className="flex items-center justify-between px-4 py-2.5 border-b border-slate-100">
-              <div className="flex items-center gap-2">
-                <Radio className="w-4 h-4 text-indigo-600" />
-                <h3 className="text-sm font-semibold text-slate-800">
-                  {selectedAgentId ? 'Agent 详情' : 'Agent 概览'}
-                </h3>
-                {!selectedAgentId && agentTree && (
-                  <Badge variant="outline" className="ml-1 h-5 px-2 text-xs border-indigo-200 text-indigo-600 bg-indigo-50">
-                    {agentTree.total_agents}
-                  </Badge>
-                )}
-              </div>
+            <div className="flex items-center gap-2">
+              {task && isComplete && (
+                <button
+                  onClick={handleExportReport}
+                  className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-indigo-600 transition-colors"
+                >
+                  <Download className="w-3.5 h-3.5" />
+                  导出
+                </button>
+              )}
 
               {selectedAgentId && (
                 <button
                   onClick={() => selectAgent(null)}
-                  className="flex items-center gap-1 text-xs text-indigo-600 hover:text-indigo-500 font-medium px-2 py-1 rounded-lg hover:bg-indigo-50"
+                  className="flex items-center gap-1 text-[10px] text-slate-400 hover:text-slate-600 transition-colors"
                 >
-                  <ArrowLeft className="w-3.5 h-3.5" />
-                  返回概览
+                  <ArrowLeft className="w-3 h-3" />
+                  返回
                 </button>
               )}
             </div>
+          </div>
 
-            <div className="max-h-[200px] overflow-y-auto custom-scrollbar px-3 py-2">
-              {selectedAgentId ? (
-                <AgentDetailPanel
-                  agentId={selectedAgentId}
-                  treeNodes={treeNodes}
-                  onClose={() => selectAgent(null)}
-                />
-              ) : treeNodes.length > 0 ? (
-                <div>
-                  {treeNodes.map(node => (
-                    <AgentTreeNodeItem
-                      key={node.agent_id}
-                      node={node}
-                      selectedId={selectedAgentId}
-                      onSelect={handleAgentSelect}
-                    />
-                  ))}
-                </div>
-              ) : (
-                <div className="py-4 text-center">
-                  {isRunning ? (
-                    <>
-                      <Loader2 className="w-5 h-5 animate-spin text-indigo-500 mx-auto mb-1" />
-                      <p className="text-xs text-slate-400">初始化 Agent...</p>
-                    </>
-                  ) : (
-                    <>
-                      <Radio className="w-6 h-6 text-slate-300 mx-auto mb-1" />
-                      <p className="text-xs text-slate-400">暂无 Agent</p>
-                    </>
-                  )}
-                </div>
-              )}
-            </div>
+          <div className="max-h-[180px] overflow-y-auto custom-scrollbar">
+            {selectedAgentId ? (
+              <AgentDetailPanel
+                agentId={selectedAgentId}
+                treeNodes={treeNodes}
+                onClose={() => selectAgent(null)}
+              />
+            ) : treeNodes.length > 0 ? (
+              <div className="py-1">
+                {treeNodes.map(node => (
+                  <AgentTreeNodeItem
+                    key={node.agent_id}
+                    node={node}
+                    selectedId={selectedAgentId}
+                    onSelect={handleAgentSelect}
+                  />
+                ))}
+              </div>
+            ) : (
+              <div className="py-4 text-center">
+                {isRunning ? (
+                  <div className="flex items-center justify-center gap-1.5 text-slate-300">
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    <span className="text-[10px]">初始化 Agent...</span>
+                  </div>
+                ) : (
+                  <span className="text-[10px] text-slate-300">暂无 Agent</span>
+                )}
+              </div>
+            )}
           </div>
         </div>
       </div>

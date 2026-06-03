@@ -62,7 +62,7 @@ class AuditRule(Base):
     # 规则描述
     description = Column(Text, nullable=True)
     
-    # 规则类别: security, bug, performance, style, maintainability
+    # 规则类别: security, performance, quality（规则名带性能→performance，带质量→quality，其他→security）
     category = Column(String(50), nullable=False)
     
     # 默认严重程度: critical, high, medium, low

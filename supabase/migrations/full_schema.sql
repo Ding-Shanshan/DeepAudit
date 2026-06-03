@@ -75,7 +75,7 @@ CREATE TABLE IF NOT EXISTS audit_issues (
     file_path TEXT NOT NULL,
     line_number INTEGER,
     column_number INTEGER,
-    issue_type VARCHAR(20) DEFAULT 'maintainability' CHECK (issue_type IN ('bug', 'security', 'performance', 'style', 'maintainability')),
+    issue_type VARCHAR(20) DEFAULT 'security' CHECK (issue_type IN ('security', 'performance', 'quality')),
     severity VARCHAR(20) DEFAULT 'low' CHECK (severity IN ('critical', 'high', 'medium', 'low')),
     title VARCHAR(255) NOT NULL,
     description TEXT,

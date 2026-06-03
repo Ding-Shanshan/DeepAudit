@@ -17,13 +17,11 @@ export const SUPPORTED_LANGUAGES = [
   'swift',
 ] as const;
 
-// 问题类型
+// 问题类型（规则名带性能→performance，带质量→quality，其他→security）
 export const ISSUE_TYPES = {
-  BUG: 'bug',
   SECURITY: 'security',
   PERFORMANCE: 'performance',
-  STYLE: 'style',
-  MAINTAINABILITY: 'maintainability',
+  QUALITY: 'quality',
 } as const;
 
 // 问题严重程度

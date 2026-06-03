@@ -14,7 +14,7 @@ class AuditRuleBase(BaseModel):
     rule_code: str = Field(..., min_length=1, max_length=50, description="规则标识")
     name: str = Field(..., min_length=1, max_length=200, description="规则名称")
     description: Optional[str] = Field(None, description="规则描述")
-    category: str = Field(..., description="规则类别: security/bug/performance/style/maintainability")
+    category: str = Field(..., description="规则类别: security/performance/quality（规则名带性能→performance，带质量→quality，其他→security）")
     severity: str = Field("medium", description="严重程度: critical/high/medium/low")
     custom_prompt: Optional[str] = Field(None, description="自定义检测提示词")
     code_patterns: Optional[Dict[str, List[str]]] = Field(None, description="代码检测模式(按语言)")
