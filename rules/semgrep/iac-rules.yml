@@ -16,12 +16,15 @@ rules:
       rule_code: IAC-CTR-001
 
   - id: IAC-CTR-002
-    message: "镜像使用 :latest 标签，不利于复现"
+    message: "镜像使用 :latest 标签或未指定标签，不利于复现"
     severity: WARNING
     languages: [generic]
     paths:
       include: ["Dockerfile", "*.dockerfile", "Dockerfile.*"]
-    pattern-regex: '^FROM\s+\S+:latest(\s|$)'
+    patterns:
+      - pattern-either:
+          - pattern-regex: '^FROM\s+(--\S+\s+)?\S+:latest(\s|$)'
+          - pattern-regex: '^FROM\s+(--\S+\s+)?[^\s:@-][^\s:@]*\s*$'
     metadata:
       category: iac
       iac_target: dockerfile
@@ -107,7 +110,7 @@ rules:
     languages: [yaml]
     paths:
       include: [".github/workflows/*.yml", ".github/workflows/*.yaml"]
-    pattern-regex: 'uses:\s+[\w\-]+/[\w\-]+@(v\d+(\.\d+)*|main|master|latest|\w{1,39})$'
+    pattern-regex: 'uses:\s+[\w\-.]+/[\w\-./]+@(?![a-f0-9]{40}(\s|$))\S+'
     metadata:
       category: iac
       iac_target: github_actions
@@ -120,7 +123,9 @@ rules:
     paths:
       include: [".github/workflows/*.yml", ".github/workflows/*.yaml"]
     patterns:
-      - pattern-regex: 'run:[^\n]*\$\{\{\s*secrets\.'
+      - pattern-either:
+          - pattern-regex: 'run:[^\n]*\$\{\{\s*secrets\.'
+          - pattern-regex: 'run:\s*[|>][-+]?\s*\n(?:[ \t]+[^\n]*\n)*?[ \t]+[^\n]*\$\{\{\s*secrets\.'
     metadata:
       category: iac
       iac_target: github_actions
