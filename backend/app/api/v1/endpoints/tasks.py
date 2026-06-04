@@ -2,7 +2,7 @@ from typing import Any, List, Optional
 from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
-from sqlalchemy.orm import selectinload
+from sqlalchemy.orm import selectinload, defer
 from sqlalchemy import func
 from pydantic import BaseModel
 from datetime import datetime, timezone
@@ -28,11 +28,27 @@ router = APIRouter()
 
 
 async def _fix_stale_issues_count(db: AsyncSession, tasks: list[AuditTask]) -> None:
-    """校正 stale 的 issues_count：从 audit_issues 表重新计数并更新任务对象"""
+    """校正 stale 的 issues_count：从 audit_issues 表重新计数并更新任务对象。
+
+    注意：本函数在 GET 端点里被调用，必须避免不必要的写入——
+    1) 只统计可能 stale 的任务（status 不是 completed/failed/cancelled，
+       或 issues_count==0 但任务已结束、可能是历史脏数据）
+    2) quality_score 对比改 0.05 容差（DB Float 精度 vs Python float）
+    3) 没有真正变化就不 commit
+    """
     if not tasks:
         return
-    task_ids = [t.id for t in tasks]
-    # 批量查询每个 task 的实际 issue 数量
+    # 终态任务的 issues_count 通常已经写定，无需每次查 issues 表
+    # 仅对未终态任务、或 issues_count==0/quality_score==0 但已完成的可疑任务，做校正
+    candidates = [
+        t for t in tasks
+        if t.status not in ("completed", "failed", "cancelled")
+        or (t.status == "completed" and (t.issues_count == 0 or t.quality_score == 0.0))
+    ]
+    if not candidates:
+        return
+
+    task_ids = [t.id for t in candidates]
     counts_result = await db.execute(
         select(AuditIssue.task_id, func.count(AuditIssue.id))
         .where(AuditIssue.task_id.in_(task_ids))
@@ -41,19 +57,20 @@ async def _fix_stale_issues_count(db: AsyncSession, tasks: list[AuditTask]) -> N
     counts_map = dict(counts_result.all())
 
     needs_commit = False
-    for task in tasks:
+    for task in candidates:
         actual_count = counts_map.get(task.id, 0)
         if task.issues_count != actual_count:
             task.issues_count = actual_count
             needs_commit = True
         # 修正 quality_score（scanned_files=0 时用 total_files 代替）
         file_count = task.scanned_files or task.total_files or 0
-        expected_score = calculate_quality_score(file_count, actual_count)
-        if task.quality_score != expected_score and file_count > 0:
-            task.quality_score = expected_score
-            needs_commit = True
+        if file_count > 0:
+            expected_score = calculate_quality_score(file_count, actual_count)
+            # DB Float 精度可能跟 Python float 有 0.01~0.02 漂移，容忍 0.05
+            if abs((task.quality_score or 0.0) - expected_score) > 0.05:
+                task.quality_score = expected_score
+                needs_commit = True
 
-    # 持久化修正后的数据，避免下次再需重新计算
     if needs_commit:
         await db.commit()
 
@@ -157,8 +174,16 @@ async def list_tasks(
         select(Project.id).where(Project.owner_id == current_user.id)
     )
     user_project_ids = [p[0] for p in projects_result.fetchall()]
-    
-    query = select(AuditTask).options(selectinload(AuditTask.project))
+
+    query = (
+        select(AuditTask)
+        .options(
+            selectinload(AuditTask.project),
+            # code_analysis_results 是 JSON 列，单条记录可达数百 MB；
+            # 列表接口不需要它（response schema 也未声明），必须 defer 避免每次刷新拉 GB 级数据。
+            defer(AuditTask.code_analysis_results),
+        )
+    )
     # 只返回当前用户项目的任务
     query = query.where(AuditTask.project_id.in_(user_project_ids)) if user_project_ids else query.where(False)
     if project_id:
@@ -182,7 +207,12 @@ async def read_task(
     """
     result = await db.execute(
         select(AuditTask)
-        .options(selectinload(AuditTask.project))
+        .options(
+            selectinload(AuditTask.project),
+            # 同 list_tasks：code_analysis_results 可达数百 MB，详情页通过
+            # 专门的 /tasks/{id}/code-analysis 端点获取，read_task 不需要它。
+            defer(AuditTask.code_analysis_results),
+        )
         .where(AuditTask.id == id)
     )
     task = result.scalars().first()
