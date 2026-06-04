@@ -193,6 +193,9 @@ export default function TerminalProgressDialog({
                 setQualityScore(task.quality_score || 0);
                 setTotalLines(task.total_lines || 0);
 
+                // 编译后产物没有"代码行数"这个概念，跳过相关日志/卡片以免误导
+                const isCompiledScan = task.project?.scan_mode === "compiled";
+
                 const statusChanged = task.status !== lastStatus;
                 const filesChanged = task.scanned_files !== lastScannedFiles;
                 const issuesChanged = task.issues_count !== lastIssuesCount;
@@ -207,7 +210,7 @@ export default function TerminalProgressDialog({
                     details.push(`状态: ${task.status}`);
                     if (task.scanned_files) details.push(`文件: ${task.scanned_files}/${task.total_files}`);
                     if (task.issues_count) details.push(`问题: ${task.issues_count}`);
-                    if (task.total_lines) details.push(`行数: ${task.total_lines}`);
+                    if (task.total_lines && !isCompiledScan) details.push(`行数: ${task.total_lines}`);
                     if (task.quality_score) {
                         const riskLabel = task.quality_score === 100 ? "无风险" : task.quality_score <= 25 ? "严重风险" : task.quality_score <= 50 ? "高风险" : task.quality_score <= 75 ? "中风险" : "低风险";
                         details.push(`风险: ${riskLabel}`);
@@ -243,7 +246,7 @@ export default function TerminalProgressDialog({
                         lastIssuesCount = task.issues_count;
                     }
 
-                    if (linesChanged && task.total_lines > lastTotalLines) {
+                    if (linesChanged && task.total_lines > lastTotalLines && !isCompiledScan) {
                         addLog(`[统计] 已分析 ${task.total_lines.toLocaleString()} 行代码`, "info");
                         lastTotalLines = task.total_lines;
                     }
@@ -253,7 +256,9 @@ export default function TerminalProgressDialog({
                         addLog("[完成] 代码扫描完成", "success");
 
                         addLog(`[统计] 总计扫描: ${task.total_files} 个文件`, "success");
-                        addLog(`[统计] 总计分析: ${task.total_lines.toLocaleString()} 行代码`, "success");
+                        if (!isCompiledScan) {
+                            addLog(`[统计] 总计分析: ${task.total_lines.toLocaleString()} 行代码`, "success");
+                        }
                         addLog(`[结果] 发现问题: ${task.issues_count} 个`, task.issues_count > 0 ? "warning" : "success");
 
                         if (task.issues_count > 0) {
@@ -287,7 +292,9 @@ export default function TerminalProgressDialog({
                         addLog("[停止] 任务已被用户取消", "warning");
                         addLog(`[统计] 已分析文件: ${task.scanned_files}/${task.total_files}`, "info");
                         addLog(`[统计] 发现问题: ${task.issues_count} 个`, "info");
-                        addLog(`[统计] 代码行数: ${task.total_lines.toLocaleString()} 行`, "info");
+                        if (!isCompiledScan) {
+                            addLog(`[统计] 代码行数: ${task.total_lines.toLocaleString()} 行`, "info");
+                        }
                         addLog("[保存] 已分析的结果已保存", "success");
                         setIsCancelled(true);
                         if (pollIntervalRef.current) { clearInterval(pollIntervalRef.current); pollIntervalRef.current = null; }
