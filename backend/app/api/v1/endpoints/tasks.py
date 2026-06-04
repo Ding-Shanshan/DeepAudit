@@ -470,6 +470,45 @@ async def get_code_analysis(
     }
 
 
+@router.get("/{task_id}/code-analysis/summary")
+async def get_code_analysis_summary(
+    task_id: str,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(deps.get_current_user),
+):
+    """获取代码分析结果各小节计数（轻量级，用于前端分批加载首屏渲染）。
+
+    返回 < 200 字节的 JSON。即便 code_analysis_results 列高达数百 MB，
+    DB 端只扫描顶层键不加载整列；超大记录时各计数回退为 -1（前端识别此值显示"过大"）。
+    """
+    await _verify_task_access(db, task_id, current_user.id, task_table="audit_tasks")
+    return await _get_code_analysis_summary(db, task_id, task_table="audit_tasks")
+
+
+@router.get("/{task_id}/code-analysis/{section}")
+async def get_code_analysis_section(
+    task_id: str,
+    section: str,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(deps.get_current_user),
+):
+    """按需获取代码分析结果的某一小节。
+
+    支持的 section: api_endpoints | call_graph | file_dependencies | control_flow
+
+    用户点击代码结构分析面板某节标题时触发，避免一次性加载整个 code_analysis_results。
+    """
+    if section not in _CODE_ANALYSIS_SECTIONS:
+        raise HTTPException(status_code=400, detail=f"不支持的 section: {section}")
+
+    await _verify_task_access(db, task_id, current_user.id, task_table="audit_tasks")
+    data = await _get_code_analysis_section(db, task_id, section, task_table="audit_tasks")
+    if data is None:
+        # control_flow 是 dict，其余三个是 list
+        return {} if section == "control_flow" else []
+    return data
+
+
 @router.patch("/{task_id}/issues/{issue_id}", response_model=AuditIssueSchema)
 async def update_issue(
     task_id: str,
