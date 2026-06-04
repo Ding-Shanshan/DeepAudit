@@ -106,7 +106,10 @@ async def scan_zip(
     # 检查权限：只有项目所有者可以上传
     if project.owner_id != current_user.id:
         raise HTTPException(status_code=403, detail="无权操作此项目")
-    
+
+    # 解析项目的 scan_mode 作为回退；请求显式提供时必须与项目一致
+    project_scan_mode = (project.scan_mode or "source")
+
     if not file.filename or not is_supported_archive(file.filename):
         raise HTTPException(status_code=400, detail="请上传 zip、rar、7z、tar、gz、tar.gz 等本地文件")
         
@@ -154,6 +157,24 @@ async def scan_zip(
     
     # 将扫描配置注入到 user_config 中（包括规则集、提示词模板和排除模式）
     if parsed_scan_config:
+        req_scan_mode = parsed_scan_config.get('scan_mode')
+        if req_scan_mode and req_scan_mode != project_scan_mode:
+            raise HTTPException(
+                status_code=400,
+                detail=f"扫描类型与项目不一致：项目 scan_mode={project_scan_mode}，请求 scan_mode={req_scan_mode}",
+            )
+        effective_scan_mode = req_scan_mode or project_scan_mode
+        req_compiled_options = parsed_scan_config.get('compiled_options')
+        if req_compiled_options is not None:
+            effective_compiled_options = req_compiled_options
+        elif project.compiled_options:
+            try:
+                effective_compiled_options = json.loads(project.compiled_options) if isinstance(project.compiled_options, str) else (project.compiled_options or {})
+            except Exception:
+                effective_compiled_options = {}
+        else:
+            effective_compiled_options = {}
+
         user_config['scan_config'] = {
             'file_paths': parsed_scan_config.get('file_paths', []),
             'exclude_patterns': parsed_scan_config.get('exclude_patterns', []),
@@ -162,8 +183,8 @@ async def scan_zip(
             'functionWhitelist': parsed_scan_config.get('functionWhitelist', []),
             'vulnerabilityWhitelist': parsed_scan_config.get('vulnerabilityWhitelist', []),
             'sanitizerFunctions': parsed_scan_config.get('sanitizerFunctions', []),
-            'scan_mode': parsed_scan_config.get('scan_mode') or 'source',
-            'compiled_options': parsed_scan_config.get('compiled_options') or {},
+            'scan_mode': effective_scan_mode,
+            'compiled_options': effective_compiled_options,
             'task_type': parsed_scan_config.get('task_type') or 'repository',
         }
 
@@ -214,7 +235,9 @@ async def scan_stored_zip(
     stored_zip_path = await load_project_zip(project_id)
     if not stored_zip_path:
         raise HTTPException(status_code=400, detail="项目没有已存储的本地文件，请先上传")
-    
+
+    project_scan_mode = (project.scan_mode or "source")
+
     # Create Task
     task = AuditTask(
         project_id=project_id,
@@ -232,6 +255,22 @@ async def scan_stored_zip(
     
     # 将扫描配置注入到 user_config 中（包括规则集、提示词模板和排除模式）
     if scan_request:
+        if scan_request.scan_mode and scan_request.scan_mode != project_scan_mode:
+            raise HTTPException(
+                status_code=400,
+                detail=f"扫描类型与项目不一致：项目 scan_mode={project_scan_mode}，请求 scan_mode={scan_request.scan_mode}",
+            )
+        effective_scan_mode = scan_request.scan_mode or project_scan_mode
+        if scan_request.compiled_options is not None:
+            effective_compiled_options = scan_request.compiled_options
+        elif project.compiled_options:
+            try:
+                effective_compiled_options = json.loads(project.compiled_options) if isinstance(project.compiled_options, str) else (project.compiled_options or {})
+            except Exception:
+                effective_compiled_options = {}
+        else:
+            effective_compiled_options = {}
+
         user_config['scan_config'] = {
             'file_paths': scan_request.file_paths or [],
             'exclude_patterns': scan_request.exclude_patterns or [],
@@ -240,8 +279,8 @@ async def scan_stored_zip(
             'functionWhitelist': scan_request.functionWhitelist or [],
             'vulnerabilityWhitelist': scan_request.vulnerabilityWhitelist or [],
             'sanitizerFunctions': scan_request.sanitizerFunctions or [],
-            'scan_mode': scan_request.scan_mode or 'source',
-            'compiled_options': scan_request.compiled_options or {},
+            'scan_mode': effective_scan_mode,
+            'compiled_options': effective_compiled_options,
             'task_type': scan_request.task_type or 'repository',
         }
 

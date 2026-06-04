@@ -591,10 +591,19 @@ async def scan_project(
     if not project:
         raise HTTPException(status_code=404, detail="项目不存在")
 
-    if scan_request and scan_request.scan_mode == "compiled":
+    # 从项目读取 scan_mode 作为回退；如果请求显式传了，必须与项目一致
+    project_scan_mode = (project.scan_mode or "source")
+    if scan_request and scan_request.scan_mode and scan_request.scan_mode != project_scan_mode:
         raise HTTPException(
             status_code=400,
-            detail="编译后产物扫描仅支持通过压缩包上传方式，不支持 Git 仓库。"
+            detail=f"扫描类型与项目不一致：项目 scan_mode={project_scan_mode}，请求 scan_mode={scan_request.scan_mode}",
+        )
+    effective_scan_mode = (scan_request.scan_mode if scan_request and scan_request.scan_mode else project_scan_mode)
+
+    if effective_scan_mode == "compiled":
+        raise HTTPException(
+            status_code=400,
+            detail="编译后产物扫描仅支持通过压缩包上传方式，不支持 Git 仓库。",
         )
 
     # 获取分支和排除模式
@@ -659,6 +668,18 @@ async def scan_project(
 
     # 将扫描配置注入到 user_config 中，以便 scan_repo_task 使用
     if scan_request:
+        # compiled_options fallback：请求未带则从项目读取
+        if scan_request.compiled_options is not None:
+            effective_compiled_options = scan_request.compiled_options
+        else:
+            if project.compiled_options:
+                try:
+                    effective_compiled_options = json.loads(project.compiled_options) if isinstance(project.compiled_options, str) else (project.compiled_options or {})
+                except Exception:
+                    effective_compiled_options = {}
+            else:
+                effective_compiled_options = {}
+
         user_config['scan_config'] = {
             'file_paths': scan_request.file_paths or [],
             'exclude_patterns': scan_request.exclude_patterns or [],
@@ -667,8 +688,21 @@ async def scan_project(
             'functionWhitelist': scan_request.functionWhitelist or [],
             'vulnerabilityWhitelist': scan_request.vulnerabilityWhitelist or [],
             'sanitizerFunctions': scan_request.sanitizerFunctions or [],
-            'scan_mode': scan_request.scan_mode or 'source',
-            'compiled_options': scan_request.compiled_options or {},
+            'scan_mode': effective_scan_mode,
+            'compiled_options': effective_compiled_options,
+        }
+    else:
+        # No scan_request body — still hydrate scan_config from project defaults
+        if project.compiled_options:
+            try:
+                project_options = json.loads(project.compiled_options) if isinstance(project.compiled_options, str) else (project.compiled_options or {})
+            except Exception:
+                project_options = {}
+        else:
+            project_options = {}
+        user_config['scan_config'] = {
+            'scan_mode': effective_scan_mode,
+            'compiled_options': project_options,
         }
 
     # Trigger Background Task
