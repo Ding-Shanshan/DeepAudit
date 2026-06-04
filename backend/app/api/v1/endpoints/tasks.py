@@ -162,10 +162,16 @@ class AuditTaskSchema(BaseModel):
 
 
 # ── 代码分析结果分批加载 ──────────────────────────────────────────
-# 数据库实测：单个 code_analysis_results 可达 274 MB，旧 /code-analysis 端点
+# 数据库实测：单个 code_analysis_results 可达 274 MB JSON 文本，旧 /code-analysis 端点
 # 一次返回整列会导致前端 axios 超时和浏览器 OOM。
-# 下面三个 helper 通过 PostgreSQL JSON->jsonb cast + 路径提取按需读取子文档，
-# 配合下面新增的 /summary 和 /{section} 端点使用。旧端点保持不动。
+# 下面三个 helper 通过 PostgreSQL json 路径提取按需读取子文档，配合 /summary +
+# /{section} 端点使用。旧端点保持不动。
+#
+# 关键：列类型是 json（不是 jsonb，见 app/models/audit.py / agent_task.py），
+# 所以必须用 json_* 操作符（json_array_length / json_object_keys），不要 cast 成 jsonb：
+# - jsonb 类型有 256MB 硬上限（asyncpg ProgramLimitExceededError），274MB 任务会失败
+# - json 类型没有这个上限，json_* 操作符直接走文本扫描即可
+# - -> 操作符在 json 列上返回 json，psycopg/asyncpg 会自动反序列化为 Python 对象
 
 _CODE_ANALYSIS_SECTIONS = ("api_endpoints", "call_graph", "file_dependencies", "control_flow")
 _CODE_ANALYSIS_TABLES = ("audit_tasks", "agent_tasks")
@@ -179,30 +185,27 @@ async def _get_code_analysis_summary(
     返回: { api_endpoints: int, call_graph: int, file_dependencies: int, control_flow_files: int }
 
     所有计数最多 ~200 字节，不会触发前端超时。
-    若 record 超过 PostgreSQL jsonb 限制（>256MB），DB 端会抛错；本函数捕获后
-    回退为 -1（前端识别此值显示"过大"），不会让端点崩溃。
-
-    注意：列类型是 JSON 不是 JSONB（见 app/models/audit.py / app/models/agent_task.py），
-    所以要 cast 成 jsonb 才能用 jsonb_array_length / jsonb_object_keys。
+    用 json_* 函数（不 cast 成 jsonb），可处理任意大小的 json 列；DB 解析失败时
+    捕获并回退为 -1（前端识别此值显示"过大"），不会让端点崩溃。
     """
     if task_table not in _CODE_ANALYSIS_TABLES:
         raise ValueError(f"invalid task_table: {task_table!r}")
     sql = text(f"""
         SELECT
-            jsonb_array_length(COALESCE((code_analysis_results::jsonb)->'api_endpoints','[]'::jsonb))       AS api_count,
-            jsonb_array_length(COALESCE((code_analysis_results::jsonb)->'call_graph','[]'::jsonb))            AS call_count,
-            jsonb_array_length(COALESCE((code_analysis_results::jsonb)->'file_dependencies','[]'::jsonb))     AS dep_count,
+            json_array_length(COALESCE(code_analysis_results->'api_endpoints','[]'::json))       AS api_count,
+            json_array_length(COALESCE(code_analysis_results->'call_graph','[]'::json))            AS call_count,
+            json_array_length(COALESCE(code_analysis_results->'file_dependencies','[]'::json))     AS dep_count,
             COALESCE(
-                (SELECT count(*) FROM jsonb_object_keys(COALESCE((code_analysis_results::jsonb)->'control_flow','{{}}'::jsonb))),
+                (SELECT count(*) FROM json_object_keys(COALESCE(code_analysis_results->'control_flow','{{}}'::json))),
                 0
-            )::int                                                                                            AS cfg_count
+            )::int                                                                                  AS cfg_count
         FROM {task_table}
         WHERE id = :task_id
     """)
     try:
         row = (await db.execute(sql, {"task_id": task_id})).one_or_none()
     except Exception as e:
-        # 超大 JSONB / cast 失败 → 回退为 -1，端点不崩溃
+        # DB 解析失败 → 回退为 -1，端点不崩溃
         import logging
         logging.getLogger(__name__).warning(
             "code-analysis summary fallback for task=%s table=%s err=%s",
@@ -226,17 +229,19 @@ async def _get_code_analysis_section(
     *,
     task_table: str = "audit_tasks",
 ) -> Optional[Any]:
-    """使用 JSON 路径提取 (code_analysis_results::jsonb)->section 返回该子文档。
+    """使用 PostgreSQL json 路径提取 code_analysis_results->section 返回该子文档。
 
     支持的 section 值: api_endpoints | call_graph | file_dependencies | control_flow
 
     返回反序列化后的 Python 对象，或 None（任务不存在 / 无数据 / section 不合法）。
 
-    用 -> 而非 ->>：-> 返回 jsonb（驱动会自动反序列化为 Python 对象），
+    用 ->（json）而非 ->>（text）：-> 返回 json，驱动会自动反序列化为 Python 对象，
     ->> 会返回 text 字符串需要手动 json.loads。
 
     注意：section 名直接拼到 SQL 而非参数绑定，因为 -> 不支持参数化的字段名；
     调用方必须保证 section 在白名单内（端点已有校验），此处再做一次防御性校验。
+
+    列类型是 json，不要 cast 成 jsonb——jsonb 有 256MB 硬上限，274MB 任务会失败。
     """
     if section not in _CODE_ANALYSIS_SECTIONS:
         return None
@@ -244,7 +249,7 @@ async def _get_code_analysis_section(
         raise ValueError(f"invalid task_table: {task_table!r}")
     try:
         sql = text(f"""
-            SELECT (code_analysis_results::jsonb)->'{section}' AS value
+            SELECT code_analysis_results->'{section}' AS value
             FROM {task_table}
             WHERE id = :task_id
         """)
