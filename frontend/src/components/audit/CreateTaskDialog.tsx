@@ -50,7 +50,7 @@ import {
   validateZipFile,
 } from "@/features/projects/services/repoZipScan";
 import { isRepositoryProject, isZipProject } from "@/shared/utils/projectUtils";
-import type { Project } from "@/shared/types";
+import type { Project, CompiledScanOptions } from "@/shared/types";
 
 interface CreateTaskDialogProps {
   open: boolean;
@@ -84,10 +84,6 @@ export default function CreateTaskDialog({
   const [scheduleTime, setScheduleTime] = useState("09:00");
 
   const [auditMode, setAuditMode] = useState<"fast" | "agent">("fast");
-
-  const [scanType, setScanType] = useState<"source" | "compiled">("source");
-  const [enableSca, setEnableSca] = useState<boolean>(true);
-  const [maxBinarySizeMb, setMaxBinarySizeMb] = useState<number>(200);
 
   const [ruleSets, setRuleSets] = useState<AuditRuleSet[]>([]);
   const [promptTemplates, setPromptTemplates] = useState<PromptTemplate[]>([]);
@@ -275,6 +271,12 @@ export default function CreateTaskDialog({
       let taskId: string;
 
       if (auditMode === "agent") {
+        // 编译后产物项目暂不支持深度审计
+        if (selectedProject.scan_mode === "compiled") {
+          toast.error("编译后产物项目暂不支持深度审计");
+          setCreating(false);
+          return;
+        }
         const agentTask = await createAgentTask({
           project_id: selectedProject.id,
           name: taskName.trim(),
@@ -299,13 +301,12 @@ export default function CreateTaskDialog({
       }
 
       if (isZipProject(selectedProject)) {
-        const compiledExtras = scanType === "compiled"
+        // 读取项目的 scan_mode 和 compiled_options（不再由对话框选择）
+        const projectScanMode = selectedProject.scan_mode || "source";
+        const compiledExtras = projectScanMode === "compiled"
           ? {
               scanMode: "compiled" as const,
-              compiledOptions: {
-                enable_sca: enableSca,
-                max_binary_size_mb: maxBinarySizeMb,
-              },
+              compiledOptions: (selectedProject.compiled_options || { enable_sca: true, max_binary_size_mb: 200 }) as CompiledScanOptions,
             }
           : { scanMode: "source" as const };
 
@@ -571,76 +572,8 @@ export default function CreateTaskDialog({
                   </div>
                 )}
 
-                {/* 扫描类型 - 仅快速扫描模式显示 */}
-                {auditMode === "fast" && (
-                  <>
-                    <div className="mb-4 rounded border p-3">
-                      <div className="mb-2 font-medium">扫描类型</div>
-                      <label className="mr-4 inline-flex items-center">
-                        <input
-                          type="radio"
-                          name="scanType"
-                          value="source"
-                          checked={scanType === "source"}
-                          onChange={() => setScanType("source")}
-                          className="mr-1"
-                        />
-                        源代码 (Git 仓库 / 源码压缩包)
-                      </label>
-                      <label className="inline-flex items-center">
-                        <input
-                          type="radio"
-                          name="scanType"
-                          value="compiled"
-                          checked={scanType === "compiled"}
-                          onChange={() => setScanType("compiled")}
-                          className="mr-1"
-                        />
-                        编译后产物 (.apk/.so/.dll/.exe...)
-                      </label>
-                      <div className="mt-1 text-xs text-gray-500">
-                        ⓘ 仅支持 Android (.apk/.aab/.dex) 和 C/C++ 原生二进制 (.so/.dll/.exe/.elf)。
-                      </div>
-                    </div>
-
-                    {auditMode === "fast" && scanType === "compiled" && selectedProject && isRepositoryProject(selectedProject) && (
-                      <div className="mb-2 text-xs text-amber-600">
-                        编译后产物扫描仅支持上传压缩包，不支持 Git 仓库。
-                      </div>
-                    )}
-
-                    {auditMode === "fast" && scanType === "compiled" && (
-                      <div className="mb-4 rounded border p-3">
-                        <label className="mb-2 flex items-center">
-                          <input
-                            type="checkbox"
-                            checked={enableSca}
-                            onChange={(e) => setEnableSca(e.target.checked)}
-                            className="mr-2"
-                          />
-                          启用第三方库 CVE 匹配 (SCA)
-                        </label>
-                        <label className="block text-sm">
-                          单文件大小上限 (MB):
-                          <input
-                            type="number"
-                            min={1}
-                            max={2048}
-                            value={maxBinarySizeMb}
-                            onChange={(e) => setMaxBinarySizeMb(Number(e.target.value) || 200)}
-                            className="ml-2 w-24 rounded border px-2 py-1"
-                          />
-                        </label>
-                        <div className="mt-1 text-xs text-gray-500">
-                          压缩包内支持的扩展名: .apk .aab .dex .so .dll .exe .elf — 其他文件将被忽略。
-                        </div>
-                      </div>
-                    )}
-                  </>
-                )}
-
                 {/* 规则集和提示词选择 - 仅快速扫描模式显示 */}
-                {auditMode !== "agent" && !(auditMode === "fast" && scanType === "compiled") && (
+                {auditMode !== "agent" && (
                   <div className="space-y-2">
                     <div>
                       <Label className="text-xs text-muted-foreground">规则集</Label>
