@@ -767,7 +767,15 @@ def run_semgrep_scan(
     timeout_seconds: int = 120,
     rules_file: str | Path | None = None,
 ) -> list[dict[str, Any]]:
-    if not shutil.which("semgrep"):
+    # 解析 semgrep 路径：优先 PATH；找不到则回退到 venv 中的 entry point。
+    # 容器里 Dockerfile 没把 /app/.venv/bin 加到 PATH，但 semgrep 装在那里——
+    # 不显式 fallback 的话 shutil.which 返回 None，调用方静默拿到 0 个 finding。
+    # 注意：quick_scan.py 位于 /app/app/services/quick_scan.py，
+    #   parents[0]=services, [1]=app, [2]=/app (项目根)。
+    semgrep_bin = shutil.which("semgrep") or str(
+        Path(__file__).resolve().parents[2] / ".venv" / "bin" / "semgrep"
+    )
+    if not Path(semgrep_bin).exists():
         return []
 
     if rules_file is not None:
@@ -780,7 +788,7 @@ def run_semgrep_scan(
     workspace = Path(workspace_dir)
     source_set = {item["path"] for item in source_files}
     command = [
-        "semgrep",
+        semgrep_bin,
         "scan",
         "--json",
         "--quiet",
@@ -796,6 +804,17 @@ def run_semgrep_scan(
     else:
         command.append(str(workspace))
 
+    # 清掉 HTTP_PROXY 等代理变量再调 semgrep——OCaml 实现的 semgrep 用
+    # cohttp 解析这些 URL，遇到非空值就会以 "No host was provided in URI ."
+    # 崩溃（看似返回非零静默退出，调用方拿到 0 finding）。本机 semgrep 完全
+    # 离线扫规则，不需要代理。
+    import os as _os
+    proxy_free_env = {
+        k: v for k, v in _os.environ.items()
+        if k.upper() not in {"HTTP_PROXY", "HTTPS_PROXY", "ALL_PROXY", "NO_PROXY"}
+    }
+    proxy_free_env["NO_PROXY"] = "*"
+
     try:
         result = subprocess.run(
             command,
@@ -804,6 +823,7 @@ def run_semgrep_scan(
             text=True,
             check=False,
             timeout=timeout_seconds,
+            env=proxy_free_env,
         )
     except subprocess.TimeoutExpired:
         return []
