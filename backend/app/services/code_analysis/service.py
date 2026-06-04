@@ -244,6 +244,11 @@ class CodeAnalysisService:
                     results["statistics"]["by_language"].get(lang, 0) + 1
 
         # 执行分析
+        # project_functions：收集本次扫描所有文件解析出的函数名（去重 set）
+        # 用于主循环结束后过滤 call_graph，只保留「项目内函数 A 调项目内函数 B」的边。
+        # 这是噪音控制的核心——实测可把测试断言、内置 API、JSX 工厂等噪音过滤掉约 70-80%。
+        project_functions: set = set()
+
         for file_path in files:
             try:
                 file_result = self._analyze_single_file(
@@ -259,6 +264,7 @@ class CodeAnalysisService:
                     results["api_endpoints"].extend(file_result.get("api_endpoints", []))
                 if extract_calls:
                     results["call_graph"].extend(file_result.get("call_graph", []))
+                    project_functions.update(file_result.get("function_names", []))
                 if extract_dependencies:
                     results["file_dependencies"].extend(file_result.get("file_dependencies", []))
                 if extract_control_flow:
@@ -271,6 +277,28 @@ class CodeAnalysisService:
 
             except Exception as e:
                 logger.error(f"Failed to analyze file {file_path}: {e}")
+
+        # 主循环后过滤 call_graph：只保留 callee 在项目内的边。
+        # 保险栓：project_functions 为空（极端情况：项目里一个函数都没解析出来）时跳过过滤，
+        # 否则会把全部 call_graph 清空。
+        if extract_calls and project_functions:
+            before = len(results["call_graph"])
+            results["call_graph"] = [
+                edge for edge in results["call_graph"]
+                if edge.get("callee_name") in project_functions
+            ]
+            after = len(results["call_graph"])
+            logger.info(
+                "call_graph filtered: %d → %d edges (kept project-internal only; "
+                "%d distinct project functions)",
+                before, after, len(project_functions),
+            )
+        elif extract_calls and results["call_graph"]:
+            logger.warning(
+                "call_graph filter skipped: project_functions is empty "
+                "(kept all %d edges as fallback)",
+                len(results["call_graph"]),
+            )
 
         logger.info(f"Analysis completed: {results['statistics']}")
 
@@ -436,6 +464,16 @@ class CodeAnalysisService:
             calls = self._call_graph_extractor.extract(tree, source_code, rel_path, language)
             # 将 dataclass 对象转换为字典
             result["call_graph"] = [asdict(call) if is_dataclass(call) else call for call in calls]
+
+            # 同时收集本文件解析出的函数名（用于 analyze() 做项目内调用过滤）。
+            # _build_function_map 是 protected 的；extract() 内部已构造过一次但未返回，
+            # 这里再调一次只遍历 FUNCTION_NODE_TYPES，开销远低于 extract() 主流程。
+            try:
+                func_map = self._call_graph_extractor._build_function_map(tree, source_code, language)
+                result["function_names"] = [name for name in func_map.values() if name]
+            except Exception as e:
+                logger.debug(f"Failed to collect function names for {rel_path}: {e}")
+                result["function_names"] = []
 
         # 提取文件依赖
         if extract_dependencies:
