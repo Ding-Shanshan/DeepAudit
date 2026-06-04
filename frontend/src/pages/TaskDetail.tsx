@@ -247,8 +247,9 @@ export default function TaskDetail() {
   const [apiEndpoints, setApiEndpoints] = useState<unknown[]>([]);
 
   // 加载 API 资产（独立加载，不阻塞主流程）
+  // IaC 任务无代码资产概念，跳过此请求
   useEffect(() => {
-    if (!id) return;
+    if (!id || task?.task_type === 'iac_scan') return;
     apiClient
       .get(`/tasks/${id}/code-analysis`)
       .then((res) => {
@@ -256,7 +257,7 @@ export default function TaskDetail() {
         setApiEndpoints(Array.isArray(data.api_endpoints) ? data.api_endpoints : []);
       })
       .catch(() => setApiEndpoints([]));
-  }, [id]);
+  }, [id, task?.task_type]);
 
   const handleViewDetail = (issue: AuditIssue) => {
     setSelectedIssue(issue);
@@ -547,6 +548,7 @@ export default function TaskDetail() {
     }
   })();
   const isCompiledScan = (scanConfig as { scan_mode?: string }).scan_mode === "compiled";
+  const isIacTask = task.task_type === 'iac_scan';
 
   return (
     <div className="space-y-4 px-6 pt-1 pb-6 cyber-bg-elevated min-h-screen font-sans relative">
@@ -562,15 +564,19 @@ export default function TaskDetail() {
             </Button>
           </Link>
           <h1 className="text-2xl font-semibold text-foreground uppercase tracking-wider">
-            {task.task_type === 'repository' ? '仓库审计任务' : '即时分析任务'}
-            {isCompiledScan ? (
-              <span className="ml-2 rounded bg-purple-100 px-2 py-0.5 text-xs text-purple-700">
-                编译后扫描
-              </span>
-            ) : (
-              <span className="ml-2 rounded bg-blue-100 px-2 py-0.5 text-xs text-blue-700">
-                源代码扫描
-              </span>
+            {isIacTask
+              ? 'IaC 扫描任务'
+              : (task.task_type === 'repository' ? '仓库审计任务' : '即时分析任务')}
+            {!isIacTask && (
+              isCompiledScan ? (
+                <span className="ml-2 rounded bg-purple-100 px-2 py-0.5 text-xs text-purple-700">
+                  编译后扫描
+                </span>
+              ) : (
+                <span className="ml-2 rounded bg-blue-100 px-2 py-0.5 text-xs text-blue-700">
+                  源代码扫描
+                </span>
+              )
             )}
           </h1>
         </div>
@@ -592,7 +598,7 @@ export default function TaskDetail() {
       </div>
 
       {/* 任务信息 */}
-      <div className="grid grid-cols-2 gap-4 relative z-10">
+      <div className={`grid ${isIacTask ? 'grid-cols-1' : 'grid-cols-2'} gap-4 relative z-10`}>
         <div className="cyber-card p-4">
           <div className="space-y-3 font-sans">
             {task.project && (
@@ -628,16 +634,22 @@ export default function TaskDetail() {
 
             <div className="flex items-center justify-between">
               <span className="text-sm text-muted-foreground uppercase">任务类型</span>
-              <span className="text-sm font-bold text-foreground">{task.task_type === 'repository' ? '仓库审计任务' : '即时分析任务'}</span>
-            </div>
-
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-muted-foreground uppercase">目标分支</span>
-              <span className="text-sm text-foreground flex items-center">
-                <GitBranch className="w-3.5 h-3.5 mr-1" />
-                {task.branch_name || '默认分支'}
+              <span className="text-sm font-bold text-foreground">
+                {isIacTask
+                  ? 'IaC 扫描任务'
+                  : (task.task_type === 'repository' ? '仓库审计任务' : '即时分析任务')}
               </span>
             </div>
+
+            {!isIacTask && (
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-muted-foreground uppercase">目标分支</span>
+                <span className="text-sm text-foreground flex items-center">
+                  <GitBranch className="w-3.5 h-3.5 mr-1" />
+                  {task.branch_name || '默认分支'}
+                </span>
+              </div>
+            )}
 
             <div className="flex items-center justify-between">
               <span className="text-sm text-muted-foreground uppercase">创建时间</span>
@@ -689,7 +701,7 @@ export default function TaskDetail() {
             <div className="border-t border-border" />
           </div>
         </div>
-        <CodeAnalysisPanel taskId={id!} taskType="quick" hideApi />
+        {!isIacTask && <CodeAnalysisPanel taskId={id!} taskType="quick" hideApi />}
       </div>
 
       {/* 问题列表 / API 资产（Tab 切换） */}
@@ -700,10 +712,12 @@ export default function TaskDetail() {
               问题列表
               <span className="ml-1 text-[11px] text-muted-foreground">({totalIssues})</span>
             </TabsTrigger>
-            <TabsTrigger value="api">
-              API 接口资产
-              <span className="ml-1 text-[11px] text-muted-foreground">({apiEndpoints.length})</span>
-            </TabsTrigger>
+            {!isIacTask && (
+              <TabsTrigger value="api">
+                API 接口资产
+                <span className="ml-1 text-[11px] text-muted-foreground">({apiEndpoints.length})</span>
+              </TabsTrigger>
+            )}
           </TabsList>
 
           <TabsContent value="issues">
@@ -773,11 +787,13 @@ export default function TaskDetail() {
             />
           </TabsContent>
 
-          <TabsContent value="api">
-            <div className="cyber-card p-4">
-              <APIAssetsList data={apiEndpoints} />
-            </div>
-          </TabsContent>
+          {!isIacTask && (
+            <TabsContent value="api">
+              <div className="cyber-card p-4">
+                <APIAssetsList data={apiEndpoints} />
+              </div>
+            </TabsContent>
+          )}
         </Tabs>
       </div>
 
