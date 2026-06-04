@@ -50,7 +50,7 @@ import {
   validateZipFile,
 } from "@/features/projects/services/repoZipScan";
 import { isRepositoryProject, isZipProject } from "@/shared/utils/projectUtils";
-import type { Project, CompiledScanOptions } from "@/shared/types";
+import type { Project } from "@/shared/types";
 
 interface CreateTaskDialogProps {
   open: boolean;
@@ -271,10 +271,9 @@ export default function CreateTaskDialog({
       let taskId: string;
 
       if (auditMode === "agent") {
-        // 编译后产物项目暂不支持深度审计
+        // 编译后产物项目暂不支持深度审计（agent 目前只处理源码反编译尚未接入）
         if (selectedProject.scan_mode === "compiled") {
           toast.error("编译后产物项目暂不支持深度审计");
-          setCreating(false);
           return;
         }
         const agentTask = await createAgentTask({
@@ -306,7 +305,7 @@ export default function CreateTaskDialog({
         const compiledExtras = projectScanMode === "compiled"
           ? {
               scanMode: "compiled" as const,
-              compiledOptions: (selectedProject.compiled_options || { enable_sca: true, max_binary_size_mb: 200 }) as CompiledScanOptions,
+              compiledOptions: selectedProject.compiled_options || { enable_sca: true, max_binary_size_mb: 200 },
             }
           : { scanMode: "source" as const };
 
