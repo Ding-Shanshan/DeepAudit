@@ -147,6 +147,7 @@ async def scan_zip(
             'sanitizerFunctions': parsed_scan_config.get('sanitizerFunctions', []),
             'scan_mode': parsed_scan_config.get('scan_mode') or 'source',
             'compiled_options': parsed_scan_config.get('compiled_options') or {},
+            'task_type': parsed_scan_config.get('task_type') or 'repository',
         }
 
     # Trigger Background Task - 使用持久化存储的文件路径
@@ -168,6 +169,8 @@ class ScanRequest(BaseModel):
     # --- compiled-artifact mode ---
     scan_mode: Optional[str] = "source"           # "source" | "compiled"
     compiled_options: Optional[Dict[str, Any]] = None
+    # --- task type for routing inside process_zip_task ---
+    task_type: Optional[str] = "repository"       # "repository" | "iac_scan"
 
 
 @router.post("/scan-stored-zip")
@@ -222,6 +225,7 @@ async def scan_stored_zip(
             'sanitizerFunctions': scan_request.sanitizerFunctions or [],
             'scan_mode': scan_request.scan_mode or 'source',
             'compiled_options': scan_request.compiled_options or {},
+            'task_type': scan_request.task_type or 'repository',
         }
 
     # Trigger Background Task
