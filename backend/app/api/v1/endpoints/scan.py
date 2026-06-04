@@ -54,9 +54,26 @@ async def process_zip_task(task_id: str, file_path: str, db_session_factory, use
             await db.commit()
             extract_dir.mkdir(parents=True, exist_ok=True)
             extract_archive_recursive(file_path, extract_dir)
-            await scan_local_workspace(task, db, str(extract_dir), user_config=user_config)
+
+            # 按 scan_config.task_type 分流：iac_scan 走 IaC Semgrep，
+            # 其它走现有源码/编译产物扫描管道
+            scan_cfg = (user_config or {}).get("scan_config", {}) or {}
+            requested_task_type = scan_cfg.get("task_type") or "repository"
+
+            if requested_task_type == "iac_scan":
+                # 回写 task.task_type 让前端列表/详情正确识别为 IaC 任务
+                task.task_type = "iac_scan"
+                await db.commit()
+                from app.services.scanner import _run_iac_workspace
+                await _run_iac_workspace(task, db, str(extract_dir))
+                task.status = "completed"
+                task.completed_at = datetime.now(timezone.utc)
+                await db.commit()
+            else:
+                await scan_local_workspace(task, db, str(extract_dir), user_config=user_config)
+
             task_control.cleanup_task(task_id)
-            
+
         except Exception as e:
             print(f"❌ 本地文件扫描失败: {e}")
             task.status = "failed"
