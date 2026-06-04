@@ -24,6 +24,15 @@ export interface Profile {
 // 项目来源类型
 export type ProjectSourceType = 'repository' | 'zip';
 
+// 项目扫描类型：审计源代码 vs 编译后产物
+export type ProjectScanMode = 'source' | 'compiled';
+
+// 编译产物扫描配置（仅 scan_mode='compiled' 项目使用）
+export interface CompiledScanOptions {
+  enable_sca: boolean;
+  max_binary_size_mb: number;
+}
+
 // 仓库平台类型
 export type RepositoryPlatform = 'github' | 'gitlab' | 'gitea' | 'svn' | 'other';
 
@@ -35,6 +44,8 @@ export interface Project {
   source_type: ProjectSourceType;  // 项目来源: 'repository' (远程仓库) 或 'zip' (ZIP上传)
   repository_url?: string;         // 仅 source_type='repository' 时有效
   repository_type?: RepositoryPlatform;  // 仓库平台: github, gitlab, other
+  scan_mode?: ProjectScanMode;       // 扫描类型: 'source' 或 'compiled'，老项目缺失时按 'source' 处理
+  compiled_options?: CompiledScanOptions; // 仅 scan_mode='compiled' 时有效
   default_branch: string;
   programming_languages: string;
   owner_id: string;
@@ -165,6 +176,8 @@ export interface CreateProjectForm {
   source_type?: ProjectSourceType;  // 项目来源类型
   repository_url?: string;          // 仅 source_type='repository' 时需要
   repository_type?: RepositoryPlatform;  // 仓库平台
+  scan_mode?: ProjectScanMode;       // 扫描类型，默认 'source'
+  compiled_options?: CompiledScanOptions; // 仅 scan_mode='compiled' 时填写
   default_branch?: string;
   programming_languages: string[];
 }

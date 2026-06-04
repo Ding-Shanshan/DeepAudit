@@ -1,4 +1,7 @@
 import { apiClient } from "@/shared/api/serverClient";
+import type { CompiledScanOptions } from "@/shared/types";
+
+export type { CompiledScanOptions };
 
 const SUPPORTED_ARCHIVE_EXTENSIONS = [
   ".zip",
@@ -9,11 +12,6 @@ const SUPPORTED_ARCHIVE_EXTENSIONS = [
   ".tgz",
   ".tar.gz",
 ];
-
-export interface CompiledScanOptions {
-  enable_sca: boolean;
-  max_binary_size_mb: number;
-}
 
 /**
  * 上传本地文件并启动扫描
