@@ -177,6 +177,66 @@ _CODE_ANALYSIS_SECTIONS = ("api_endpoints", "call_graph", "file_dependencies", "
 _CODE_ANALYSIS_TABLES = ("audit_tasks", "agent_tasks")
 
 
+# ── call_graph 展示清洗 ──────────────────────────────────────────────
+# tree-sitter 在解析二进制/反编译/混淆产物时偶尔会把伪函数名（如 `m-c\m-i`、控制
+# 字符、不可打印字节）当作 identifier。这些节点对调用图阅读价值为零，纯属噪音。
+# 这里在 API 出口侧统一过滤——历史数据库里已经存进去的脏边也会在前端读取时被
+# 清掉，不需要重跑扫描；后端服务层的 project_functions 过滤是另一道闸门。
+#
+# 注意：故意不按"高位字节比例"过滤。Java/C/C++/JS/TS 的合法函数名几乎全 ASCII，
+# 但 Python/部分项目允许 Unicode 标识符；按比例误杀合法 CJK 名字得不偿失。
+# 也不按"短名长度"过滤——压缩 JS（如 webpack 构建产物）的调用确实就是
+# `d -> i` 这种短名，那是真实的调用关系；根因是扫描时未跳过 minified 文件，
+# 不是 caller/callee 字段本身脏。展示侧只清明显的乱码字符。
+# 过滤特征：
+#   1) `m-` 字符前缀 / `\m-` 序列（cat -v 风格的不可打印字节回显）
+#   2) ASCII 控制字符（NUL、SOH、ESC 等，排除 tab/newline/cr）
+import re as _re
+
+_GARBAGE_NAME_PATTERNS = (
+    _re.compile(r"\\m-"),                              # 字面反斜杠 + m-（cat -v 风格）
+    _re.compile(r"m-[a-z]\\m-[a-z]", _re.IGNORECASE),  # m-c\m-i 这种连续段
+    _re.compile(r"[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]"),  # 控制字符（保留 \t/\n/\r）
+)
+
+
+def _is_garbage_name(name: Any) -> bool:
+    """函数/方法名是否属于不应展示的乱码节点。"""
+    if not isinstance(name, str) or not name:
+        return False
+    for pat in _GARBAGE_NAME_PATTERNS:
+        if pat.search(name):
+            return True
+    return False
+
+
+def _clean_call_graph_edges(edges: Any) -> list:
+    """过滤掉 caller/callee 含乱码字符的调用边。非列表/异常输入原样返回 []。"""
+    if not isinstance(edges, list):
+        return []
+    out = []
+    for edge in edges:
+        if not isinstance(edge, dict):
+            continue
+        if (
+            _is_garbage_name(edge.get("caller_function"))
+            or _is_garbage_name(edge.get("callee_name"))
+            or _is_garbage_name(edge.get("callee_object"))
+        ):
+            continue
+        out.append(edge)
+    return out
+
+
+def _clean_code_analysis_results(results: Any) -> Any:
+    """对完整的 code_analysis_results dict 做清洗（目前只清 call_graph 一节）。"""
+    if not isinstance(results, dict):
+        return results
+    if "call_graph" in results:
+        results = {**results, "call_graph": _clean_call_graph_edges(results.get("call_graph"))}
+    return results
+
+
 async def _get_code_analysis_summary(
     db: AsyncSession, task_id: str, *, task_table: str = "audit_tasks"
 ) -> dict:
@@ -263,6 +323,8 @@ async def _get_code_analysis_section(
         return None
     if not row or row.value is None:
         return None
+    if section == "call_graph":
+        return _clean_call_graph_edges(row.value)
     return row.value
 
 
@@ -310,7 +372,10 @@ async def _get_code_analysis_section_page(
             task_id, task_table, section, offset, e,
         )
         return []
-    return [r.value for r in rows]
+    values = [r.value for r in rows]
+    if section == "call_graph":
+        return _clean_call_graph_edges(values)
+    return values
 
 
 async def _verify_task_access(
@@ -514,7 +579,7 @@ async def get_code_analysis(
     if project and project.owner_id != current_user.id:
         raise HTTPException(status_code=403, detail="无权访问此任务")
 
-    return task.code_analysis_results or {
+    return _clean_code_analysis_results(task.code_analysis_results) or {
         "api_endpoints": [],
         "call_graph": [],
         "file_dependencies": [],

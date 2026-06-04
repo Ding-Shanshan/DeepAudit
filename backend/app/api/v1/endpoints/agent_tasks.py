@@ -2301,7 +2301,8 @@ async def get_code_analysis(
     if task.project and task.project.owner_id != current_user.id:
         raise HTTPException(status_code=403, detail="无权访问此任务")
 
-    return task.code_analysis_results or {
+    from app.api.v1.endpoints.tasks import _clean_code_analysis_results
+    return _clean_code_analysis_results(task.code_analysis_results) or {
         "api_endpoints": [],
         "call_graph": [],
         "file_dependencies": [],
