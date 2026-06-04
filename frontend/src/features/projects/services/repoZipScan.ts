@@ -31,6 +31,7 @@ export async function scanZipFile(params: {
   sanitizerFunctions?: string[];
   scanMode?: "source" | "compiled";
   compiledOptions?: CompiledScanOptions;
+  taskType?: "repository" | "iac_scan";
 }): Promise<string> {
   const formData = new FormData();
   formData.append("file", params.zipFile);
@@ -47,6 +48,7 @@ export async function scanZipFile(params: {
     sanitizerFunctions: params.sanitizerFunctions || [],
     scan_mode: params.scanMode || "source",
     compiled_options: params.compiledOptions || null,
+    task_type: params.taskType || "repository",
   };
   formData.append("scan_config", JSON.stringify(scanConfig));
 
@@ -74,6 +76,7 @@ export async function scanStoredZipFile(params: {
   sanitizerFunctions?: string[];
   scanMode?: "source" | "compiled";
   compiledOptions?: CompiledScanOptions;
+  taskType?: "repository" | "iac_scan";
 }): Promise<string> {
   const scanRequest = {
     file_paths: params.filePaths,
@@ -86,6 +89,7 @@ export async function scanStoredZipFile(params: {
     sanitizerFunctions: params.sanitizerFunctions || [],
     scan_mode: params.scanMode || "source",
     compiled_options: params.compiledOptions || null,
+    task_type: params.taskType || "repository",
   };
   const res = await apiClient.post(`/scan/scan-stored-zip`, scanRequest, {
     params: { project_id: params.projectId },
