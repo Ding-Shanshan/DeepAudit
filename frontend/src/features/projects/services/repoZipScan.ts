@@ -1,7 +1,5 @@
 import { apiClient } from "@/shared/api/serverClient";
-import type { CompiledScanOptions } from "@/shared/types";
-
-export type { CompiledScanOptions };
+import type { CompiledScanOptions, ProjectScanMode } from "@/shared/types";
 
 const SUPPORTED_ARCHIVE_EXTENSIONS = [
   ".zip",
@@ -27,7 +25,7 @@ export async function scanZipFile(params: {
   functionWhitelist?: string[];
   vulnerabilityWhitelist?: string[];
   sanitizerFunctions?: string[];
-  scanMode?: "source" | "compiled";
+  scanMode?: ProjectScanMode;
   compiledOptions?: CompiledScanOptions;
   taskType?: "repository" | "iac_scan";
 }): Promise<string> {
@@ -72,7 +70,7 @@ export async function scanStoredZipFile(params: {
   functionWhitelist?: string[];
   vulnerabilityWhitelist?: string[];
   sanitizerFunctions?: string[];
-  scanMode?: "source" | "compiled";
+  scanMode?: ProjectScanMode;
   compiledOptions?: CompiledScanOptions;
   taskType?: "repository" | "iac_scan";
 }): Promise<string> {
