@@ -115,6 +115,10 @@ export const api = {
       repository_type: project.repository_type,
       default_branch: project.default_branch,
       programming_languages: project.programming_languages,
+      // scan_mode / compiled_options 必须透传，否则编译后项目会被悄悄落库成 source，
+      // 后续扫描会走 tree-sitter 解析二进制产物而失败。
+      scan_mode: project.scan_mode || 'source',
+      compiled_options: project.compiled_options,
     });
     return res.data;
   },
