@@ -512,7 +512,11 @@ async def _execute_agent_task(task_id: str):
                 await event_emitter.emit_info("📊 正在执行代码结构分析...")
 
                 analysis_service = CodeAnalysisService(project_root)
-                code_analysis_results = analysis_service.analyze(
+                # tree-sitter 解析 + 调用图构建是 CPU-bound 同步代码，
+                # 直接调用会阻塞事件循环数十秒，导致并发 HTTP 请求超时。
+                # 用 asyncio.to_thread 卸到 worker 线程，事件循环保持空闲。
+                code_analysis_results = await asyncio.to_thread(
+                    analysis_service.analyze,
                     exclude_patterns=task.exclude_patterns,
                     target_files=task.target_files,
                     extract_api=True,
