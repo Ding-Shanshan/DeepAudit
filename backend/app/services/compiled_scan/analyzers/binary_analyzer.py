@@ -21,7 +21,14 @@ def _load_yaml(name: str) -> list[dict]:
 
 class BinaryAnalyzer(CompiledAnalyzer):
     name = "compiled.binary"
-    supported_extensions = {".so", ".dll", ".exe", ".elf"}
+    # 走 ELF 解析的：纯 ELF + Linux 共享库 + 目标文件 + 静态归档（ar 不是 ELF，
+    # pyelftools 会抛错并落到 string 扫描兜底，仍能捞到敏感字符串）。
+    _ELF_FAMILY = {".elf", ".so", ".o", ".a"}
+    # 走 PE 解析的：Windows 可执行 / 动态库。
+    _PE_FAMILY = {".exe", ".dll"}
+    # macOS Mach-O 还没有专用 parser，但 string 扫描对它仍然有效，所以也接进来。
+    _STRING_ONLY = {".dylib", ".obj", ".lib"}
+    supported_extensions = _ELF_FAMILY | _PE_FAMILY | _STRING_ONLY
 
     def __init__(self) -> None:
         self._dangerous = _load_yaml("dangerous_functions.yml")
@@ -39,11 +46,13 @@ class BinaryAnalyzer(CompiledAnalyzer):
 
         # 1. Symbol extraction (format-specific). Failures fall through to string scan.
         symbols: set[str] = set()
+        ext = file_path.suffix.lower()
         try:
-            if file_path.suffix.lower() in {".elf", ".so"}:
+            if ext in self._ELF_FAMILY:
                 symbols = self._elf_symbols(file_path)
-            elif file_path.suffix.lower() in {".exe", ".dll"}:
+            elif ext in self._PE_FAMILY:
                 symbols = self._pe_symbols(file_path)
+            # _STRING_ONLY 直接跳过 symbol，走下面的字符串扫描
         except Exception as exc:   # noqa: BLE001 — analyzers must never raise
             findings.append(
                 Finding(

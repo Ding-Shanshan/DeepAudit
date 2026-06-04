@@ -12,8 +12,13 @@ from app.services.quick_scan import normalize_path, should_exclude
 COMPILED_EXTENSIONS: set[str] = {
     # Android
     ".apk", ".aab", ".dex",
-    # Native binaries
+    # Java 系（jar/war/ear/aar 本质是 zip，class 是字节码）
+    ".jar", ".war", ".ear", ".aar", ".class",
+    # Native binaries — Windows / Linux / macOS
     ".so", ".dll", ".exe", ".elf",
+    ".o", ".obj",                 # object files (C/C++ 编译中间产物)
+    ".a", ".lib",                 # 静态库
+    ".dylib",                     # macOS 动态库
 }
 
 DEFAULT_MAX_SIZE_MB = 200
