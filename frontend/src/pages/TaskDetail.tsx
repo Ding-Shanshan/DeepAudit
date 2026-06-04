@@ -547,7 +547,9 @@ export default function TaskDetail() {
       return {};
     }
   })();
-  const isCompiledScan = (scanConfig as { scan_mode?: string }).scan_mode === "compiled";
+  const isCompiledScan = task.project?.scan_mode
+    ? task.project.scan_mode === "compiled"
+    : (scanConfig as { scan_mode?: string }).scan_mode === "compiled";
   const isIacTask = task.task_type === 'iac_scan';
 
   return (
