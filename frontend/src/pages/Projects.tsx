@@ -63,6 +63,8 @@ export default function Projects() {
     name: "",
     description: "",
     source_type: "repository",
+    scan_mode: "source",
+    compiled_options: { enable_sca: true, max_binary_size_mb: 200 },
     repository_url: "",
     repository_type: "github",
     default_branch: "main",
@@ -72,6 +74,8 @@ export default function Projects() {
     name: "",
     description: "",
     source_type: "repository",
+    scan_mode: "source",
+    compiled_options: { enable_sca: true, max_binary_size_mb: 200 },
     repository_url: "",
     repository_type: "github",
     default_branch: "main",
@@ -168,6 +172,8 @@ export default function Projects() {
       name: "",
       description: "",
       source_type: "repository",
+      scan_mode: "source",
+      compiled_options: { enable_sca: true, max_binary_size_mb: 200 },
       repository_url: "",
       repository_type: "github",
       default_branch: "main",
@@ -283,6 +289,8 @@ export default function Projects() {
       name: project.name,
       description: project.description || "",
       source_type: project.source_type || "repository",
+      scan_mode: project.scan_mode || 'source',
+      compiled_options: project.compiled_options || { enable_sca: true, max_binary_size_mb: 200 },
       repository_url: project.repository_url || "",
       repository_type: project.repository_type || "github",
       default_branch: project.default_branch || "main",
@@ -441,18 +449,59 @@ export default function Projects() {
               </div>
             </div>
 
+            {/* 扫描类型区 */}
+            <div className="px-6 py-5 space-y-4 border-b border-border">
+              <h3 className="text-xs font-sans font-bold uppercase text-muted-foreground tracking-widest">扫描类型</h3>
+              <div className="grid grid-cols-2 gap-0 border border-border rounded overflow-hidden">
+                <button
+                  type="button"
+                  className={`flex flex-col items-center justify-center gap-1 py-3 text-sm font-sans transition-colors ${
+                    createForm.scan_mode === 'source'
+                      ? 'bg-primary text-foreground font-bold'
+                      : 'bg-muted/50 text-muted-foreground hover:bg-muted'
+                  }`}
+                  onClick={() => setCreateForm({ ...createForm, scan_mode: 'source' })}
+                >
+                  <FileText className="w-4 h-4" />
+                  <span>源代码扫描</span>
+                  <span className="text-[10px] opacity-70 font-normal normal-case">支持 Git 仓库 / 本地上传</span>
+                </button>
+                <button
+                  type="button"
+                  className={`flex flex-col items-center justify-center gap-1 py-3 text-sm font-sans transition-colors ${
+                    createForm.scan_mode === 'compiled'
+                      ? 'bg-primary text-foreground font-bold'
+                      : 'bg-muted/50 text-muted-foreground hover:bg-muted'
+                  }`}
+                  onClick={() => setCreateForm({
+                    ...createForm,
+                    scan_mode: 'compiled',
+                    source_type: 'zip', // compiled 强制本地上传
+                  })}
+                >
+                  <Upload className="w-4 h-4" />
+                  <span>编译后产物扫描</span>
+                  <span className="text-[10px] opacity-70 font-normal normal-case">仅支持本地上传</span>
+                </button>
+              </div>
+            </div>
+
             {/* 项目位置区 */}
             <div className="px-6 py-5 space-y-4">
               <h3 className="text-xs font-sans font-bold uppercase text-muted-foreground tracking-widest">项目位置</h3>
               <div className="grid grid-cols-2 gap-0 border border-border rounded overflow-hidden">
                 <button
                   type="button"
+                  disabled={createForm.scan_mode === 'compiled'}
                   className={`flex items-center justify-center gap-2 py-2.5 text-sm font-sans transition-colors ${
-                    createForm.source_type === 'repository'
-                      ? 'bg-primary text-foreground font-bold'
-                      : 'bg-muted/50 text-muted-foreground hover:bg-muted'
+                    createForm.scan_mode === 'compiled'
+                      ? 'bg-muted/30 text-muted-foreground/50 cursor-not-allowed'
+                      : createForm.source_type === 'repository'
+                        ? 'bg-primary text-foreground font-bold'
+                        : 'bg-muted/50 text-muted-foreground hover:bg-muted'
                   }`}
                   onClick={() => setCreateForm({ ...createForm, source_type: 'repository' })}
+                  title={createForm.scan_mode === 'compiled' ? '编译后产物扫描仅支持本地上传' : undefined}
                 >
                   <GitBranch className="w-4 h-4" />
                   仓库地址
@@ -582,6 +631,49 @@ export default function Projects() {
                     <Progress value={uploadProgress} className="h-1.5 bg-muted [&>div]:bg-primary" />
                   </div>
                 )}
+              </div>
+            )}
+
+            {/* Compiled Options - 仅 scan_mode='compiled' */}
+            {createForm.scan_mode === 'compiled' && (
+              <div className="px-6 py-5 space-y-4 border-b border-border">
+                <h3 className="text-xs font-sans font-bold uppercase text-muted-foreground tracking-widest">编译产物扫描配置</h3>
+                <div className="space-y-3">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={createForm.compiled_options?.enable_sca ?? true}
+                      onChange={(e) => setCreateForm({
+                        ...createForm,
+                        compiled_options: {
+                          ...(createForm.compiled_options ?? { enable_sca: true, max_binary_size_mb: 200 }),
+                          enable_sca: e.target.checked,
+                        },
+                      })}
+                      className="rounded border-border"
+                    />
+                    <span className="text-sm text-foreground">启用 SCA（已知 CVE 依赖检测）</span>
+                  </label>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="max-binary-size" className="text-sm text-foreground">单文件最大字节数 (MB)</Label>
+                    <Input
+                      id="max-binary-size"
+                      type="number"
+                      min={1}
+                      max={2048}
+                      value={createForm.compiled_options?.max_binary_size_mb ?? 200}
+                      onChange={(e) => setCreateForm({
+                        ...createForm,
+                        compiled_options: {
+                          ...(createForm.compiled_options ?? { enable_sca: true, max_binary_size_mb: 200 }),
+                          max_binary_size_mb: Math.max(1, Math.min(2048, Number(e.target.value) || 200)),
+                        },
+                      })}
+                      className="cyber-input"
+                    />
+                    <p className="text-xs text-muted-foreground">压缩包内支持的扩展名: .apk .aab .dex .so .dll .exe .elf — 其他文件将被忽略。</p>
+                  </div>
+                </div>
               </div>
             )}
 
@@ -717,6 +809,7 @@ export default function Projects() {
                   <tr className="border-b border-border text-muted-foreground">
                     <th className="text-left py-2 px-6 font-medium">项目名称</th>
                     <th className="text-left py-2 px-3 font-medium">项目描述</th>
+                    <th className="text-left py-2 px-3 font-medium">扫描类型</th>
                     <th className="text-left py-2 px-3 font-medium">开发语言</th>
                     <th className="text-left py-2 px-3 font-medium">项目负责人</th>
                     <th className="text-left py-2 px-3 font-medium">操作</th>
@@ -725,7 +818,7 @@ export default function Projects() {
                 <tbody>
                   {filteredProjects.length === 0 ? (
                     <tr>
-                      <td colSpan={5} className="py-8 text-center text-muted-foreground">
+                      <td colSpan={6} className="py-8 text-center text-muted-foreground">
                         {searchTerm || filterLang !== 'all' ? '未找到匹配项' : '当前无项目'}
                       </td>
                     </tr>
@@ -736,6 +829,11 @@ export default function Projects() {
                           <span className="font-medium text-foreground">{project.name}</span>
                         </td>
                         <td className="py-2.5 px-3 text-muted-foreground max-w-md truncate">{project.description || '-'}</td>
+                        <td className="py-2.5 px-3">
+                          <Badge className={project.scan_mode === 'compiled' ? 'cyber-badge-warning' : 'cyber-badge-info'}>
+                            {project.scan_mode === 'compiled' ? '编译后产物' : '源代码'}
+                          </Badge>
+                        </td>
                         <td className="py-2.5 px-3">
                           <div className="flex flex-wrap gap-1">
                             {project.programming_languages ? (
@@ -847,6 +945,18 @@ export default function Projects() {
                   rows={3}
                   className="cyber-input mt-1"
                 />
+              </div>
+            </div>
+
+            {/* 扫描配置（只读） */}
+            <div className="space-y-4">
+              <h3 className="font-sans font-bold uppercase text-sm text-muted-foreground border-b border-border pb-2">扫描配置</h3>
+              <div className="flex items-center gap-3">
+                <Label className="font-sans font-bold uppercase text-xs text-muted-foreground">扫描类型</Label>
+                <Badge className={editForm.scan_mode === 'compiled' ? 'cyber-badge-warning' : 'cyber-badge-info'}>
+                  {editForm.scan_mode === 'compiled' ? '编译后产物' : '源代码'}
+                </Badge>
+                <span className="text-xs text-muted-foreground">创建后不可修改</span>
               </div>
             </div>
 
