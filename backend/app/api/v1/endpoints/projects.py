@@ -3,7 +3,7 @@ from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks, UploadFi
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy.orm import selectinload
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 from datetime import datetime, timezone
 from pathlib import Path
 import shutil
@@ -54,6 +54,8 @@ class ProjectCreate(BaseModel):
     description: Optional[str] = None
     default_branch: Optional[str] = "main"
     programming_languages: Optional[List[str]] = None
+    scan_mode: Optional[str] = "source"
+    compiled_options: Optional[Dict[str, Any]] = None
 
 class ProjectUpdate(BaseModel):
     name: Optional[str] = None
@@ -88,6 +90,22 @@ class ProjectResponse(BaseModel):
     created_at: datetime
     updated_at: Optional[datetime] = None
     owner: Optional[OwnerSchema] = None
+    scan_mode: Optional[str] = "source"
+    compiled_options: Optional[Dict[str, Any]] = None
+
+    @field_validator("compiled_options", mode="before")
+    @classmethod
+    def _parse_compiled_options(cls, v):
+        if v is None or v == "":
+            return None
+        if isinstance(v, dict):
+            return v
+        if isinstance(v, str):
+            try:
+                return json.loads(v)
+            except Exception:
+                return None
+        return v
 
     class Config:
         from_attributes = True
@@ -114,7 +132,14 @@ async def create_project(
     import json
     # 根据 source_type 设置默认值
     source_type = project_in.source_type or "repository"
-    
+
+    scan_mode = project_in.scan_mode or "source"
+    if scan_mode == "compiled" and source_type != "zip":
+        raise HTTPException(
+            status_code=400,
+            detail="编译后产物扫描仅支持本地上传，请将代码来源设置为 zip。",
+        )
+
     project = Project(
         name=project_in.name,
         source_type=source_type,
@@ -123,7 +148,9 @@ async def create_project(
         description=project_in.description,
         default_branch=project_in.default_branch or "main",
         programming_languages=json.dumps(project_in.programming_languages or []),
-        owner_id=current_user.id
+        owner_id=current_user.id,
+        scan_mode=scan_mode,
+        compiled_options=json.dumps(project_in.compiled_options) if project_in.compiled_options else None,
     )
     db.add(project)
     await db.commit()

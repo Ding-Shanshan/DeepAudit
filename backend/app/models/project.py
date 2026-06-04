@@ -13,7 +13,12 @@ class Project(Base):
     
     # 项目来源类型: 'repository' (远程仓库) 或 'zip' (ZIP上传)
     source_type = Column(String(20), default="repository", nullable=False)
-    
+
+    # 扫描模式: 'source' (审计源代码) 或 'compiled' (审计编译后产物)
+    scan_mode = Column(String(20), default="source", nullable=False)
+    # 编译后产物扫描的可选参数 (JSON 字符串): {"enable_sca": bool, "max_binary_size_mb": int}
+    compiled_options = Column(Text, nullable=True)
+
     # 仓库相关字段 (仅 source_type='repository' 时使用)
     repository_url = Column(String, nullable=True)
     repository_type = Column(String, default="other")  # github, gitlab, gitea, other
