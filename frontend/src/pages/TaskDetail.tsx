@@ -762,17 +762,19 @@ export default function TaskDetail() {
                   ))}
                 </SelectContent>
               </Select>
-              {/* 批量AI排查按钮 */}
-              <Button
-                variant="outline"
-                size="sm"
-                className="h-8 text-sm border-purple-500/30 hover:bg-purple-500/12 hover:text-purple-500 hover:border-purple-500/50"
-                disabled={aiBatchInProgress}
-                onClick={handleBatchAiInvestigate}
-              >
-                <Sparkles className="w-3.5 h-3.5 mr-1" />
-                {aiBatchInProgress ? `排查中 (${aiBatchProgress.completed}/${aiBatchProgress.total})` : '批量AI排查'}
-              </Button>
+              {/* 批量AI排查按钮（IaC 任务不参与 AI 排查） */}
+              {!isIacTask && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-8 text-sm border-purple-500/30 hover:bg-purple-500/12 hover:text-purple-500 hover:border-purple-500/50"
+                  disabled={aiBatchInProgress}
+                  onClick={handleBatchAiInvestigate}
+                >
+                  <Sparkles className="w-3.5 h-3.5 mr-1" />
+                  {aiBatchInProgress ? `排查中 (${aiBatchProgress.completed}/${aiBatchProgress.total})` : '批量AI排查'}
+                </Button>
+              )}
             </div>
 
             <IssuesTable
@@ -783,7 +785,7 @@ export default function TaskDetail() {
               loadingMore={loadingMore}
               onStatusChange={handleIssueStatusChange}
               onViewDetail={handleViewDetail}
-              onAiInvestigate={handleAiInvestigate}
+              onAiInvestigate={isIacTask ? undefined : handleAiInvestigate}
             />
           </TabsContent>
 
