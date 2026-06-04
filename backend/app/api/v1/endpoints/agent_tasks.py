@@ -37,6 +37,11 @@ from app.services.agent.event_manager import EventManager
 from app.services.agent.streaming import StreamHandler, StreamEvent, StreamEventType
 from app.services.git_ssh_service import GitSSHOperations
 from app.core.encryption import decrypt_sensitive_data
+from app.api.v1.endpoints.tasks import (
+    _get_code_analysis_summary,
+    _get_code_analysis_section,
+    _verify_task_access,
+)
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -2301,6 +2306,36 @@ async def get_code_analysis(
         "file_dependencies": [],
         "control_flow": [],
     }
+
+
+@router.get("/{task_id}/code-analysis/summary")
+async def get_agent_code_analysis_summary(
+    task_id: str,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(deps.get_current_user),
+):
+    """获取深度审计任务代码分析结果各小节计数（轻量级，用于前端分批加载首屏渲染）"""
+    await _verify_task_access(db, task_id, current_user.id, task_table="agent_tasks")
+    return await _get_code_analysis_summary(db, task_id, task_table="agent_tasks")
+
+
+@router.get("/{task_id}/code-analysis/{section}")
+async def get_agent_code_analysis_section(
+    task_id: str,
+    section: str,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(deps.get_current_user),
+):
+    """按需获取深度审计任务代码分析结果的某一小节"""
+    from app.api.v1.endpoints.tasks import _CODE_ANALYSIS_SECTIONS
+    if section not in _CODE_ANALYSIS_SECTIONS:
+        raise HTTPException(status_code=400, detail=f"不支持的 section: {section}")
+
+    await _verify_task_access(db, task_id, current_user.id, task_table="agent_tasks")
+    data = await _get_code_analysis_section(db, task_id, section, task_table="agent_tasks")
+    if data is None:
+        return {} if section == "control_flow" else []
+    return data
 
 
 @router.get("/{task_id}/summary", response_model=TaskSummaryResponse)
