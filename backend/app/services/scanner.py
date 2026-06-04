@@ -4,12 +4,15 @@
 
 import httpx
 import json
+import logging
 import os
 from pathlib import Path
 import shutil
 import subprocess
 import tempfile
 from typing import List, Dict, Any, Optional
+
+logger = logging.getLogger(__name__)
 from datetime import datetime, timezone
 from urllib.parse import urlparse, quote
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -64,6 +67,30 @@ def should_exclude(path: str, exclude_patterns: List[str] = None) -> bool:
 def get_language_from_path(path: str) -> str:
     """从文件路径获取语言类型"""
     return local_language_from_path(path)
+
+
+def parse_compiled_options(raw: Any) -> Dict[str, Any]:
+    """Decode a Project.compiled_options column value into a plain dict.
+
+    The column is Text/JSON, but stored values can be:
+    - None / "" → empty options
+    - a JSON string → decode
+    - already a dict (in tests / future schema change) → return as-is
+    - malformed JSON → log warning and return {}
+    """
+    if not raw:
+        return {}
+    if isinstance(raw, dict):
+        return raw
+    if isinstance(raw, str):
+        try:
+            return json.loads(raw)
+        except json.JSONDecodeError as e:
+            logger.warning(
+                "Failed to decode project.compiled_options JSON: %s; raw=%r", e, raw[:100]
+            )
+            return {}
+    return {}
 
 
 class TaskControlManager:

@@ -35,6 +35,7 @@ from app.services.scanner import (
     get_gitlab_branches,
     get_gitea_branches,
     materialize_repository_workspace,
+    parse_compiled_options,
     scan_repo_task,
     scan_iac_task,
 )
@@ -669,16 +670,11 @@ async def scan_project(
     # 将扫描配置注入到 user_config 中，以便 scan_repo_task 使用
     if scan_request:
         # compiled_options fallback：请求未带则从项目读取
-        if scan_request.compiled_options is not None:
-            effective_compiled_options = scan_request.compiled_options
-        else:
-            if project.compiled_options:
-                try:
-                    effective_compiled_options = json.loads(project.compiled_options) if isinstance(project.compiled_options, str) else (project.compiled_options or {})
-                except Exception:
-                    effective_compiled_options = {}
-            else:
-                effective_compiled_options = {}
+        effective_compiled_options = (
+            scan_request.compiled_options
+            if scan_request.compiled_options is not None
+            else parse_compiled_options(project.compiled_options)
+        )
 
         user_config['scan_config'] = {
             'file_paths': scan_request.file_paths or [],
@@ -693,16 +689,10 @@ async def scan_project(
         }
     else:
         # No scan_request body — still hydrate scan_config from project defaults
-        if project.compiled_options:
-            try:
-                project_options = json.loads(project.compiled_options) if isinstance(project.compiled_options, str) else (project.compiled_options or {})
-            except Exception:
-                project_options = {}
-        else:
-            project_options = {}
+        effective_compiled_options = parse_compiled_options(project.compiled_options)
         user_config['scan_config'] = {
             'scan_mode': effective_scan_mode,
-            'compiled_options': project_options,
+            'compiled_options': effective_compiled_options,
         }
 
     # Trigger Background Task

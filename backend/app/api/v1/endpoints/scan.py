@@ -22,6 +22,7 @@ from app.services.llm.service import LLMService
 from app.services.archive_utils import extract_archive_recursive, is_supported_archive
 from app.services.scanner import (
     get_analysis_config,
+    parse_compiled_options,
     scan_local_workspace,
     task_control,
 )
@@ -165,15 +166,11 @@ async def scan_zip(
             )
         effective_scan_mode = req_scan_mode or project_scan_mode
         req_compiled_options = parsed_scan_config.get('compiled_options')
-        if req_compiled_options is not None:
-            effective_compiled_options = req_compiled_options
-        elif project.compiled_options:
-            try:
-                effective_compiled_options = json.loads(project.compiled_options) if isinstance(project.compiled_options, str) else (project.compiled_options or {})
-            except Exception:
-                effective_compiled_options = {}
-        else:
-            effective_compiled_options = {}
+        effective_compiled_options = (
+            req_compiled_options
+            if req_compiled_options is not None
+            else parse_compiled_options(project.compiled_options)
+        )
 
         user_config['scan_config'] = {
             'file_paths': parsed_scan_config.get('file_paths', []),
@@ -261,15 +258,11 @@ async def scan_stored_zip(
                 detail=f"扫描类型与项目不一致：项目 scan_mode={project_scan_mode}，请求 scan_mode={scan_request.scan_mode}",
             )
         effective_scan_mode = scan_request.scan_mode or project_scan_mode
-        if scan_request.compiled_options is not None:
-            effective_compiled_options = scan_request.compiled_options
-        elif project.compiled_options:
-            try:
-                effective_compiled_options = json.loads(project.compiled_options) if isinstance(project.compiled_options, str) else (project.compiled_options or {})
-            except Exception:
-                effective_compiled_options = {}
-        else:
-            effective_compiled_options = {}
+        effective_compiled_options = (
+            scan_request.compiled_options
+            if scan_request.compiled_options is not None
+            else parse_compiled_options(project.compiled_options)
+        )
 
         user_config['scan_config'] = {
             'file_paths': scan_request.file_paths or [],
