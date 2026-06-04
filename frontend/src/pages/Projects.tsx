@@ -42,6 +42,10 @@ import CreateTaskDialog from "@/components/audit/CreateTaskDialog";
 import TerminalProgressDialog from "@/components/audit/TerminalProgressDialog";
 import { SUPPORTED_LANGUAGES, REPOSITORY_PLATFORMS } from "@/shared/constants";
 
+// Compiled-mode (二进制扫描) form defaults — keep in lockstep with backend.
+const DEFAULT_COMPILED_OPTIONS = { enable_sca: true, max_binary_size_mb: 200 } as const;
+const MAX_BINARY_MB_CAP = 2048;
+
 export default function Projects() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
@@ -64,7 +68,7 @@ export default function Projects() {
     description: "",
     source_type: "repository",
     scan_mode: "source",
-    compiled_options: { enable_sca: true, max_binary_size_mb: 200 },
+    compiled_options: DEFAULT_COMPILED_OPTIONS,
     repository_url: "",
     repository_type: "github",
     default_branch: "main",
@@ -75,7 +79,7 @@ export default function Projects() {
     description: "",
     source_type: "repository",
     scan_mode: "source",
-    compiled_options: { enable_sca: true, max_binary_size_mb: 200 },
+    compiled_options: DEFAULT_COMPILED_OPTIONS,
     repository_url: "",
     repository_type: "github",
     default_branch: "main",
@@ -173,7 +177,7 @@ export default function Projects() {
       description: "",
       source_type: "repository",
       scan_mode: "source",
-      compiled_options: { enable_sca: true, max_binary_size_mb: 200 },
+      compiled_options: DEFAULT_COMPILED_OPTIONS,
       repository_url: "",
       repository_type: "github",
       default_branch: "main",
@@ -290,7 +294,7 @@ export default function Projects() {
       description: project.description || "",
       source_type: project.source_type || "repository",
       scan_mode: project.scan_mode || 'source',
-      compiled_options: project.compiled_options || { enable_sca: true, max_binary_size_mb: 200 },
+      compiled_options: project.compiled_options || DEFAULT_COMPILED_OPTIONS,
       repository_url: project.repository_url || "",
       repository_type: project.repository_type || "github",
       default_branch: project.default_branch || "main",
@@ -646,7 +650,7 @@ export default function Projects() {
                       onChange={(e) => setCreateForm({
                         ...createForm,
                         compiled_options: {
-                          ...(createForm.compiled_options ?? { enable_sca: true, max_binary_size_mb: 200 }),
+                          ...(createForm.compiled_options ?? DEFAULT_COMPILED_OPTIONS),
                           enable_sca: e.target.checked,
                         },
                       })}
@@ -660,13 +664,13 @@ export default function Projects() {
                       id="max-binary-size"
                       type="number"
                       min={1}
-                      max={2048}
+                      max={MAX_BINARY_MB_CAP}
                       value={createForm.compiled_options?.max_binary_size_mb ?? 200}
                       onChange={(e) => setCreateForm({
                         ...createForm,
                         compiled_options: {
-                          ...(createForm.compiled_options ?? { enable_sca: true, max_binary_size_mb: 200 }),
-                          max_binary_size_mb: Math.max(1, Math.min(2048, Number(e.target.value) || 200)),
+                          ...(createForm.compiled_options ?? DEFAULT_COMPILED_OPTIONS),
+                          max_binary_size_mb: Math.max(1, Math.min(MAX_BINARY_MB_CAP, Number(e.target.value) || 200)),
                         },
                       })}
                       className="cyber-input"
