@@ -205,16 +205,16 @@ export default function AuditTasks() {
   };
 
 
-  const loadTasks = async () => {
+  const loadTasks = async (silent = false) => {
     try {
-      setLoading(true);
+      if (!silent) setLoading(true);
       const data = await api.getAuditTasks();
       setTasks(data);
     } catch (error) {
       console.error('Failed to load tasks:', error);
-      toast.error("加载任务失败");
+      if (!silent) toast.error("加载任务失败");
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   };
 
@@ -242,6 +242,8 @@ export default function AuditTasks() {
   };
 
   const filteredTasks = tasks.filter(task => {
+    // 排除 IaC 扫描任务（它们只属于 IaC tab）
+    if ((task.task_type as string) === "iac_scan") return false;
     const matchesSearch = task.project?.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       task.task_type.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = statusFilter === "all" || task.status === statusFilter;
@@ -520,7 +522,7 @@ export default function AuditTasks() {
       <CreateTaskDialog
         open={showCreateDialog}
         onOpenChange={setShowCreateDialog}
-        onTaskCreated={() => { loadTasks(); loadAgentTasks(); }}
+        onTaskCreated={() => { loadTasks(true); loadAgentTasks(true); }}
         onFastScanStarted={handleFastScanStarted}
       />
 
@@ -534,7 +536,10 @@ export default function AuditTasks() {
       <CreateIacTaskDialog
         open={iacDialogOpen}
         onOpenChange={setIacDialogOpen}
-        onCreated={() => loadTasks()}
+        onCreated={() => {
+          // 静默刷新：避免触发全屏 loading；800ms 让 BackgroundTasks 翻转 task_type
+          setTimeout(() => loadTasks(true), 800);
+        }}
       />
 
       {/* Terminal Progress Dialog for Fast Scan */}
