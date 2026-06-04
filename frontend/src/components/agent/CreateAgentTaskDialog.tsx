@@ -162,6 +162,8 @@ export default function CreateAgentTaskDialog({
   const canStart = useMemo(() => {
     if (!selectedProject) return false;
     if (!taskName.trim()) return false;
+    // 编译后产物项目不允许走深度审计
+    if (selectedProject.scan_mode === "compiled") return false;
     if (isZipProject(selectedProject)) {
       return storedZipInfo?.has_file || !!zipFile;
     }
@@ -173,6 +175,10 @@ export default function CreateAgentTaskDialog({
     if (!selectedProject) return;
     if (!taskName.trim()) {
       toast.error("请输入任务名称");
+      return;
+    }
+    if (selectedProject.scan_mode === "compiled") {
+      toast.error("编译后产物项目暂不支持深度审计");
       return;
     }
     if (scheduleEnabled) {

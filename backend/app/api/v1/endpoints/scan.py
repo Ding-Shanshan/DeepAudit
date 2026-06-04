@@ -184,6 +184,13 @@ async def scan_zip(
             'compiled_options': effective_compiled_options,
             'task_type': parsed_scan_config.get('task_type') or 'repository',
         }
+    else:
+        # 请求未带 scan_config 时也要把项目默认的 scan_mode 透传给后台任务，
+        # 否则 compiled 项目会被悄悄当 source 扫描
+        user_config['scan_config'] = {
+            'scan_mode': project_scan_mode,
+            'compiled_options': parse_compiled_options(project.compiled_options),
+        }
 
     # Trigger Background Task - 使用持久化存储的文件路径
     stored_zip_path = await load_project_zip(project_id)
@@ -275,6 +282,12 @@ async def scan_stored_zip(
             'scan_mode': effective_scan_mode,
             'compiled_options': effective_compiled_options,
             'task_type': scan_request.task_type or 'repository',
+        }
+    else:
+        # 请求未带 scan_request 时也透传项目默认值，避免 compiled 项目被当 source 扫
+        user_config['scan_config'] = {
+            'scan_mode': project_scan_mode,
+            'compiled_options': parse_compiled_options(project.compiled_options),
         }
 
     # Trigger Background Task

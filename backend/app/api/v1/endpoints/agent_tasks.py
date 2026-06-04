@@ -1634,7 +1634,14 @@ async def create_agent_task(
     
     if project.owner_id != current_user.id:
         raise HTTPException(status_code=403, detail="无权访问此项目")
-    
+
+    # 编译后产物项目暂不支持深度审计（agent 目前只处理源代码）
+    if (project.scan_mode or "source") == "compiled":
+        raise HTTPException(
+            status_code=400,
+            detail="编译后产物项目暂不支持深度审计",
+        )
+
     # 创建任务
     task = AgentTask(
         id=str(uuid4()),
