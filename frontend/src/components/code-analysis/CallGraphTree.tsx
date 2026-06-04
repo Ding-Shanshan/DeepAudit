@@ -1,24 +1,44 @@
 // frontend/src/components/code-analysis/CallGraphTree.tsx
 //
-// 调用图视图：按文件分组的调用列表（右侧 reactflow 图已隐藏）。
+// 调用图视图：按文件分组的调用列表。
 // 视图模型来自 adapters.toCallGraphView()。
+// 支持滚动到底自动加载更多。
 
 import { useMemo, useState } from 'react';
 import { ArrowRight, ChevronDown, ChevronRight, File } from 'lucide-react';
 
 import { toCallGraphView } from './adapters';
+import { useInfiniteSentinel } from './CodeAnalysisPanel';
+import { LoadMoreBar } from './APIAssetsList';
 
 interface Props {
-  /** 后端返回的原始 call_graph（数组） */
+  /** 后端返回的原始 call_graph（数组），CodeAnalysisPanel 已做分页累计 */
   data: unknown[] | unknown;
+  hasMore?: boolean;
+  loadingMore?: boolean;
+  onLoadMore?: () => void;
+  total?: number;
+  error?: string | null;
 }
 
-export function CallGraphTree({ data }: Props) {
+export function CallGraphTree({
+  data,
+  hasMore = false,
+  loadingMore = false,
+  onLoadMore,
+  total,
+  error,
+}: Props) {
   const view = useMemo(() => toCallGraphView(data), [data]);
   const [openFiles, setOpenFiles] = useState<Set<string>>(new Set());
   const [highlightCaller, setHighlightCaller] = useState<string | null>(null);
 
-  if (view.edges.length === 0) {
+  const sentinelRef = useInfiniteSentinel(
+    () => onLoadMore?.(),
+    hasMore && !loadingMore && !error
+  );
+
+  if (view.edges.length === 0 && !hasMore) {
     return <div className="text-muted-foreground text-xs py-4 px-2">暂无调用关系</div>;
   }
 
@@ -30,10 +50,11 @@ export function CallGraphTree({ data }: Props) {
     });
   };
 
+  const totalLabel = total ?? view.edges.length;
+
   return (
-    <div className="h-[420px]">
-      {/* 按文件分组的调用列表（占满整宽，图视图已隐藏） */}
-      <div className="h-full overflow-auto border border-border rounded p-1">
+    <div className="h-[420px] flex flex-col">
+      <div className="flex-1 overflow-auto border border-border rounded p-1">
         {view.fileGroups.map((g) => {
           const open = openFiles.has(g.file);
           return (
@@ -75,8 +96,17 @@ export function CallGraphTree({ data }: Props) {
             </div>
           );
         })}
+
+        <LoadMoreBar
+          sentinelRef={sentinelRef}
+          hasMore={hasMore}
+          loadingMore={loadingMore}
+          loaded={view.edges.length}
+          total={totalLabel}
+          error={error}
+          onRetry={onLoadMore}
+        />
       </div>
     </div>
   );
 }
-

@@ -1,21 +1,41 @@
 // frontend/src/components/code-analysis/FileDepsTree.tsx
 //
-// 文件依赖视图：按源文件分组的依赖列表（右侧 reactflow 图已隐藏）。
+// 文件依赖视图：按源文件分组的依赖列表。
+// 支持滚动到底自动加载更多。
 
 import { useMemo, useState } from 'react';
 import { ChevronDown, ChevronRight, File, FileCode } from 'lucide-react';
 
 import { toFileDepsView } from './adapters';
+import { useInfiniteSentinel } from './CodeAnalysisPanel';
+import { LoadMoreBar } from './APIAssetsList';
 
 interface Props {
   data: unknown[] | unknown;
+  hasMore?: boolean;
+  loadingMore?: boolean;
+  onLoadMore?: () => void;
+  total?: number;
+  error?: string | null;
 }
 
-export function FileDepsTree({ data }: Props) {
+export function FileDepsTree({
+  data,
+  hasMore = false,
+  loadingMore = false,
+  onLoadMore,
+  total,
+  error,
+}: Props) {
   const view = useMemo(() => toFileDepsView(data), [data]);
   const [openFiles, setOpenFiles] = useState<Set<string>>(new Set());
 
-  if (view.edges.length === 0) {
+  const sentinelRef = useInfiniteSentinel(
+    () => onLoadMore?.(),
+    hasMore && !loadingMore && !error
+  );
+
+  if (view.edges.length === 0 && !hasMore) {
     return <div className="text-muted-foreground text-xs py-4 px-2">暂无依赖关系</div>;
   }
 
@@ -27,10 +47,11 @@ export function FileDepsTree({ data }: Props) {
     });
   };
 
+  const totalLabel = total ?? view.edges.length;
+
   return (
-    <div className="h-[420px]">
-      {/* 按源文件分组（占满整宽，图视图已隐藏） */}
-      <div className="h-full overflow-auto border border-border rounded p-1">
+    <div className="h-[420px] flex flex-col">
+      <div className="flex-1 overflow-auto border border-border rounded p-1">
         {view.fileGroups.map((g) => {
           const open = openFiles.has(g.file);
           const externalCount = g.includes.filter((i) => i.external).length;
@@ -76,6 +97,16 @@ export function FileDepsTree({ data }: Props) {
             </div>
           );
         })}
+
+        <LoadMoreBar
+          sentinelRef={sentinelRef}
+          hasMore={hasMore}
+          loadingMore={loadingMore}
+          loaded={view.edges.length}
+          total={totalLabel}
+          error={error}
+          onRetry={onLoadMore}
+        />
       </div>
     </div>
   );
