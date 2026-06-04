@@ -40,6 +40,7 @@ from app.core.encryption import decrypt_sensitive_data
 from app.api.v1.endpoints.tasks import (
     _get_code_analysis_summary,
     _get_code_analysis_section,
+    _get_code_analysis_section_page,
     _verify_task_access,
 )
 
@@ -2317,6 +2318,33 @@ async def get_agent_code_analysis_summary(
     """获取深度审计任务代码分析结果各小节计数（轻量级，用于前端分批加载首屏渲染）"""
     await _verify_task_access(db, task_id, current_user.id, task_table="agent_tasks")
     return await _get_code_analysis_summary(db, task_id, task_table="agent_tasks")
+
+
+@router.get("/{task_id}/code-analysis/{section}/page")
+async def get_agent_code_analysis_section_page(
+    task_id: str,
+    section: str,
+    offset: int = 0,
+    limit: int = 50,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(deps.get_current_user),
+):
+    """分页获取深度审计任务代码分析结果的某一数组型小节。
+
+    支持的 section: api_endpoints | call_graph | file_dependencies
+    control_flow（dict）不支持分页。
+    """
+    from app.api.v1.endpoints.tasks import _PAGEABLE_SECTIONS
+    if section not in _PAGEABLE_SECTIONS:
+        raise HTTPException(status_code=400, detail=f"该 section 不支持分页: {section}")
+
+    limit = max(1, min(limit, 500))
+    offset = max(0, offset)
+
+    await _verify_task_access(db, task_id, current_user.id, task_table="agent_tasks")
+    return await _get_code_analysis_section_page(
+        db, task_id, section, task_table="agent_tasks", offset=offset, limit=limit,
+    )
 
 
 @router.get("/{task_id}/code-analysis/{section}")

@@ -14,10 +14,13 @@ from fastapi import HTTPException
 from app.api.v1.endpoints.tasks import (
     _CODE_ANALYSIS_SECTIONS,
     _CODE_ANALYSIS_TABLES,
+    _PAGEABLE_SECTIONS,
     _get_code_analysis_summary,
     _get_code_analysis_section,
+    _get_code_analysis_section_page,
     get_code_analysis_summary,
     get_code_analysis_section,
+    get_code_analysis_section_page,
 )
 
 
@@ -44,6 +47,15 @@ def _mock_db_execute_returns(row):
 def _mock_db_execute_raises(exc):
     db = MagicMock()
     db.execute = AsyncMock(side_effect=exc)
+    return db
+
+
+def _mock_db_execute_returns_rows(rows):
+    """构造一个 db.execute 的 mock，让 .all() 返回 rows 列表。"""
+    db = MagicMock()
+    result_proxy = MagicMock()
+    result_proxy.all.return_value = rows
+    db.execute = AsyncMock(return_value=result_proxy)
     return db
 
 
@@ -279,3 +291,147 @@ class TestSectionEndpoint:
         ):
             result = await get_code_analysis_section(TASK_ID, "control_flow", db, user)
             assert result == {}
+
+
+# ─────────────────────────────────────────
+# Helper: _get_code_analysis_section_page
+# ─────────────────────────────────────────
+
+
+class TestGetCodeAnalysisSectionPage:
+    @pytest.mark.asyncio
+    async def test_returns_sliced_items(self):
+        rows = [MagicMock(value={"i": 0}), MagicMock(value={"i": 1})]
+        db = _mock_db_execute_returns_rows(rows)
+        result = await _get_code_analysis_section_page(
+            db, TASK_ID, "api_endpoints", offset=10, limit=2,
+        )
+        assert result == [{"i": 0}, {"i": 1}]
+
+    @pytest.mark.asyncio
+    async def test_returns_empty_when_no_rows(self):
+        db = _mock_db_execute_returns_rows([])
+        result = await _get_code_analysis_section_page(
+            db, TASK_ID, "call_graph", offset=0, limit=50,
+        )
+        assert result == []
+
+    @pytest.mark.asyncio
+    async def test_returns_empty_for_non_pageable_section(self):
+        """control_flow 不在分页白名单 → 直接返回 []，不触发 SQL。"""
+        db = MagicMock()
+        db.execute = AsyncMock()
+        result = await _get_code_analysis_section_page(
+            db, TASK_ID, "control_flow", offset=0, limit=50,
+        )
+        assert result == []
+        db.execute.assert_not_called()
+
+    @pytest.mark.asyncio
+    async def test_returns_empty_for_bogus_section(self):
+        db = MagicMock()
+        db.execute = AsyncMock()
+        result = await _get_code_analysis_section_page(
+            db, TASK_ID, "bogus", offset=0, limit=50,
+        )
+        assert result == []
+        db.execute.assert_not_called()
+
+    @pytest.mark.asyncio
+    async def test_invalid_task_table_raises(self):
+        db = MagicMock()
+        with pytest.raises(ValueError, match="invalid task_table"):
+            await _get_code_analysis_section_page(
+                db, TASK_ID, "api_endpoints", task_table="x;drop", offset=0, limit=50,
+            )
+
+    @pytest.mark.asyncio
+    async def test_fallback_to_empty_on_db_error(self):
+        db = _mock_db_execute_raises(Exception("boom"))
+        result = await _get_code_analysis_section_page(
+            db, TASK_ID, "file_dependencies", offset=0, limit=50,
+        )
+        assert result == []
+
+
+# ─────────────────────────────────────────
+# Module-level constants: pageable subset
+# ─────────────────────────────────────────
+
+
+def test_pageable_sections_subset_of_sections():
+    """分页支持的 section 必须是总 section 白名单子集，且不含 control_flow。"""
+    assert set(_PAGEABLE_SECTIONS).issubset(set(_CODE_ANALYSIS_SECTIONS))
+    assert "control_flow" not in _PAGEABLE_SECTIONS
+    assert "api_endpoints" in _PAGEABLE_SECTIONS
+    assert "call_graph" in _PAGEABLE_SECTIONS
+    assert "file_dependencies" in _PAGEABLE_SECTIONS
+
+
+# ─────────────────────────────────────────
+# Endpoint: get_code_analysis_section_page
+# ─────────────────────────────────────────
+
+
+class TestSectionPageEndpoint:
+    @pytest.mark.asyncio
+    async def test_returns_page_data(self):
+        db = MagicMock()
+        user = _make_user()
+        payload = [{"i": 0}, {"i": 1}]
+        with patch(
+            "app.api.v1.endpoints.tasks._verify_task_access",
+            new=AsyncMock(return_value=None),
+        ), patch(
+            "app.api.v1.endpoints.tasks._get_code_analysis_section_page",
+            new=AsyncMock(return_value=payload),
+        ):
+            result = await get_code_analysis_section_page(
+                TASK_ID, "api_endpoints", offset=0, limit=50, db=db, current_user=user,
+            )
+            assert result == payload
+
+    @pytest.mark.asyncio
+    async def test_rejects_control_flow(self):
+        db = MagicMock()
+        user = _make_user()
+        with pytest.raises(HTTPException) as exc:
+            await get_code_analysis_section_page(
+                TASK_ID, "control_flow", offset=0, limit=50, db=db, current_user=user,
+            )
+        assert exc.value.status_code == 400
+        assert "control_flow" in exc.value.detail
+
+    @pytest.mark.asyncio
+    async def test_rejects_bogus_section(self):
+        db = MagicMock()
+        user = _make_user()
+        with pytest.raises(HTTPException) as exc:
+            await get_code_analysis_section_page(
+                TASK_ID, "bogus", offset=0, limit=50, db=db, current_user=user,
+            )
+        assert exc.value.status_code == 400
+
+    @pytest.mark.asyncio
+    async def test_clamps_limit_and_offset(self):
+        """limit/offset 越界值要在传入 helper 前被夹紧。"""
+        db = MagicMock()
+        user = _make_user()
+        captured = {}
+
+        async def fake_page(_db, _tid, _section, *, task_table, offset, limit):
+            captured.update(offset=offset, limit=limit)
+            return []
+
+        with patch(
+            "app.api.v1.endpoints.tasks._verify_task_access",
+            new=AsyncMock(return_value=None),
+        ), patch(
+            "app.api.v1.endpoints.tasks._get_code_analysis_section_page",
+            new=fake_page,
+        ):
+            await get_code_analysis_section_page(
+                TASK_ID, "api_endpoints", offset=-100, limit=99999, db=db, current_user=user,
+            )
+            assert captured["offset"] == 0       # 负值 → 0
+            assert captured["limit"] == 500      # 超大值 → 500 上限

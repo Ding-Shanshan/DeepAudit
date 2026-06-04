@@ -266,6 +266,53 @@ async def _get_code_analysis_section(
     return row.value
 
 
+# 数组型 section 才能分页（control_flow 是 dict 不在此列）
+_PAGEABLE_SECTIONS = ("api_endpoints", "call_graph", "file_dependencies")
+
+
+async def _get_code_analysis_section_page(
+    db: AsyncSession,
+    task_id: str,
+    section: str,
+    *,
+    task_table: str = "audit_tasks",
+    offset: int = 0,
+    limit: int = 50,
+) -> list:
+    """按 offset/limit 从 json 数组中切片返回元素列表。control_flow 不支持。
+
+    用 json_array_elements + WITH ORDINALITY（ord 从 1 开始），避免一次性把整个数组
+    序列化回 Python；只走 DB 端切片。即便 code_analysis_results 高达 274MB，
+    单次响应也只有 limit 个元素。
+
+    DB 解析失败（极端 json 异常）→ 返回 [] 兜底，端点不崩溃。
+    """
+    if section not in _PAGEABLE_SECTIONS:
+        return []
+    if task_table not in _CODE_ANALYSIS_TABLES:
+        raise ValueError(f"invalid task_table: {task_table!r}")
+    sql = text(f"""
+        SELECT value
+        FROM {task_table} t,
+             LATERAL json_array_elements(t.code_analysis_results->'{section}')
+               WITH ORDINALITY AS arr(value, ord)
+        WHERE t.id = :task_id
+          AND ord > :offset
+        ORDER BY ord
+        LIMIT :limit
+    """)
+    try:
+        rows = (await db.execute(sql, {"task_id": task_id, "offset": offset, "limit": limit})).all()
+    except Exception as e:
+        import logging
+        logging.getLogger(__name__).warning(
+            "code-analysis section page fallback for task=%s table=%s section=%s offset=%s err=%s",
+            task_id, task_table, section, offset, e,
+        )
+        return []
+    return [r.value for r in rows]
+
+
 async def _verify_task_access(
     db: AsyncSession,
     task_id: str,
@@ -490,6 +537,34 @@ async def get_code_analysis_summary(
     return await _get_code_analysis_summary(db, task_id, task_table="audit_tasks")
 
 
+@router.get("/{task_id}/code-analysis/{section}/page")
+async def get_code_analysis_section_page(
+    task_id: str,
+    section: str,
+    offset: int = 0,
+    limit: int = 50,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(deps.get_current_user),
+):
+    """分页获取代码分析结果的某一数组型小节。
+
+    支持的 section: api_endpoints | call_graph | file_dependencies
+    control_flow 不支持分页（dict 形态）。
+
+    展开某节后通过 IntersectionObserver 自动触发后续页。
+    """
+    if section not in _PAGEABLE_SECTIONS:
+        raise HTTPException(status_code=400, detail=f"该 section 不支持分页: {section}")
+
+    limit = max(1, min(limit, 500))
+    offset = max(0, offset)
+
+    await _verify_task_access(db, task_id, current_user.id, task_table="audit_tasks")
+    return await _get_code_analysis_section_page(
+        db, task_id, section, task_table="audit_tasks", offset=offset, limit=limit,
+    )
+
+
 @router.get("/{task_id}/code-analysis/{section}")
 async def get_code_analysis_section(
     task_id: str,
@@ -497,11 +572,12 @@ async def get_code_analysis_section(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(deps.get_current_user),
 ):
-    """按需获取代码分析结果的某一小节。
+    """按需获取代码分析结果的某一小节（一次性全量）。
 
     支持的 section: api_endpoints | call_graph | file_dependencies | control_flow
 
-    用户点击代码结构分析面板某节标题时触发，避免一次性加载整个 code_analysis_results。
+    注意：数组型 section 建议改用 /{section}/page 端点加分页；本端点保留给
+    control_flow（dict）和部分需要全量的下游调用（如 TaskDetail.tsx）。
     """
     if section not in _CODE_ANALYSIS_SECTIONS:
         raise HTTPException(status_code=400, detail=f"不支持的 section: {section}")
