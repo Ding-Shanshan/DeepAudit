@@ -250,11 +250,11 @@ export default function TaskDetail() {
   // IaC 任务无代码资产概念，跳过此请求
   useEffect(() => {
     if (!id || task?.task_type === 'iac_scan') return;
+    // 只取 api_endpoints 这一节，不再下载整个 code_analysis_results（可达数百 MB）
     apiClient
-      .get(`/tasks/${id}/code-analysis`)
+      .get(`/tasks/${id}/code-analysis/api_endpoints`)
       .then((res) => {
-        const data = (res.data as { api_endpoints?: unknown[] }) || {};
-        setApiEndpoints(Array.isArray(data.api_endpoints) ? data.api_endpoints : []);
+        setApiEndpoints(Array.isArray(res.data) ? res.data : []);
       })
       .catch(() => setApiEndpoints([]));
   }, [id, task?.task_type]);
