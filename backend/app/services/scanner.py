@@ -618,12 +618,57 @@ def _collect_iac_files(workspace: Path) -> list[dict[str, Any]]:
     return files
 
 
-async def scan_iac_task(task_id: str, db_session_factory, user_config: Optional[Dict[str, Any]] = None):
-    """IaC 扫描任务入口：克隆仓库 → 收集 IaC 文件 → 跑 IaC Semgrep 规则 → 落 Issue。"""
+async def _run_iac_workspace(
+    task: AuditTask,
+    db: AsyncSession,
+    workspace_dir: str,
+) -> None:
+    """在已物化的 workspace 上跑 IaC Semgrep 扫描并落 issue。
+
+    被 scan_iac_task（Git 仓库路径）和 process_zip_task 的 iac_scan 分支
+    （zip 上传路径）共用，保持 issue 落库形态完全一致。
+    """
     from app.services.quick_scan import run_semgrep_scan
 
-    iac_rules_path = Path(__file__).resolve().parents[3] / "rules" / "semgrep" / "iac-rules.yml"
+    iac_rules_path = (
+        Path(__file__).resolve().parents[3]
+        / "rules" / "semgrep" / "iac-rules.yml"
+    )
 
+    workspace_path = Path(workspace_dir)
+    iac_files = _collect_iac_files(workspace_path)
+    print(f"📦 IaC 扫描发现 {len(iac_files)} 个文件")
+
+    findings = []
+    if iac_files:
+        findings = run_semgrep_scan(
+            workspace_dir=workspace_path,
+            source_files=iac_files,
+            rules_file=iac_rules_path,
+        )
+
+    for f in findings:
+        issue = AuditIssue(
+            task_id=task.id,
+            file_path=f["file_path"],
+            line_number=f.get("line_number"),
+            column_number=f.get("column_number"),
+            issue_type="iac",
+            severity=f.get("severity", "medium"),
+            title=f.get("title"),
+            message=f.get("title"),
+            description=f.get("description"),
+            suggestion=f.get("suggestion"),
+            code_snippet=f.get("code_snippet"),
+        )
+        db.add(issue)
+    task.total_files = len(iac_files)
+    task.scanned_files = len(iac_files)
+    task.issues_count = len(findings)
+
+
+async def scan_iac_task(task_id: str, db_session_factory, user_config: Optional[Dict[str, Any]] = None):
+    """IaC 扫描任务入口：克隆仓库 → 收集 IaC 文件 → 跑 IaC Semgrep 规则 → 落 Issue。"""
     # 1) Mark running
     async with db_session_factory() as db:
         task = await db.get(AuditTask, task_id)
@@ -648,46 +693,15 @@ async def scan_iac_task(task_id: str, db_session_factory, user_config: Optional[
             branch=branch,
             user_config=user_config,
         )
-        workspace_path = Path(workspace_dir)
 
-        # 4) Collect IaC files
-        iac_files = _collect_iac_files(workspace_path)
-        print(f"📦 IaC 扫描发现 {len(iac_files)} 个文件")
-
-        # 5) Run Semgrep with IaC ruleset
-        findings = []
-        if iac_files:
-            findings = run_semgrep_scan(
-                workspace_dir=workspace_path,
-                source_files=iac_files,
-                rules_file=iac_rules_path,
-            )
-
-        # 6) Persist issues
+        # 4) Run IaC scan via shared helper
         async with db_session_factory() as db:
             task = await db.get(AuditTask, task_id)
-            for f in findings:
-                issue = AuditIssue(
-                    task_id=task.id,
-                    file_path=f["file_path"],
-                    line_number=f.get("line_number"),
-                    column_number=f.get("column_number"),
-                    issue_type="iac",
-                    severity=f.get("severity", "medium"),
-                    title=f.get("title"),
-                    message=f.get("title"),
-                    description=f.get("description"),
-                    suggestion=f.get("suggestion"),
-                    code_snippet=f.get("code_snippet"),
-                )
-                db.add(issue)
-            task.total_files = len(iac_files)
-            task.scanned_files = len(iac_files)
-            task.issues_count = len(findings)
+            await _run_iac_workspace(task, db, workspace_dir)
             task.status = "completed"
             task.completed_at = datetime.now(timezone.utc)
             await db.commit()
-        print(f"✅ IaC 任务 {task_id} 完成，共 {len(findings)} 条 issue")
+        print(f"✅ IaC 任务 {task_id} 完成")
 
     except Exception as exc:
         print(f"❌ IaC 任务 {task_id} 失败: {exc}")
