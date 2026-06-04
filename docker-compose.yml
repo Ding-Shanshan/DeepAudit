@@ -35,6 +35,7 @@ services:
     restart: unless-stopped
     volumes:
       # - ./backend/app:/app/app:ro  # 挂载代码目录，修改后自动生效
+      - ./rules:/rules:ro  # semgrep 规则集（IaC + 通用）。backend 镜像 build context 在 ./backend，COPY 不到外层 rules/，必须运行时挂入；否则 _run_iac_workspace 与 quick_scan 找不到 yaml 规则，扫描结果恒为 0。
       - backend_uploads:/app/uploads
       - /var/run/docker.sock:/var/run/docker.sock # 沙箱执行必须
     ports:

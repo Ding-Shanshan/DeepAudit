@@ -130,3 +130,49 @@ rules:
       category: iac
       iac_target: github_actions
       rule_code: IAC-CI-003
+
+  # ============ IaC 文件通用安全类 (2 条) ============
+  # 把过去只在通用源码扫描里命中的 DA-SECRET-001 / DA-CRYPTO-001 同步到
+  # IaC 路径，让 IaC 扫描自洽——独立分流后，IaC 任务不再走通用源码扫描，
+  # 但 Dockerfile / compose / actions 里这两类问题仍需覆盖。
+  - id: IAC-SEC-001
+    message: "IaC 文件中疑似硬编码密钥/Token/Password，建议改用 secrets 注入或环境变量"
+    severity: ERROR
+    languages: [generic]
+    paths:
+      include:
+        - "Dockerfile"
+        - "*.dockerfile"
+        - "Dockerfile.*"
+        - "docker-compose*.yml"
+        - "docker-compose*.yaml"
+        - "compose.yml"
+        - "compose.yaml"
+        - ".github/workflows/*.yml"
+        - ".github/workflows/*.yaml"
+    pattern-regex: '(?i)(secret|api[_-]?key|token|access[_-]?key|password)\s*[:=]\s*["''][^"'']{8,}["'']'
+    metadata:
+      category: iac
+      iac_target: any
+      rule_code: IAC-SEC-001
+
+  - id: IAC-SEC-002
+    message: "IaC 文件中疑似使用弱加密算法（MD5/SHA1/DES/RC4），建议改用现代算法"
+    severity: WARNING
+    languages: [generic]
+    paths:
+      include:
+        - "Dockerfile"
+        - "*.dockerfile"
+        - "Dockerfile.*"
+        - "docker-compose*.yml"
+        - "docker-compose*.yaml"
+        - "compose.yml"
+        - "compose.yaml"
+        - ".github/workflows/*.yml"
+        - ".github/workflows/*.yaml"
+    pattern-regex: '\b(md5sum|sha1sum|openssl\s+(?:dgst\s+-md5|dgst\s+-sha1|enc\s+-des|enc\s+-rc4))\b'
+    metadata:
+      category: iac
+      iac_target: any
+      rule_code: IAC-SEC-002
