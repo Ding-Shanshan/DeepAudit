@@ -3,7 +3,7 @@ from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy.orm import selectinload, defer
-from sqlalchemy import func
+from sqlalchemy import func, text
 from pydantic import BaseModel
 from datetime import datetime, timezone
 import json
@@ -12,6 +12,7 @@ import uuid
 from app.api import deps
 from app.db.session import get_db, async_session_factory
 from app.models.audit import AuditTask, AuditIssue
+from app.models.agent_task import AgentTask
 from app.models.project import Project
 from app.models.user import User
 from app.models.user_config import UserConfig
@@ -158,6 +159,129 @@ class AuditTaskSchema(BaseModel):
     
     class Config:
         from_attributes = True
+
+
+# ── 代码分析结果分批加载 ──────────────────────────────────────────
+# 数据库实测：单个 code_analysis_results 可达 274 MB，旧 /code-analysis 端点
+# 一次返回整列会导致前端 axios 超时和浏览器 OOM。
+# 下面三个 helper 通过 PostgreSQL JSON->jsonb cast + 路径提取按需读取子文档，
+# 配合下面新增的 /summary 和 /{section} 端点使用。旧端点保持不动。
+
+_CODE_ANALYSIS_SECTIONS = ("api_endpoints", "call_graph", "file_dependencies", "control_flow")
+_CODE_ANALYSIS_TABLES = ("audit_tasks", "agent_tasks")
+
+
+async def _get_code_analysis_summary(
+    db: AsyncSession, task_id: str, *, task_table: str = "audit_tasks"
+) -> dict:
+    """仅返回各小节计数（轻量级请求，DB 端只扫描 JSON 顶层键的数组长度）。
+
+    返回: { api_endpoints: int, call_graph: int, file_dependencies: int, control_flow_files: int }
+
+    所有计数最多 ~200 字节，不会触发前端超时。
+    若 record 超过 PostgreSQL jsonb 限制（>256MB），DB 端会抛错；本函数捕获后
+    回退为 -1（前端识别此值显示"过大"），不会让端点崩溃。
+
+    注意：列类型是 JSON 不是 JSONB（见 app/models/audit.py / app/models/agent_task.py），
+    所以要 cast 成 jsonb 才能用 jsonb_array_length / jsonb_object_keys。
+    """
+    if task_table not in _CODE_ANALYSIS_TABLES:
+        raise ValueError(f"invalid task_table: {task_table!r}")
+    sql = text(f"""
+        SELECT
+            jsonb_array_length(COALESCE((code_analysis_results::jsonb)->'api_endpoints','[]'::jsonb))       AS api_count,
+            jsonb_array_length(COALESCE((code_analysis_results::jsonb)->'call_graph','[]'::jsonb))            AS call_count,
+            jsonb_array_length(COALESCE((code_analysis_results::jsonb)->'file_dependencies','[]'::jsonb))     AS dep_count,
+            COALESCE(
+                (SELECT count(*) FROM jsonb_object_keys(COALESCE((code_analysis_results::jsonb)->'control_flow','{{}}'::jsonb))),
+                0
+            )::int                                                                                            AS cfg_count
+        FROM {task_table}
+        WHERE id = :task_id
+    """)
+    try:
+        row = (await db.execute(sql, {"task_id": task_id})).one_or_none()
+    except Exception as e:
+        # 超大 JSONB / cast 失败 → 回退为 -1，端点不崩溃
+        import logging
+        logging.getLogger(__name__).warning(
+            "code-analysis summary fallback for task=%s table=%s err=%s",
+            task_id, task_table, e,
+        )
+        return {"api_endpoints": -1, "call_graph": -1, "file_dependencies": -1, "control_flow_files": -1}
+    if not row:
+        return {}
+    return {
+        "api_endpoints": row.api_count if row.api_count is not None else 0,
+        "call_graph": row.call_count if row.call_count is not None else 0,
+        "file_dependencies": row.dep_count if row.dep_count is not None else 0,
+        "control_flow_files": row.cfg_count if row.cfg_count is not None else 0,
+    }
+
+
+async def _get_code_analysis_section(
+    db: AsyncSession,
+    task_id: str,
+    section: str,
+    *,
+    task_table: str = "audit_tasks",
+) -> Optional[Any]:
+    """使用 JSON 路径提取 (code_analysis_results::jsonb)->section 返回该子文档。
+
+    支持的 section 值: api_endpoints | call_graph | file_dependencies | control_flow
+
+    返回反序列化后的 Python 对象，或 None（任务不存在 / 无数据 / section 不合法）。
+
+    用 -> 而非 ->>：-> 返回 jsonb（驱动会自动反序列化为 Python 对象），
+    ->> 会返回 text 字符串需要手动 json.loads。
+
+    注意：section 名直接拼到 SQL 而非参数绑定，因为 -> 不支持参数化的字段名；
+    调用方必须保证 section 在白名单内（端点已有校验），此处再做一次防御性校验。
+    """
+    if section not in _CODE_ANALYSIS_SECTIONS:
+        return None
+    if task_table not in _CODE_ANALYSIS_TABLES:
+        raise ValueError(f"invalid task_table: {task_table!r}")
+    try:
+        sql = text(f"""
+            SELECT (code_analysis_results::jsonb)->'{section}' AS value
+            FROM {task_table}
+            WHERE id = :task_id
+        """)
+        row = (await db.execute(sql, {"task_id": task_id})).one_or_none()
+    except Exception as e:
+        import logging
+        logging.getLogger(__name__).warning(
+            "code-analysis section fallback for task=%s table=%s section=%s err=%s",
+            task_id, task_table, section, e,
+        )
+        return None
+    if not row or row.value is None:
+        return None
+    return row.value
+
+
+async def _verify_task_access(
+    db: AsyncSession,
+    task_id: str,
+    current_user_id: str,
+    *,
+    task_table: str = "audit_tasks",
+) -> None:
+    """检查任务存在且当前用户有权限访问。
+
+    通过返回 None 表示通过；抛 HTTPException 表示拒绝。
+    通过 task_table 参数区分 AuditTask（"audit_tasks"，默认）和 AgentTask（"agent_tasks"）。
+    """
+    if task_table not in _CODE_ANALYSIS_TABLES:
+        raise ValueError(f"invalid task_table: {task_table!r}")
+    model_cls = AuditTask if task_table == "audit_tasks" else AgentTask
+
+    task = await db.get(model_cls, task_id, options=[selectinload(model_cls.project)])
+    if not task:
+        raise HTTPException(status_code=404, detail="任务不存在")
+    if task.project and task.project.owner_id != current_user_id:
+        raise HTTPException(status_code=403, detail="无权访问此任务")
 
 
 @router.get("/", response_model=List[AuditTaskSchema])
